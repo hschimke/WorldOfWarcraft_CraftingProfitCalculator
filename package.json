@@ -1,0 +1,25 @@
+{
+  "name": "worldofwarcraft_craftingprofitcalculator",
+  "version": "2020.12.25",
+  "description": "An application to determine the profitability of a crafted item on the public auction house.",
+  "main": "wow_crafting_profits.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hschimke/WorldOfWarcraft_CraftingProfitCalculator.git"
+  },
+  "keywords": [
+    "games",
+    "world",
+    "warcraft",
+    "crafting"
+  ],
+  "author": "Henry Schimke",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hschimke/WorldOfWarcraft_CraftingProfitCalculator/issues"
+  },
+  "homepage": "https://github.com/hschimke/WorldOfWarcraft_CraftingProfitCalculator#readme"
+}
