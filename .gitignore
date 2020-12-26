@@ -102,3 +102,9 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Secrets
+secrets.json
+
+# Cached Data
+data-cache.json
