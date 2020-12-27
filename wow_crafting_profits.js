@@ -220,7 +220,7 @@ async function performProfitAnalysis(region, server, character_professions, item
     }
 
     let price_obj = {
-        item_id = item_id
+        item_id: item_id
     };
 
     // Get the realm id
