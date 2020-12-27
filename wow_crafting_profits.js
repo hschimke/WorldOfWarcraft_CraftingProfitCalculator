@@ -241,8 +241,9 @@ async function performProfitAnalysis(region, server, character_professions, item
 
         // Get prices for BOM
         let bom_prices = [];
-        item_bom.forEach((id) => {
-            if( await checkIsCrafting( id, character_professions ) ){
+        item_bom.forEach( (id) => {
+            const is_craftable = await checkIsCrafting( id, character_professions );
+            if( is_craftable ){
                 bom_prices.push( await performProfitAnalysis( region, server, character_professions, item ) );
             }else{
                 bom_prices.push( await getAHItemPrice( id ) );
