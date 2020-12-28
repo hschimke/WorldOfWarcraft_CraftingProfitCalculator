@@ -76,18 +76,18 @@ async function getAuthorizationToken(){
 async function getBlizzardAPIResponse( region_code, authorization_token, data, uri ){
     try{
         // CHECK OUT TEMPLATE STRING FOR MORE USEES
-        const api_response = await got( `${region_code}.${base_uri}${uri}`, {
+        const api_response = await got( `https://${region_code}.${base_uri}${uri}`, {
             reponseType: 'json',
-            method: 'POST',
+            method: 'GET',
             headers: {
                 'Connection': 'keep-alive',
-                'Bearer': authorization_token.access_token
+                'Authorization': `Bearer ${authorization_token.access_token}`
             },
-            form: data
-        });
-        return api_response.body;
+            searchParams: data
+        }).json();
+        return api_response;
     }catch( error ){
-        console.log( 'Issue fetching blizzard data: ' + error );
+        console.log( 'Issue fetching blizzard data: (' + `https://${region_code}.${base_uri}${uri}` + ') ' + error );
     }
 }
 
@@ -97,12 +97,10 @@ async function getConnectedRealmId( server_name, server_region ){
     const list_connected_realms_api = '/data/wow/connected-realm/index';
     const get_connected_realm_api = '/data/wow/connected-realm'; // /{connectedRealmId}
     const list_connected_realms_form = {
-        ':region': server_region,
         'namespace': 'dynamic-us',
         'locale': 'en_US'
     };
     const get_connected_realm_form = {
-        ':region': server_region,
         'namespace': 'dynamic-us',
         'locale': 'en_US'
     };
@@ -122,17 +120,17 @@ async function getConnectedRealmId( server_name, server_region ){
         const hr = realm_href.href;
         const connected_realm_detail = await got( hr, {
             reponseType: 'json',
-            method: 'POST',
+            method: 'GET',
             headers: {
                 'Connection': 'keep-alive',
-                'Bearer': authorization_token.access_token
+                'Authorization': `Bearer ${access_token.access_token}`
             },
-            form: get_connected_realm_form
-        });
-        const realm_list = connected_realm_detail.body.realms;
+            searchparams: get_connected_realm_form
+        }).json();
+        const realm_list = connected_realm_detail.realms;
         let found_realm = false;
         for( let rlm of realm_list ){
-            if( rlm.name == server_name ) {
+            if( rlm.name['en_US'].localeCompare(server_name, undefined, { sensitivity: 'accent' }) ) {
                 found_realm = true;
                 break;
             }
@@ -231,12 +229,13 @@ async function performProfitAnalysis(region, server, character_professions, item
 
     // Get the realm id
     const server_id = await getConnectedRealmId( server, region );
+    console.log( `Connected Realm ID: ${server_id}` );
 
     //Get the auction house
     price_obj.auction_house = await getAuctionHouse( server_id, region );
 
     // Get Item AH price
-    price_obj.item_price = await getAHItemPrice( item_id, auction_house );
+    price_obj.item_price = await getAHItemPrice( item_id, price_obj.auction_house );
 
     // Get NON AH price
     price_obj.item_non_ah_price = await findNoneAHPrice( item_id );
