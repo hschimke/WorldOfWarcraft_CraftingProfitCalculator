@@ -24,6 +24,7 @@
   "homepage": "https://github.com/hschimke/WorldOfWarcraft_CraftingProfitCalculator#readme",
   "dependencies": {
     "got": "^11.8.1",
+    "moment": "^2.29.1",
     "yargs": "^16.2.0"
   }
 }
