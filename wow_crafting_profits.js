@@ -6,18 +6,23 @@ const secrets = require('./secrets.json');
 const clientID = '9d85a3dfca994efa969df07bd1e47695';
 const clientSecret = secrets.keys.client_secret;
 
-const base_uri = 'battle.net';
+const base_uri = 'api.blizzard.com';
 
 const authorization_uri = 'https://us.battle.net/oauth/token';
 let clientAccessToken = {
     access_token: '',
     token_type: '',
-    expires_in: '',
+    expires_in: 0,
     scope: '',
     fetched: Date.now(),
     checkExpired: function(){
-        //always expires, bad practice
-        return true;
+        let expired = true;
+        const current_time = Date.now();
+        const expire_time = this.fetched + (this.expires_in * 1000);
+        if( current_time < expire_time ){
+            expired = false;
+        }
+        return expired;
     },
 };
 
@@ -47,7 +52,8 @@ async function getAuthorizationToken(){
             const auth_response = await got(authorization_uri, {
                 responseType: 'json',
                 method: 'POST',
-                username: clientID+':'+clientSecret,
+                username: clientID,
+                password: clientSecret,
                 headers: {
                     'Connection': 'keep-alive'
                 },
