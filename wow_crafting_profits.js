@@ -230,7 +230,7 @@ async function performProfitAnalysis(region, server, character_professions, item
     };
 
     // Get the realm id
-    const server_id = await getConnectedRealmId( server );
+    const server_id = await getConnectedRealmId( server, region );
 
     //Get the auction house
     price_obj.auction_house = await getAuctionHouse( server_id, region );
