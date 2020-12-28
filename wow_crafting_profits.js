@@ -41,7 +41,7 @@ try {
 }
 
 function saveCache() {
-    fs.writeFile(cache_name, JSON.stringify(cached_reports), 'utf8', () => {
+    fs.writeFile(cache_name, JSON.stringify(cached_data), 'utf8', () => {
         console.log('Cache saved');
     });
 }
@@ -145,6 +145,13 @@ async function getConnectedRealmId( server_name, server_region ){
 }
 async function getItemDetails( item_id ){}
 async function checkIsCrafting( item_id, character_professions ){
+    const profession_list_uri = '/data/wow/profession/index'; // professions.name / professions.id
+    const profession_levels_uri = '/data/wow/profession/{professionId}'; // skill_tiers.name skill_tiers.id
+    const profession_recipes_uri = '/data/wow/profession/{professionId}/skill-tier/{skillTierId}';
+    //categories[array].recipes[array].name categories[array].recipes[array].id
+    const profession_recipe_uri = ' /data/wow/recipe/{recipeId}';
+    //crafted_item.name crafted_item.id / reagents[array].name reagents[array].id reagents[array].quantity
+
     // Get a list of the crafting levels for the professions
 
     // Get a list of all recipes each level can do
@@ -169,7 +176,6 @@ async function getAuctionHouse( server_id, server_region ){
             server_region,
             await getAuthorizationToken(),
             {
-                ':region': server_region,
                 'namespace': 'dynamic-us',
                 'locale': 'en_US'
             },
@@ -189,12 +195,12 @@ async function getAHItemPrice( item_id, auction_house ){
     let average_counter = 0;
     let average_accumulator = 0;
     auction_house.auctions.forEach( (auction) => {
-        if( auction.keys.includes('buyout') ){
+        if( auction.hasOwnProperty('buyout') ){
             if( auction.item.id == item_id ){
                 if(auction.buyout > item_high){
                     item_high = auction.buyout;
                 }
-                if( auction.buyout > item_low ){
+                if( auction.buyout < item_low ){
                     item_low = auction.buyout;
                 }
                 average_counter++;
@@ -207,6 +213,7 @@ async function getAHItemPrice( item_id, auction_house ){
     return {
         high: item_high,
         low: item_low,
+        total_sales: average_counter,
         average: item_average
     };
 }
@@ -232,10 +239,10 @@ async function performProfitAnalysis(region, server, character_professions, item
     console.log( `Connected Realm ID: ${server_id}` );
 
     //Get the auction house
-    price_obj.auction_house = await getAuctionHouse( server_id, region );
+    auction_house = await getAuctionHouse( server_id, region );
 
     // Get Item AH price
-    price_obj.item_price = await getAHItemPrice( item_id, price_obj.auction_house );
+    price_obj.item_price = await getAHItemPrice( item_id, auction_house );
 
     // Get NON AH price
     price_obj.item_non_ah_price = await findNoneAHPrice( item_id );
