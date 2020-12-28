@@ -87,7 +87,7 @@ async function getBlizzardAPIResponse( region_code, authorization_token, data, u
         });
         return api_response.body;
     }catch( error ){
-        console.log( 'Issue fetching blizzard data.' );
+        console.log( 'Issue fetching blizzard data: ' + error );
     }
 }
 
