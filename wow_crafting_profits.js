@@ -33,10 +33,12 @@ try {
 } catch (e) {
     cached_data = {
         fetched_auction_houses: [],
-        fetched_crafting_items: [],
         fetched_auctions_data: {},
-        fetched_crafting_item_data: {},
-        auction_house_fetch_dtm: {}
+        auction_house_fetch_dtm: {},
+        fetched_profession_skill_tier_details: [],
+        fetched_profession_skill_tier_detail_data: {},
+        fetched_profession_recipe_details: [],
+        fetched_profession_recipe_detail_data: {}
     };
 }
 
@@ -91,6 +93,7 @@ async function getBlizzardAPIResponse( region_code, authorization_token, data, u
     }
 }
 
+//To Do: No idea how to get id from name
 async function getItemId( item_name ){}
 
 async function getConnectedRealmId( server_name, server_region ){
@@ -144,25 +147,116 @@ async function getConnectedRealmId( server_name, server_region ){
     return realm_id;
 }
 async function getItemDetails( item_id ){}
-async function checkIsCrafting( item_id, character_professions ){
+
+async function getBlizProfessionsList(region){
     const profession_list_uri = '/data/wow/profession/index'; // professions.name / professions.id
-    const profession_levels_uri = '/data/wow/profession/{professionId}'; // skill_tiers.name skill_tiers.id
-    const profession_recipes_uri = '/data/wow/profession/{professionId}/skill-tier/{skillTierId}';
-    //categories[array].recipes[array].name categories[array].recipes[array].id
-    const profession_recipe_uri = ' /data/wow/recipe/{recipeId}';
-    //crafted_item.name crafted_item.id / reagents[array].name reagents[array].id reagents[array].quantity
-
-    // Get a list of the crafting levels for the professions
-
-    // Get a list of all recipes each level can do
-
-    // Check if the item_id is in the recipes
+    return await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+            'namespace': 'static-us',
+            'locale': 'en_US'
+        }, profession_list_uri);
 }
-async function getCraftingReagents( item_id ){
+async function getBlizProfessionDetail(profession_id, region){
+    const profession_detail_uri = `/data/wow/profession/${profession_id}`; // skill_tiers.name skill_tiers.id
+    return await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+            'namespace': 'static-us',
+            'locale': 'en_US'
+        },
+        profession_detail_uri);
+}
+async function getBlizSkillTierDetail(profession_id, skillTier_id, region){
+    const key = `${region}::${profession_id}::${skillTier_id}`;
+    if( !cached_data.fetched_profession_skill_tier_details.includes( key ) ){
+        cached_data.fetched_profession_skill_tier_details.push(key);
+
+        const profession_skill_tier_detail_uri = `/data/wow/profession/${profession_id}/skill-tier/${skillTier_id}`;
+        //categories[array].recipes[array].name categories[array].recipes[array].id
+        cached_data.fetched_profession_skill_tier_detail_data[key] = await getBlizzardAPIResponse( region, await getAuthorizationToken(), {
+            'namespace': 'static-us',
+            'locale': 'en_US'
+        },
+        profession_skill_tier_detail_uri);
+    }
+    return cached_data.fetched_profession_skill_tier_detail_data[key];
+}
+async function getBlizRecipeDetail(recipe_id, region){
+    const key = `${region}::${recipe_id}`;
+    if( !cached_data.fetched_profession_recipe_details.includes( key ) ){
+        cached_data.fetched_profession_recipe_details.push(key);
+
+        const profession_recipe_uri = `/data/wow/recipe/${recipe_id}`;
+        //crafted_item.name crafted_item.id / reagents[array].name reagents[array].id reagents[array].quantity
+
+        cached_data.fetched_profession_recipe_detail_data[key] = await getBlizzardAPIResponse( region, await getAuthorizationToken(), {
+            'namespace': 'static-us',
+            'locale': 'en_US'
+        },
+        profession_recipe_uri);
+    }
+    return cached_data.fetched_profession_recipe_detail_data[key];
+}
+
+async function checkIsCrafting( item_id, character_professions, region ){
+    const profession_list = await getBlizProfessionsList(region);
+
+    let found_craftable = false;
+
+    for( let prof of character_professions){
+        if( !found_craftable ){
+            const check_profession_id = profession_list.professions.find( (item) => {
+                    return (item.name.localeCompare( prof, undefined, { sensitivity: 'accent' } ) == 0);
+                } ).id;
+            
+            // Get a list of the crafting levels for the professions
+            const profession_detail = await getBlizProfessionDetail( check_profession_id, region );
+            const crafting_levels = profession_detail.skill_tiers;
+
+            //let recipe_collect = [];
+
+            for( let skill_tier of crafting_levels ){
+                //only run on shadowlands tiers
+                if(skill_tier.name.includes('Shadowlands')){
+                    console.log( 'Checking: ' + skill_tier.name );
+                    // Get a list of all recipes each level can do
+                    const skill_tier_detail = await getBlizSkillTierDetail(check_profession_id, skill_tier.id, region);
+                    const categories = skill_tier_detail.categories;
+
+                    for( let cat of categories ){
+                        if( !found_craftable ){
+                            for( let rec of cat.recipes ){
+                                const recipe = await getBlizRecipeDetail(rec.id, region );
+                                if( recipe.hasOwnProperty('alliance_crafted_item') ){
+                                    if(recipe.alliance_crafted_item.id == item_id){
+                                        found_craftable = true;
+                                    }
+                                }
+                                if( recipe.hasOwnProperty('horde_crafted_item') ){
+                                    if(recipe.horde_crafted_item.id == item_id){
+                                        found_craftable = true;
+                                    }
+                                }
+                                if( recipe.hasOwnProperty('crafted_item') ){
+                                    if(recipe.crafted_item.id == item_id){
+                                        found_craftable = true;
+                                    }
+                                }
+                                if( found_craftable ){
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    // Check if the item_id is in the recipes
+                }
+            }
+        }
+    }
+
+    return found_craftable;
+}
+async function getCraftingReagents( item_id, region ){
     // Get a list of all recipes
 
     // Check if the item_id is in the list
-
 }
 async function getAuctionHouse( server_id, server_region ){
     // Download the auction house for the server_id
@@ -247,14 +341,14 @@ async function performProfitAnalysis(region, server, character_professions, item
     // Get NON AH price
     price_obj.item_non_ah_price = await findNoneAHPrice( item_id );
 
-    if( await checkIsCrafting( item_id, character_professions ) ){
+    if( await checkIsCrafting( item_id, character_professions, region ) ){
         // Get Reagents
-        const item_bom = await getCraftingReagents( item_id );
+        const item_bom = await getCraftingReagents( item_id, region );
 
         // Get prices for BOM
         let bom_prices = [];
         for( let id of item_bom ){
-            if( await checkIsCrafting( id, character_professions ) ){
+            if( await checkIsCrafting( id, character_professions, region ) ){
                 bom_prices.push( await performProfitAnalysis( region, server, character_professions, item ) );
             }else{
                 bom_prices.push( await getAHItemPrice( id ) );
@@ -291,9 +385,7 @@ function run(){
     performProfitAnalysis( test_region, test_server, test_character_professions, test_item)
         .then((price_data) => {
             console.log( price_data );
-        }).then(()=>{
-            saveCache();
-        });
+        }).finally( saveCache );
 }
 
 run();
