@@ -37,12 +37,22 @@ try {
         auction_house_fetch_dtm: {},
         fetched_profession_skill_tier_details: [],
         fetched_profession_skill_tier_detail_data: {},
+        fetched_profession_skill_tier_dtm: {},
         fetched_profession_recipe_details: [],
         fetched_profession_recipe_detail_data: {},
+        fetched_profession_recipe_detail_dtm: {},
         fetched_items: [],
-        fetched_item_data: {}
+        fetched_item_data: {},
+        fetched_item_dtm: {},
+        connected_realms: [],
+        connected_realm_data: {},
+        connected_realm_dtm: {}
     };
 }
+
+const local_cache = {
+    craftable: {}
+};
 
 function saveCache() {
     fs.writeFile(cache_name, JSON.stringify(cached_data), 'utf8', () => {
@@ -99,55 +109,66 @@ async function getBlizzardAPIResponse( region_code, authorization_token, data, u
 async function getItemId( item_name ){}
 
 async function getConnectedRealmId( server_name, server_region ){
-    const list_connected_realms_api = '/data/wow/connected-realm/index';
-    const get_connected_realm_api = '/data/wow/connected-realm'; // /{connectedRealmId}
-    const list_connected_realms_form = {
-        'namespace': 'dynamic-us',
-        'locale': 'en_US'
-    };
-    const get_connected_realm_form = {
-        'namespace': 'dynamic-us',
-        'locale': 'en_US'
-    };
-    const access_token = await getAuthorizationToken();
+    const connected_realm_key = `${server_region}::${server_name}`;
 
-    let realm_id = 0;
+    if( !cached_data.connected_realms.includes(connected_realm_key) ){
+        cached_data.connected_realms.push(connected_realm_key);
 
-    // Get a list of all connected realms
-    const all_connected_realms = await getBlizzardAPIResponse(
-        server_region,
-        access_token,
-        list_connected_realms_form,
-        list_connected_realms_api );
+        const list_connected_realms_api = '/data/wow/connected-realm/index';
+        const get_connected_realm_api = '/data/wow/connected-realm'; // /{connectedRealmId}
+        const list_connected_realms_form = {
+            'namespace': 'dynamic-us',
+            'locale': 'en_US'
+        };
+        const get_connected_realm_form = {
+            'namespace': 'dynamic-us',
+            'locale': 'en_US'
+        };
+        const access_token = await getAuthorizationToken();
 
-    // Pull the data for each connection until you find one with the server name in question
-    for( let realm_href of all_connected_realms.connected_realms ){
-        const hr = realm_href.href;
-        const connected_realm_detail = await got( hr, {
-            reponseType: 'json',
-            method: 'GET',
-            headers: {
-                'Connection': 'keep-alive',
-                'Authorization': `Bearer ${access_token.access_token}`
-            },
-            searchparams: get_connected_realm_form
-        }).json();
-        const realm_list = connected_realm_detail.realms;
-        let found_realm = false;
-        for( let rlm of realm_list ){
-            if( rlm.name['en_US'].localeCompare(server_name, undefined, { sensitivity: 'accent' }) ) {
-                found_realm = true;
+        let realm_id = 0;
+
+        // Get a list of all connected realms
+        const all_connected_realms = await getBlizzardAPIResponse(
+            server_region,
+            access_token,
+            list_connected_realms_form,
+            list_connected_realms_api );
+
+        // Pull the data for each connection until you find one with the server name in question
+        for( let realm_href of all_connected_realms.connected_realms ){
+            const hr = realm_href.href;
+            const connected_realm_detail = await got( hr, {
+                reponseType: 'json',
+                method: 'GET',
+                headers: {
+                    'Connection': 'keep-alive',
+                    'Authorization': `Bearer ${access_token.access_token}`
+                },
+                searchparams: get_connected_realm_form
+            }).json();
+            const realm_list = connected_realm_detail.realms;
+            let found_realm = false;
+            for( let rlm of realm_list ){
+                if( rlm.name['en_US'].localeCompare(server_name, undefined, { sensitivity: 'accent' }) ) {
+                    found_realm = true;
+                    break;
+                }
+            }
+            if( found_realm == true ){
+                realm_id = connected_realm_detail.id;
                 break;
             }
         }
-        if( found_realm == true ){
-            realm_id = connected_realm_detail.id;
-            break;
-        }
+
+        cached_data.connected_realm_data[connected_realm_key] = realm_id;
+        cached_data.connected_realm_dtm[connected_realm_key] = Date.now();
     }
+
     // Return that connected realm ID
-    return realm_id;
+    return cached_data.connected_realm_data[connected_realm_key];
 }
+
 async function getItemDetails( item_id, region ){
     const key = item_id
     if( !cached_data.fetched_items.includes( key ) ){
@@ -160,6 +181,7 @@ async function getItemDetails( item_id, region ){
             'locale': 'en_US'
         },
         profession_item_detail_uri);
+        cached_data.fetched_item_dtm[key] = Date.now();
     }
     return cached_data.fetched_item_data[key];
 }
@@ -191,6 +213,7 @@ async function getBlizSkillTierDetail(profession_id, skillTier_id, region){
             'locale': 'en_US'
         },
         profession_skill_tier_detail_uri);
+        cached_data.fetched_profession_skill_tier_dtm[key] = Date.now();
     }
     return cached_data.fetched_profession_skill_tier_detail_data[key];
 }
@@ -207,11 +230,19 @@ async function getBlizRecipeDetail(recipe_id, region){
             'locale': 'en_US'
         },
         profession_recipe_uri);
+        cached_data.fetched_profession_recipe_detail_dtm[key] = Date.now();
     }
     return cached_data.fetched_profession_recipe_detail_data[key];
 }
 
+//TODO: Current limitation of only returning fist option for crafting, would be better with any option to craft.
 async function checkIsCrafting( item_id, character_professions, region ){
+    // Check if we've already run this check, and if so return the cached version, otherwise keep on
+    const key = `${region}::${item_id}::${character_professions}`;
+    if(local_cache.craftable.hasOwnProperty(key)){
+        return local_cache.craftable[key];
+    }
+    
     const profession_list = await getBlizProfessionsList(region);
 
     let found_craftable = false;
@@ -233,7 +264,7 @@ async function checkIsCrafting( item_id, character_professions, region ){
             for( let skill_tier of crafting_levels ){
                 //only run on shadowlands tiers
                 if(skill_tier.name.includes('Shadowlands')){
-                    console.log( 'Checking: ' + skill_tier.name );
+                    console.log( `Checking: ${skill_tier.name} for: ${item_id}` );
                     // Get a list of all recipes each level can do
                     const skill_tier_detail = await getBlizSkillTierDetail(check_profession_id, skill_tier.id, region);
                     const categories = skill_tier_detail.categories;
@@ -275,17 +306,28 @@ async function checkIsCrafting( item_id, character_professions, region ){
             }
         }
     }
-
-    return {craftable: found_craftable, recipe_id: found_recipe_id, crafting_profession: found_profession};
+    local_cache.craftable[key] = {craftable: found_craftable, recipe_id: found_recipe_id, crafting_profession: found_profession};
+    return local_cache.craftable[key];
 }
+
 async function getCraftingRecipe( recipe_id, region ){
     const recipe = await getBlizRecipeDetail( recipe_id, region );
     return recipe;
 }
 async function getAuctionHouse( server_id, server_region ){
     // Download the auction house for the server_id
+    // If the auction house is older than an hour then remove it from the cached_data.fetched_auction_houses array
+    if(cached_data.auction_house_fetch_dtm.hasOwnProperty(server_id)){
+        if( (cached_data.auction_house_fetch_dtm[server_id] + 3.6e+6) < Date.now() ){
+            console.log('Auction house is out of date, fetching it fresh.')
+            const index = cached_data.fetched_auction_houses.indexOf(server_id);
+                if (index > -1) {
+                    cached_data.fetched_auction_houses.splice(index, 1);
+                }
+        }
+    }
 
-    if( !cached_data.fetched_auction_houses.includes( server_id) ){
+    if( !cached_data.fetched_auction_houses.includes( server_id ) ){
         cached_data.fetched_auction_houses.push(server_id);
 
         const auction_house_fetch_uri = `/data/wow/connected-realm/${server_id}/auctions`;
@@ -307,40 +349,65 @@ async function getAuctionHouse( server_id, server_region ){
 async function getAHItemPrice( item_id, auction_house ){
     // Find the item and return best, worst, average prices
     // Ignore everything but buyout auctions
-    let item_high = 0;
-    let item_low = Number.MAX_VALUE;
-    let item_average = 0;
+    let buy_out_item_high = 0;
+    let buy_out_item_low = Number.MAX_VALUE;
+    let buy_out_item_average = 0;
+    let buy_out_average_counter = 0;
+    let buy_out_average_accumulator = 0;
 
-    let average_counter = 0;
-    let average_accumulator = 0;
+    let bid_item_high = 0;
+    let bid_item_low = Number.MAX_VALUE;
+    let bid_item_average = 0;
+    let bid_average_counter = 0;
+    let bid_average_accumulator = 0;
+    
     auction_house.auctions.forEach( (auction) => {
         if( auction.hasOwnProperty('buyout') ){
             if( auction.item.id == item_id ){
-                if(auction.buyout > item_high){
-                    item_high = auction.buyout;
+                if(auction.buyout > buy_out_item_high){
+                    buy_out_item_high = auction.buyout;
                 }
-                if( auction.buyout < item_low ){
-                    item_low = auction.buyout;
+                if( auction.buyout < buy_out_item_low ){
+                    buy_out_item_low = auction.buyout;
                 }
-                average_counter++;
-                average_accumulator+=auction.buyout;
+                buy_out_average_counter++;
+                buy_out_average_accumulator+=auction.buyout;
             }
         }
+
+        if( auction.item.id == item_id ){
+            if(auction.unit_price > bid_item_high){
+                bid_item_high = auction.unit_price;
+            }
+            if( auction.unit_price < bid_item_low ){
+                bid_item_low = auction.unit_price;
+            }
+            bid_average_counter++;
+            bid_average_accumulator+=auction.unit_price;
+        }
     });
-    item_average = average_accumulator/average_counter;
+    buy_out_item_average = buy_out_average_accumulator/buy_out_average_counter;
+    bid_item_average = bid_average_accumulator/bid_average_counter;
     
     return {
-        high: item_high,
-        low: item_low,
-        total_sales: average_counter,
-        average: item_average
+        buyout: {
+            high: buy_out_item_high,
+            low: buy_out_item_low,
+            total_sales: buy_out_average_counter,
+            average: buy_out_item_average
+        },
+        bid: {
+            high: bid_item_high,
+            low: bid_item_low,
+            total_sales: bid_average_counter,
+            average: bid_item_average
+        }
     };
 }
 async function findNoneAHPrice( item_id ){
     // Get the item from blizz and see what the purchase price is, this cannot be trusted.
 }
 
-// ADD QUANTITY
 async function performProfitAnalysis(region, server, character_professions, item, qauntity){
     // Check if we have to figure out the item id ourselves
     let item_id = 0;
@@ -389,16 +456,6 @@ async function performProfitAnalysis(region, server, character_professions, item
             const bom_item_ah_price = await getAHItemPrice( reagent.reagent.id , auction_house );
 
             bom_prices.push( await performProfitAnalysis(region, server, character_professions, reagent.reagent.id, reagent.quantity) );
-            /*
-            bom_prices.push( {
-                item_id: reagent.reagent.id,
-                name: reagent.reagent.name,
-                quantity_required: reagent.quantity,
-                crafting_status: bom_item_craftable,
-                price_data: bom_item_ah_price
-            } );
-            */
-
         }
 
         price_obj.bom_prices = bom_prices;
@@ -430,7 +487,7 @@ function run(){
 
     performProfitAnalysis( test_region, test_server, test_character_professions, test_item, 1)
         .then((price_data) => {
-            console.log( JSON.stringify(price_data, null, 4) );
+            console.log( JSON.stringify(price_data, null, 2) );
         }).finally( saveCache );
 }
 
