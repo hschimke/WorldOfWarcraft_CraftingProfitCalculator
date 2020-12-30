@@ -38,7 +38,9 @@ try {
         fetched_profession_skill_tier_details: [],
         fetched_profession_skill_tier_detail_data: {},
         fetched_profession_recipe_details: [],
-        fetched_profession_recipe_detail_data: {}
+        fetched_profession_recipe_detail_data: {},
+        fetched_items: [],
+        fetched_item_data: {}
     };
 }
 
@@ -146,7 +148,21 @@ async function getConnectedRealmId( server_name, server_region ){
     // Return that connected realm ID
     return realm_id;
 }
-async function getItemDetails( item_id ){}
+async function getItemDetails( item_id, region ){
+    const key = item_id
+    if( !cached_data.fetched_items.includes( key ) ){
+        cached_data.fetched_items.push(key);
+        
+        const profession_item_detail_uri = `/data/wow/item/${item_id}`;
+        //categories[array].recipes[array].name categories[array].recipes[array].id
+        cached_data.fetched_item_data[key] = await getBlizzardAPIResponse( region, await getAuthorizationToken(), {
+            'namespace': 'static-us',
+            'locale': 'en_US'
+        },
+        profession_item_detail_uri);
+    }
+    return cached_data.fetched_item_data[key];
+}
 
 async function getBlizProfessionsList(region){
     const profession_list_uri = '/data/wow/profession/index'; // professions.name / professions.id
@@ -199,6 +215,8 @@ async function checkIsCrafting( item_id, character_professions, region ){
     const profession_list = await getBlizProfessionsList(region);
 
     let found_craftable = false;
+    let found_recipe_id = -1;
+    let found_profession = '';
 
     for( let prof of character_professions){
         if( !found_craftable ){
@@ -223,24 +241,31 @@ async function checkIsCrafting( item_id, character_professions, region ){
                     for( let cat of categories ){
                         if( !found_craftable ){
                             for( let rec of cat.recipes ){
-                                const recipe = await getBlizRecipeDetail(rec.id, region );
-                                if( recipe.hasOwnProperty('alliance_crafted_item') ){
-                                    if(recipe.alliance_crafted_item.id == item_id){
-                                        found_craftable = true;
+                                const recipe = await getBlizRecipeDetail( rec.id, region );
+                                if( !(recipe.name.includes('Prospect') || recipe.name.includes('Mill')) ){
+                                    if( recipe.hasOwnProperty('alliance_crafted_item') ){
+                                        if(recipe.alliance_crafted_item.id == item_id){
+                                            found_craftable = true;
+                                        }
                                     }
-                                }
-                                if( recipe.hasOwnProperty('horde_crafted_item') ){
-                                    if(recipe.horde_crafted_item.id == item_id){
-                                        found_craftable = true;
+                                    if( recipe.hasOwnProperty('horde_crafted_item') ){
+                                        if(recipe.horde_crafted_item.id == item_id){
+                                            found_craftable = true;
+                                        }
                                     }
-                                }
-                                if( recipe.hasOwnProperty('crafted_item') ){
-                                    if(recipe.crafted_item.id == item_id){
-                                        found_craftable = true;
+                                    if( recipe.hasOwnProperty('crafted_item') ){
+                                        if(recipe.crafted_item.id == item_id){
+                                            found_craftable = true;
+                                        }
                                     }
-                                }
-                                if( found_craftable ){
-                                    break;
+                                    if( found_craftable ){
+                                        console.log(`Found recipe (${recipe.id}): ${recipe.name}`);
+                                        found_recipe_id = recipe.id;
+                                        found_profession = prof;
+                                        break;
+                                    }
+                                }else{
+                                    //console.log( `Skipping Recipe: (${recipe.id}) "${recipe.name}"` );
                                 }
                             }
                         }
@@ -251,12 +276,11 @@ async function checkIsCrafting( item_id, character_professions, region ){
         }
     }
 
-    return found_craftable;
+    return {craftable: found_craftable, recipe_id: found_recipe_id, crafting_profession: found_profession};
 }
-async function getCraftingReagents( item_id, region ){
-    // Get a list of all recipes
-
-    // Check if the item_id is in the list
+async function getCraftingRecipe( recipe_id, region ){
+    const recipe = await getBlizRecipeDetail( recipe_id, region );
+    return recipe;
 }
 async function getAuctionHouse( server_id, server_region ){
     // Download the auction house for the server_id
@@ -274,6 +298,7 @@ async function getAuctionHouse( server_id, server_region ){
                 'locale': 'en_US'
             },
             auction_house_fetch_uri);
+        cached_data.auction_house_fetch_dtm[server_id] = Date.now();
     }
 
     return cached_data.fetched_auctions_data[server_id];
@@ -315,7 +340,8 @@ async function findNoneAHPrice( item_id ){
     // Get the item from blizz and see what the purchase price is, this cannot be trusted.
 }
 
-async function performProfitAnalysis(region, server, character_professions, item){
+// ADD QUANTITY
+async function performProfitAnalysis(region, server, character_professions, item, qauntity){
     // Check if we have to figure out the item id ourselves
     let item_id = 0;
     if( Number.isFinite(item) ){
@@ -324,9 +350,14 @@ async function performProfitAnalysis(region, server, character_professions, item
         item_id = await getItemId( item );
     }
 
+    const item_detail = await getItemDetails(item_id, region);
+
     let price_obj = {
-        item_id: item_id
+        item_id: item_id,
+        item_name: item_detail.name
     };
+
+    console.log( "Looking at: " + item_detail.name);
 
     // Get the realm id
     const server_id = await getConnectedRealmId( server, region );
@@ -341,23 +372,38 @@ async function performProfitAnalysis(region, server, character_professions, item
     // Get NON AH price
     price_obj.item_non_ah_price = await findNoneAHPrice( item_id );
 
-    if( await checkIsCrafting( item_id, character_professions, region ) ){
+    price_obj.item_quantity = qauntity;
+
+    const item_craftable = await checkIsCrafting(item_id, character_professions, region);
+
+    price_obj.crafting_status = item_craftable;
+
+    if( item_craftable.craftable ){
         // Get Reagents
-        const item_bom = await getCraftingReagents( item_id, region );
+        const item_bom = await getCraftingRecipe( item_craftable.recipe_id, region );
 
         // Get prices for BOM
         let bom_prices = [];
-        for( let id of item_bom ){
-            if( await checkIsCrafting( id, character_professions, region ) ){
-                bom_prices.push( await performProfitAnalysis( region, server, character_professions, item ) );
-            }else{
-                bom_prices.push( await getAHItemPrice( id ) );
-            }
+        for( let reagent of item_bom.reagents ){
+            const bom_item_craftable = await checkIsCrafting( reagent.reagent.id, character_professions, region );
+            const bom_item_ah_price = await getAHItemPrice( reagent.reagent.id , auction_house );
+
+            bom_prices.push( await performProfitAnalysis(region, server, character_professions, reagent.reagent.id, reagent.quantity) );
+            /*
+            bom_prices.push( {
+                item_id: reagent.reagent.id,
+                name: reagent.reagent.name,
+                quantity_required: reagent.quantity,
+                crafting_status: bom_item_craftable,
+                price_data: bom_item_ah_price
+            } );
+            */
+
         }
 
         price_obj.bom_prices = bom_prices;
     }else{
-        console.log( "Item not crafted" );
+        console.log( "Item not craftable by character." );
     }
 
     return price_obj;
@@ -379,12 +425,12 @@ function run(){
 
     const test_region = 'us';
     const test_server = 'hyjal';
-    const test_character_professions = ['Jewelcrafting', 'Blacksmithing'];
-    const test_item = 178926;
+    const test_character_professions = ['Jewelcrafting', 'Tailoring', 'Inscription', 'Enchanting', 'Blacksmithing'];
+    const test_item = 171414;
 
-    performProfitAnalysis( test_region, test_server, test_character_professions, test_item)
+    performProfitAnalysis( test_region, test_server, test_character_professions, test_item, 1)
         .then((price_data) => {
-            console.log( price_data );
+            console.log( JSON.stringify(price_data, null, 4) );
         }).finally( saveCache );
 }
 
