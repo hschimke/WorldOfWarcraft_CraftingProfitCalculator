@@ -548,25 +548,30 @@ async function recipeCostCalculator(recipe_option){
             console.log('recurse')
             let ave_acc = 0;
             let ave_cnt = 0;
+
+            let high = Number.MIN_VALUE;
+            let low = Number.MAX_VALUE;
+
             for(let opt of component.recipe_options){
                 const recurse_price = await recipeCostCalculator(opt);
 
-                if(cost.high < recurse_price.high * component.item_quantity){
-                    cost.high = recurse_price.high * component.item_quantity;
+                if(high < recurse_price.high * component.item_quantity){
+                    high = recurse_price.high * component.item_quantity;
                 }
 
-                if(cost.low > recurse_price.low * component.item_quantity){
-                    cost.low = recurse_price.low * component.item_quantity;
+                if(low > recurse_price.low * component.item_quantity){
+                    low = recurse_price.low * component.item_quantity;
                 }
 
                 ave_acc += recurse_price.average * component.item_quantity;
                 ave_cnt ++;
             }
+            cost.low = low;
+            cost.high = high;
             cost.average+=ave_acc/ave_cnt;
         }
     }
 
-    console.log(cost);
     return cost;
 }
 
@@ -576,10 +581,14 @@ async function recipeCostPrint(recipe_option){
 
 function indentAdder(level){
     let str = '';
-    for(let i = 0; i++; i<level){
+    for(let i = 0; i++; i<=level){
         str+='\t';
     }
     return str;
+}
+
+function goldFormatter(price){
+    return price;
 }
 
 async function textFriendlyOutputFormat(price_data, indent) {
@@ -609,7 +618,7 @@ async function textFriendlyOutputFormat(price_data, indent) {
     }
     for( let recipe_option of price_data.recipe_options ){
         const option_price = await recipeCostCalculator( recipe_option );
-        return_string += indentAdder(indent+1) + option_price;
+        return_string += indentAdder(indent+1) + `${recipe_option.recipe.recipe_id} : ${option_price.high}/${option_price.low}/${option_price.average}\n`
     }
 
     return return_string;
