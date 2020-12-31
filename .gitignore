@@ -111,3 +111,5 @@ data-cache.json
 
 # Output data
 output.json
+raw_output.json
+formatted_output

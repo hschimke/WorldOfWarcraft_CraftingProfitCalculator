@@ -217,6 +217,7 @@ async function getBlizSkillTierDetail(profession_id, skillTier_id, region){
     }
     return cached_data.fetched_profession_skill_tier_detail_data[key];
 }
+
 async function getBlizRecipeDetail(recipe_id, region){
     const key = `${region}::${recipe_id}`;
     if( !cached_data.fetched_profession_recipe_details.includes( key ) ){
@@ -235,7 +236,6 @@ async function getBlizRecipeDetail(recipe_id, region){
     return cached_data.fetched_profession_recipe_detail_data[key];
 }
 
-//TODO: Current limitation of only returning fist option for crafting, would be better with any option to craft.
 async function checkIsCrafting( item_id, character_professions, region ){
     // Check if we've already run this check, and if so return the cached version, otherwise keep on
     const key = `${region}::${item_id}::${character_professions}`;
@@ -250,9 +250,15 @@ async function checkIsCrafting( item_id, character_professions, region ){
         recipes: []
     };
 
-    //let found_craftable = false;
-    //let found_recipe_id = -1;
-    //let found_profession = '';
+    // Check if a vendor is mentioned in the item description and if so just short circuit
+    const item_detail = await getItemDetails(item_id,region);
+    if(item_detail.hasOwnProperty('description')){
+        if(item_detail.description.includes('vendor')){
+            console.log('Short circuit on vendor recipe');
+            local_cache.craftable[key] = recipe_options;
+            return local_cache.craftable[key];
+        }
+    }
 
     for( let prof of character_professions){
         //if( !found_craftable ){
@@ -264,8 +270,6 @@ async function checkIsCrafting( item_id, character_professions, region ){
             const profession_detail = await getBlizProfessionDetail( check_profession_id, region );
             const crafting_levels = profession_detail.skill_tiers;
 
-            //let recipe_collect = [];
-
             for( let skill_tier of crafting_levels ){
                 //only run on shadowlands tiers
                 if(skill_tier.name.includes('Shadowlands')){
@@ -275,7 +279,6 @@ async function checkIsCrafting( item_id, character_professions, region ){
                     const categories = skill_tier_detail.categories;
 
                     for( let cat of categories ){
-                        //if( !found_craftable ){
                             for( let rec of cat.recipes ){
                                 const recipe = await getBlizRecipeDetail( rec.id, region );
                                 if( !(recipe.name.includes('Prospect') || recipe.name.includes('Mill')) ){
@@ -297,9 +300,7 @@ async function checkIsCrafting( item_id, character_professions, region ){
                                     }
                                     if( crafty ){
                                         console.log(`Found recipe (${recipe.id}): ${recipe.name}`);
-                                        //found_recipe_id = recipe.id;
-                                        //found_profession = prof;
-                                        //found_craftable = true;
+
                                         recipe_options.recipes.push(
                                             {
                                                 recipe_id: recipe.id,
@@ -307,18 +308,16 @@ async function checkIsCrafting( item_id, character_professions, region ){
                                             }
                                         )
                                         recipe_options.craftable = true;
-                                        //break;
+
                                     }
                                 }else{
-                                    //console.log( `Skipping Recipe: (${recipe.id}) "${recipe.name}"` );
+                                    console.log( `Skipping Recipe: (${recipe.id}) "${recipe.name}"` );
                                 }
                             }
-                        //} ?****
                     }
                     // Check if the item_id is in the recipes
                 }
             }
-        //} kljdfkd
     }
     local_cache.craftable[key] = recipe_options; //{craftable: found_craftable, recipe_id: found_recipe_id, crafting_profession: found_profession};
     return local_cache.craftable[key];
@@ -485,13 +484,21 @@ async function performProfitAnalysis(region, server, character_professions, item
                 bom_prices.push( await performProfitAnalysis(region, server, character_professions, reagent.reagent.id, reagent.quantity) );
             }
 
-            price_obj.recipe_options.push(bom_prices);
+            price_obj.recipe_options.push({
+                recipe: recipe,
+                prices: bom_prices
+            });
         }
     }else{
-        console.log( "Item not craftable by character." );
+        console.log( `Item not craftable with professions: ${character_professions}` );
     }
 
     return price_obj;
+}
+
+async function textFriendlyOutputFormat( price_data ){
+
+    return 'Price_data ' + JSON.stringify(price_data, null, 2);
 }
 
 //outline
@@ -513,11 +520,22 @@ function run(){
     const test_character_professions = ['Jewelcrafting', 'Tailoring', 'Inscription', 'Enchanting', 'Blacksmithing'];
     const test_item = 171414;
 
+    let price_data = undefined;
+
     performProfitAnalysis( test_region, test_server, test_character_professions, test_item, 1)
-        .then((price_data) => {
+        .then((pd) => {
+            price_data = pd;
+        }).then(()=>{
             console.log( 'Saving output' );
-            fs.writeFile('output.json', JSON.stringify(price_data, null, 2), 'utf8', () => {
-                console.log('Output saved');
+        }).then(()=>{
+            return textFriendlyOutputFormat(price_data);
+        }).then((formatted_data)=>{
+            fs.writeFile('formatted_output', formatted_data, 'utf8', () => {
+                console.log('Raw output saved');
+            });
+        }).then(()=>{
+            fs.writeFile('raw_output.json', JSON.stringify(price_data, null, 2), 'utf8', () => {
+                console.log('Formatted output saved');
             });
         }).finally( saveCache );
 }
