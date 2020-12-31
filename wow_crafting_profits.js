@@ -362,21 +362,21 @@ async function getAuctionHouse(server_id, server_region) {
 async function getAHItemPrice(item_id, auction_house) {
     // Find the item and return best, worst, average prices
     // Ignore everything but buyout auctions
-    let buy_out_item_high = 0;
+    let buy_out_item_high = Number.MIN_VALUE;
     let buy_out_item_low = Number.MAX_VALUE;
     let buy_out_item_average = 0;
     let buy_out_average_counter = 0;
     let buy_out_average_accumulator = 0;
 
-    let bid_item_high = 0;
+    let bid_item_high = Number.MIN_VALUE;
     let bid_item_low = Number.MAX_VALUE;
     let bid_item_average = 0;
     let bid_average_counter = 0;
     let bid_average_accumulator = 0;
 
     auction_house.auctions.forEach((auction) => {
-        if (auction.hasOwnProperty('buyout')) {
-            if (auction.item.id == item_id) {
+        if (auction.item.id == item_id){
+            if (auction.hasOwnProperty('buyout')){
                 if (auction.buyout > buy_out_item_high) {
                     buy_out_item_high = auction.buyout;
                 }
@@ -384,19 +384,17 @@ async function getAHItemPrice(item_id, auction_house) {
                     buy_out_item_low = auction.buyout;
                 }
                 buy_out_average_counter += auction.quantity;
-                buy_out_average_accumulator += auction.buyout * auction.quantity;
+                buy_out_average_accumulator += (auction.buyout * auction.quantity);
+            }else{
+                if (auction.unit_price > bid_item_high) {
+                    bid_item_high = auction.unit_price;
+                }
+                if (auction.unit_price < bid_item_low) {
+                    bid_item_low = auction.unit_price;
+                }
+                bid_average_counter += auction.quantity;
+                bid_average_accumulator += (auction.unit_price * auction.quantity);
             }
-        }
-
-        if (auction.item.id == item_id) {
-            if (auction.unit_price > bid_item_high) {
-                bid_item_high = auction.unit_price;
-            }
-            if (auction.unit_price < bid_item_low) {
-                bid_item_low = auction.unit_price;
-            }
-            bid_average_counter += auction.quantity;
-            bid_average_accumulator += auction.buyout * auction.unit_price;
         }
     });
     buy_out_item_average = buy_out_average_accumulator / buy_out_average_counter;
