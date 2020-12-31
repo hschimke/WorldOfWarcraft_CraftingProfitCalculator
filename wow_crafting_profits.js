@@ -494,9 +494,125 @@ async function performProfitAnalysis(region, server, character_professions, item
     return price_obj;
 }
 
-async function textFriendlyOutputFormat(price_data) {
+async function recipeCostCalculator(recipe_option){
+    /**
+     * For each recipe
+     *   For each component
+     *     if component is vendor: cost = price * quantity
+     *     if component is on AH: cost = h/l/a * quantity (tuple)
+     *     if component is craftable: cost = h/l/a of each recipe option
+     */
+    const cost = {
+        high: 0,
+        low: 0,
+        average: 0
+    };
 
-    return 'Price_data ' + JSON.stringify(price_data, null, 2);
+    //console.log(recipe_option);
+
+    for( let component of recipe_option.prices ){
+        if( component.vendor_price != -1 ){
+            cost.high += component.vendor_price * component.item_quantity;
+            cost.low += component.vendor_price * component.item_quantity;
+            cost.average += component.vendor_price * component.item_quantity;
+            console.log('Vendor price');
+        }else if(component.crafting_status.craftable == false){
+            let high = Number.MIN_VALUE;
+            let low = Number.MAX_VALUE;
+            let average = 0;
+            let count = 0;
+            if(component.ah_price.bid.total_sales>0){
+                average+=component.ah_price.bid.average;
+                if(component.ah_price.bid.high>high){
+                    high = component.ah_price.bid.high;
+                }
+                if(component.ah_price.bid.low<low){
+                    low = component.ah_price.bid.low;
+                }
+                count++;
+            }if(component.ah_price.buyout.total_sales>0){
+                average+=component.ah_price.buyout.average;
+                if(component.ah_price.buyout.high>high){
+                    high = component.ah_price.buyout.high;
+                }
+                if(component.ah_price.buyout.low<low){
+                    low = component.ah_price.buyout.low;
+                }
+                count++;
+            }
+            cost.average += (average / count) * component.item_quantity;
+            cost.high += high * component.item_quantity;
+            cost.low += low * component.item_quantity;
+            console.log('AH uncraftable');
+        }else{
+            console.log('recurse')
+            let ave_acc = 0;
+            let ave_cnt = 0;
+            for(let opt of component.recipe_options){
+                const recurse_price = await recipeCostCalculator(opt);
+
+                if(cost.high < recurse_price.high * component.item_quantity){
+                    cost.high = recurse_price.high * component.item_quantity;
+                }
+
+                if(cost.low > recurse_price.low * component.item_quantity){
+                    cost.low = recurse_price.low * component.item_quantity;
+                }
+
+                ave_acc += recurse_price.average * component.item_quantity;
+                ave_cnt ++;
+            }
+            cost.average+=ave_acc/ave_cnt;
+        }
+    }
+
+    console.log(cost);
+    return cost;
+}
+
+async function recipeCostPrint(recipe_option){
+
+}
+
+function indentAdder(level){
+    let str = '';
+    for(let i = 0; i++; i<level){
+        str+='\t';
+    }
+    return str;
+}
+
+async function textFriendlyOutputFormat(price_data, indent) {
+    /*
+     * Output format:
+     * Item
+     *   Price Data (hih/low/average)
+     *   Recipe Options
+     *     Recipe
+     *       Component Price
+     *   Best Component Crafting Cost
+     *   Worst Componenet Crafting Cost
+     *   Average Component Crafting Cost
+    */
+
+    let return_string = '';
+
+    return_string += indentAdder(indent) + `${price_data.item_name} (${price_data.item_id})\n`;
+    if(price_data.ah_price.bid.total_sales > 0){
+        return_string += indentAdder(indent+1) + `AH Bid ${price_data.ah_price.bid.total_sales}: ${price_data.ah_price.bid.high}/${price_data.ah_price.bid.low}/${price_data.ah_price.bid.average}\n`;
+    }
+    if(price_data.ah_price.buyout.total_sales > 0){
+        return_string += indentAdder(indent+1) + `AH Buyout ${price_data.ah_price.buyout.total_sales}: ${price_data.ah_price.buyout.high}/${price_data.ah_price.buyout.low}/${price_data.ah_price.buyout.average}\n`;
+    }
+    if(price_data.vendor_price > 0){
+        return_string += indentAdder(indent+1) + `Vendor ${price_data.vendor_price}\n`;
+    }
+    for( let recipe_option of price_data.recipe_options ){
+        const option_price = await recipeCostCalculator( recipe_option );
+        return_string += indentAdder(indent+1) + option_price;
+    }
+
+    return return_string;
 }
 
 //outline
@@ -518,7 +634,7 @@ function run() {
     const test_character_professions = ['Jewelcrafting', 'Tailoring', 'Inscription', 'Enchanting', 'Blacksmithing'];
     const test_item = 171414;
 
-    let price_data = undefined;
+    let price_data = null;
 
     performProfitAnalysis(test_region, test_server, test_character_professions, test_item, 1)
         .then((pd) => {
@@ -526,7 +642,7 @@ function run() {
         }).then(() => {
             console.log('Saving output');
         }).then(() => {
-            return textFriendlyOutputFormat(price_data);
+            return textFriendlyOutputFormat(price_data, 0);
         }).then((formatted_data) => {
             fs.writeFile('formatted_output', formatted_data, 'utf8', () => {
                 console.log('Raw output saved');
