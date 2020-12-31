@@ -108,3 +108,6 @@ secrets.json
 
 # Cached Data
 data-cache.json
+
+# Output data
+output.json
