@@ -414,7 +414,7 @@ async function getAHItemPrice(item_id, auction_house) {
      */
     auction_house.auctions.forEach((auction) => {
         if (auction.item.id == item_id){
-            logger.debug(auction);
+            //logger.debug(auction);
             if (auction.hasOwnProperty('buyout')){
                 if (auction.buyout > buy_out_item_high) {
                     buy_out_item_high = auction.buyout;
@@ -476,6 +476,45 @@ async function findNoneAHPrice(item_id, region) {
     return vendor_price;
 }
 
+/**
+ * Get a list of bonus item values for a given item.
+ * 
+ * Finds all of the bonus-list types associated with a given item id,
+ * currently the only way to do that is by pulling an auction house down
+ * and then scanning it. If no bonus lists are found an empty array is
+ * returned.
+ * 
+ * @param {number} item_id Item ID to scan
+ * @param {object} auction_house The auction house data to use as a source.
+ */
+async function getItemBonusLists( item_id, auction_house){
+    let bonus_lists = [];
+    let bonus_lists_set = [];
+    auction_house.auctions.forEach((auction) => {
+        if (auction.item.id == item_id){
+            if( auction.item.hasOwnProperty('bonus_lists')){
+                bonus_lists.push(auction.item.bonus_lists);
+            }
+        }
+    });
+    bonus_lists.forEach((list)=>{
+        let found = false;
+        bonus_lists_set.forEach((i)=>{
+            if (i.length == list.length && i.every(function(u, i) {
+                    return u === list[i];
+                })
+            ) {
+               found = true;
+            }
+        });
+        if(!found){
+            bonus_lists_set.push(list);
+        }
+    });
+    logger.debug(`${item_id} has ${bonus_lists_set.length} bonus lists.`);
+    return bonus_lists_set;
+}
+
 async function performProfitAnalysis(region, server, character_professions, item, qauntity) {
     // Check if we have to figure out the item id ourselves
     let item_id = 0;
@@ -512,6 +551,11 @@ async function performProfitAnalysis(region, server, character_professions, item
     const item_craftable = await checkIsCrafting(item_id, character_professions, region);
 
     price_obj.crafting_status = item_craftable;
+
+    // Eventually bonus_lists should be treated as separate items and this should happen first
+    // When that's the case we should actually return an entire extra set of price data based on each
+    // possible bonus_list. They're actually different items, blizz just tells us they aren't.
+    price_obj.bonus_lists = await getItemBonusLists( item_id, auction_house );
 
     price_obj.recipe_options = [];
 
