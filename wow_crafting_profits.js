@@ -14,7 +14,7 @@ const logger = winston.createLogger({
         //
         new winston.transports.File({ filename: 'error.log', level: 'error' }),
         new winston.transports.File({ filename: 'combined.log' }),
-      ],
+    ],
 });
 
 //
@@ -23,9 +23,9 @@ const logger = winston.createLogger({
 //
 if (process.env.NODE_ENV !== 'production') {
     logger.add(new winston.transports.Console({
-      format: winston.format.simple(),
+        format: winston.format.simple(),
     }));
-  }
+}
 
 const secrets = require('./secrets.json');
 const { exit } = require('process');
@@ -413,9 +413,9 @@ async function getAHItemPrice(item_id, auction_house) {
      * from the 'bonus_lists' array
      */
     auction_house.auctions.forEach((auction) => {
-        if (auction.item.id == item_id){
+        if (auction.item.id == item_id) {
             //logger.debug(auction);
-            if (auction.hasOwnProperty('buyout')){
+            if (auction.hasOwnProperty('buyout')) {
                 if (auction.buyout > buy_out_item_high) {
                     buy_out_item_high = auction.buyout;
                 }
@@ -424,7 +424,7 @@ async function getAHItemPrice(item_id, auction_house) {
                 }
                 buy_out_average_counter += auction.quantity;
                 buy_out_average_accumulator += (auction.buyout * auction.quantity);
-            }else{
+            } else {
                 if (auction.unit_price > bid_item_high) {
                     bid_item_high = auction.unit_price;
                 }
@@ -487,27 +487,27 @@ async function findNoneAHPrice(item_id, region) {
  * @param {number} item_id Item ID to scan
  * @param {object} auction_house The auction house data to use as a source.
  */
-async function getItemBonusLists( item_id, auction_house){
+async function getItemBonusLists(item_id, auction_house) {
     let bonus_lists = [];
     let bonus_lists_set = [];
     auction_house.auctions.forEach((auction) => {
-        if (auction.item.id == item_id){
-            if( auction.item.hasOwnProperty('bonus_lists')){
+        if (auction.item.id == item_id) {
+            if (auction.item.hasOwnProperty('bonus_lists')) {
                 bonus_lists.push(auction.item.bonus_lists);
             }
         }
     });
-    bonus_lists.forEach((list)=>{
+    bonus_lists.forEach((list) => {
         let found = false;
-        bonus_lists_set.forEach((i)=>{
-            if (i.length == list.length && i.every(function(u, i) {
-                    return u === list[i];
-                })
+        bonus_lists_set.forEach((i) => {
+            if (i.length == list.length && i.every(function (u, i) {
+                return u === list[i];
+            })
             ) {
-               found = true;
+                found = true;
             }
         });
-        if(!found){
+        if (!found) {
             bonus_lists_set.push(list);
         }
     });
@@ -555,7 +555,7 @@ async function performProfitAnalysis(region, server, character_professions, item
     // Eventually bonus_lists should be treated as separate items and this should happen first
     // When that's the case we should actually return an entire extra set of price data based on each
     // possible bonus_list. They're actually different items, blizz just tells us they aren't.
-    price_obj.bonus_lists = await getItemBonusLists( item_id, auction_house );
+    price_obj.bonus_lists = await getItemBonusLists(item_id, auction_house);
 
     price_obj.recipe_options = [];
 
@@ -585,7 +585,7 @@ async function performProfitAnalysis(region, server, character_professions, item
     return price_obj;
 }
 
-async function recipeCostCalculator(recipe_option){
+async function recipeCostCalculator(recipe_option) {
     /**
      * For each recipe
      *   For each component
@@ -599,32 +599,32 @@ async function recipeCostCalculator(recipe_option){
         average: 0
     };
 
-    for( let component of recipe_option.prices ){
-        if( component.vendor_price != -1 ){
+    for (let component of recipe_option.prices) {
+        if (component.vendor_price != -1) {
             cost.high += component.vendor_price * component.item_quantity;
             cost.low += component.vendor_price * component.item_quantity;
             cost.average += component.vendor_price * component.item_quantity;
             logger.debug('Use vendor price');
-        }else if(component.crafting_status.craftable == false){
+        } else if (component.crafting_status.craftable == false) {
             let high = Number.MIN_VALUE;
             let low = Number.MAX_VALUE;
             let average = 0;
             let count = 0;
-            if(component.ah_price.bid.total_sales>0){
-                average+=component.ah_price.bid.average;
-                if(component.ah_price.bid.high>high){
+            if (component.ah_price.bid.total_sales > 0) {
+                average += component.ah_price.bid.average;
+                if (component.ah_price.bid.high > high) {
                     high = component.ah_price.bid.high;
                 }
-                if(component.ah_price.bid.low<low){
+                if (component.ah_price.bid.low < low) {
                     low = component.ah_price.bid.low;
                 }
                 count++;
-            }if(component.ah_price.buyout.total_sales>0){
-                average+=component.ah_price.buyout.average;
-                if(component.ah_price.buyout.high>high){
+            } if (component.ah_price.buyout.total_sales > 0) {
+                average += component.ah_price.buyout.average;
+                if (component.ah_price.buyout.high > high) {
                     high = component.ah_price.buyout.high;
                 }
-                if(component.ah_price.buyout.low<low){
+                if (component.ah_price.buyout.low < low) {
                     low = component.ah_price.buyout.low;
                 }
                 count++;
@@ -633,7 +633,7 @@ async function recipeCostCalculator(recipe_option){
             cost.high += high * component.item_quantity;
             cost.low += low * component.item_quantity;
             logger.debug('Using AH price: uncraftable');
-        }else{
+        } else {
             logger.debug('Using recursion price')
             let ave_acc = 0;
             let ave_cnt = 0;
@@ -641,42 +641,42 @@ async function recipeCostCalculator(recipe_option){
             let high = Number.MIN_VALUE;
             let low = Number.MAX_VALUE;
 
-            for(let opt of component.recipe_options){
+            for (let opt of component.recipe_options) {
                 const recurse_price = await recipeCostCalculator(opt);
 
-                if(high < recurse_price.high * component.item_quantity){
+                if (high < recurse_price.high * component.item_quantity) {
                     high = recurse_price.high * component.item_quantity;
                 }
 
-                if(low > recurse_price.low * component.item_quantity){
+                if (low > recurse_price.low * component.item_quantity) {
                     low = recurse_price.low * component.item_quantity;
                 }
 
                 ave_acc += recurse_price.average * component.item_quantity;
-                ave_cnt ++;
+                ave_cnt++;
             }
             cost.low = low;
             cost.high = high;
-            cost.average+=ave_acc/ave_cnt;
+            cost.average += ave_acc / ave_cnt;
         }
     }
 
     return cost;
 }
 
-async function recipeCostPrint(recipe_option){
+async function recipeCostPrint(recipe_option) {
 
 }
 
-function indentAdder(level){
+function indentAdder(level) {
     let str = '';
-    for(let i = 0; i++; i<=level){
-        str+='  ';
+    for (let i = 0; i++; i <= level) {
+        str += '  ';
     }
     return str;
 }
 
-function goldFormatter(price){
+function goldFormatter(price) {
     return price;
 }
 
@@ -696,18 +696,18 @@ async function textFriendlyOutputFormat(price_data, indent) {
     let return_string = '';
 
     return_string += indentAdder(indent) + `${price_data.item_name} (${price_data.item_id})\n`;
-    if(price_data.ah_price.bid.total_sales > 0){
-        return_string += indentAdder(indent+1) + `AH Bid ${price_data.ah_price.bid.total_sales}: ${price_data.ah_price.bid.high}/${price_data.ah_price.bid.low}/${price_data.ah_price.bid.average}\n`;
+    if (price_data.ah_price.bid.total_sales > 0) {
+        return_string += indentAdder(indent + 1) + `AH Bid ${price_data.ah_price.bid.total_sales}: ${price_data.ah_price.bid.high}/${price_data.ah_price.bid.low}/${price_data.ah_price.bid.average}\n`;
     }
-    if(price_data.ah_price.buyout.total_sales > 0){
-        return_string += indentAdder(indent+1) + `AH Buyout ${price_data.ah_price.buyout.total_sales}: ${price_data.ah_price.buyout.high}/${price_data.ah_price.buyout.low}/${price_data.ah_price.buyout.average}\n`;
+    if (price_data.ah_price.buyout.total_sales > 0) {
+        return_string += indentAdder(indent + 1) + `AH Buyout ${price_data.ah_price.buyout.total_sales}: ${price_data.ah_price.buyout.high}/${price_data.ah_price.buyout.low}/${price_data.ah_price.buyout.average}\n`;
     }
-    if(price_data.vendor_price > 0){
-        return_string += indentAdder(indent+1) + `Vendor ${price_data.vendor_price}\n`;
+    if (price_data.vendor_price > 0) {
+        return_string += indentAdder(indent + 1) + `Vendor ${price_data.vendor_price}\n`;
     }
-    for( let recipe_option of price_data.recipe_options ){
-        const option_price = await recipeCostCalculator( recipe_option );
-        return_string += indentAdder(indent+1) + `${recipe_option.recipe.recipe_id} : ${option_price.high}/${option_price.low}/${option_price.average}\n`
+    for (let recipe_option of price_data.recipe_options) {
+        const option_price = await recipeCostCalculator(recipe_option);
+        return_string += indentAdder(indent + 1) + `${recipe_option.recipe.recipe_id} : ${option_price.high}/${option_price.low}/${option_price.average}\n`
     }
 
     return return_string;
