@@ -113,3 +113,11 @@ data-cache.json
 output.json
 raw_output.json
 formatted_output
+
+# Yarn future
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
