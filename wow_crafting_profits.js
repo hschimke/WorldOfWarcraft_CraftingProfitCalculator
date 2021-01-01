@@ -1,8 +1,34 @@
 const got = require('got');
 const yargs = require('yargs');
 const fs = require('fs');
+const winston = require('winston');
+
+const logger = winston.createLogger({
+    level: 'debug',
+    format: winston.format.json(),
+    defaultMeta: { service: 'user-service' },
+    transports: [
+        //
+        // - Write all logs with level `error` and below to `error.log`
+        // - Write all logs with level `info` and below to `combined.log`
+        //
+        new winston.transports.File({ filename: 'error.log', level: 'error' }),
+        new winston.transports.File({ filename: 'combined.log' }),
+      ],
+});
+
+//
+// If we're not in production then log to the `console` with the format:
+// `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
+//
+if (process.env.NODE_ENV !== 'production') {
+    logger.add(new winston.transports.Console({
+      format: winston.format.simple(),
+    }));
+  }
 
 const secrets = require('./secrets.json');
+const { exit } = require('process');
 const clientID = '9d85a3dfca994efa969df07bd1e47695';
 const clientSecret = secrets.keys.client_secret;
 
@@ -56,7 +82,7 @@ const local_cache = {
 
 function saveCache() {
     fs.writeFile(cache_name, JSON.stringify(cached_data), 'utf8', () => {
-        console.log('Cache saved');
+        logger.info('Cache saved');
     });
 }
 
@@ -81,7 +107,7 @@ async function getAuthorizationToken() {
             clientAccessToken.scope = auth_response.body.scope;
             clientAccessToken.fetched = Date.now();
         } catch (error) {
-            console.log("An error was encountered while retrieving an authorization token: " + error);
+            logger.error("An error was encountered while retrieving an authorization token: " + error);
         }
     }
     return clientAccessToken;
@@ -101,7 +127,7 @@ async function getBlizzardAPIResponse(region_code, authorization_token, data, ur
         }).json();
         return api_response;
     } catch (error) {
-        console.log('Issue fetching blizzard data: (' + `https://${region_code}.${base_uri}${uri}` + ') ' + error);
+        logger.warning('Issue fetching blizzard data: (' + `https://${region_code}.${base_uri}${uri}` + ') ' + error);
     }
 }
 
@@ -254,7 +280,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
     const item_detail = await getItemDetails(item_id, region);
     if (item_detail.hasOwnProperty('description')) {
         if (item_detail.description.includes('vendor')) {
-            console.log('Short circuit on vendor recipe');
+            logger.info('Skipping vendor recipe');
             local_cache.craftable[key] = recipe_options;
             return local_cache.craftable[key];
         }
@@ -273,7 +299,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
         for (let skill_tier of crafting_levels) {
             //only run on shadowlands tiers
             if (skill_tier.name.includes('Shadowlands')) {
-                console.log(`Checking: ${skill_tier.name} for: ${item_id}`);
+                logger.debug(`Checking: ${skill_tier.name} for: ${item_id}`);
                 // Get a list of all recipes each level can do
                 const skill_tier_detail = await getBlizSkillTierDetail(check_profession_id, skill_tier.id, region);
                 const categories = skill_tier_detail.categories;
@@ -299,7 +325,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
                                 }
                             }
                             if (crafty) {
-                                console.log(`Found recipe (${recipe.id}): ${recipe.name}`);
+                                logger.debug(`Found recipe (${recipe.id}): ${recipe.name}`);
 
                                 recipe_options.recipes.push(
                                     {
@@ -311,7 +337,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
 
                             }
                         } else {
-                            console.log(`Skipping Recipe: (${recipe.id}) "${recipe.name}"`);
+                            logger.debug(`Skipping Recipe: (${recipe.id}) "${recipe.name}"`);
                         }
                     }
                 }
@@ -332,7 +358,7 @@ async function getAuctionHouse(server_id, server_region) {
     // If the auction house is older than an hour then remove it from the cached_data.fetched_auction_houses array
     if (cached_data.auction_house_fetch_dtm.hasOwnProperty(server_id)) {
         if ((cached_data.auction_house_fetch_dtm[server_id] + 3.6e+6) < Date.now()) {
-            console.log('Auction house is out of date, fetching it fresh.')
+            logger.info('Auction house is out of date, fetching it fresh.')
             const index = cached_data.fetched_auction_houses.indexOf(server_id);
             if (index > -1) {
                 cached_data.fetched_auction_houses.splice(index, 1);
@@ -359,6 +385,13 @@ async function getAuctionHouse(server_id, server_region) {
     return cached_data.fetched_auctions_data[server_id];
 }
 
+/**
+ * Find the value of an item on the auction house.
+ * Items might be for sale on the auction house and be available from vendors.
+ * The auction house items have complicated bonus types.
+ * @param {number} item_id 
+ * @param {object} auction_house 
+ */
 async function getAHItemPrice(item_id, auction_house) {
     // Find the item and return best, worst, average prices
     // Ignore everything but buyout auctions
@@ -374,8 +407,14 @@ async function getAHItemPrice(item_id, auction_house) {
     let bid_average_counter = 0;
     let bid_average_accumulator = 0;
 
+    /**
+     * Issue: for items with multiple version availble on the auction house
+     * you will find that they all have the same id. The difference comes
+     * from the 'bonus_lists' array
+     */
     auction_house.auctions.forEach((auction) => {
         if (auction.item.id == item_id){
+            logger.debug(auction);
             if (auction.hasOwnProperty('buyout')){
                 if (auction.buyout > buy_out_item_high) {
                     buy_out_item_high = auction.buyout;
@@ -415,6 +454,14 @@ async function getAHItemPrice(item_id, auction_house) {
         }
     };
 }
+
+/**
+ * Retrieve the value of the item from the vendor price,
+ * items that cannot be bought from
+ * vendors are given a value of -1.
+ * @param {Number} item_id 
+ * @param {String} region 
+ */
 async function findNoneAHPrice(item_id, region) {
     // Get the item from blizz and see what the purchase price is
     // The general method is to get the item and see if the description mentions the auction house,
@@ -445,11 +492,11 @@ async function performProfitAnalysis(region, server, character_professions, item
         item_name: item_detail.name
     };
 
-    console.log("Looking at: " + item_detail.name);
+    logger.info("Checking: " + item_detail.name);
 
     // Get the realm id
     const server_id = await getConnectedRealmId(server, region);
-    console.log(`Connected Realm ID: ${server_id}`);
+    logger.debug(`Connected Realm ID: ${server_id}`);
 
     //Get the auction house
     auction_house = await getAuctionHouse(server_id, region);
@@ -488,7 +535,7 @@ async function performProfitAnalysis(region, server, character_professions, item
             });
         }
     } else {
-        console.log(`Item not craftable with professions: ${character_professions}`);
+        logger.debug(`Item not craftable with professions: ${character_professions}`);
     }
 
     return price_obj;
@@ -508,14 +555,12 @@ async function recipeCostCalculator(recipe_option){
         average: 0
     };
 
-    //console.log(recipe_option);
-
     for( let component of recipe_option.prices ){
         if( component.vendor_price != -1 ){
             cost.high += component.vendor_price * component.item_quantity;
             cost.low += component.vendor_price * component.item_quantity;
             cost.average += component.vendor_price * component.item_quantity;
-            console.log('Vendor price');
+            logger.debug('Use vendor price');
         }else if(component.crafting_status.craftable == false){
             let high = Number.MIN_VALUE;
             let low = Number.MAX_VALUE;
@@ -543,9 +588,9 @@ async function recipeCostCalculator(recipe_option){
             cost.average += (average / count) * component.item_quantity;
             cost.high += high * component.item_quantity;
             cost.low += low * component.item_quantity;
-            console.log('AH uncraftable');
+            logger.debug('Using AH price: uncraftable');
         }else{
-            console.log('recurse')
+            logger.debug('Using recursion price')
             let ave_acc = 0;
             let ave_cnt = 0;
 
@@ -582,7 +627,7 @@ async function recipeCostPrint(recipe_option){
 function indentAdder(level){
     let str = '';
     for(let i = 0; i++; i<=level){
-        str+='\t';
+        str+='  ';
     }
     return str;
 }
@@ -636,7 +681,7 @@ async function textFriendlyOutputFormat(price_data, indent) {
 // [ ] Print the summary of the item price from auction house and the component prices
 
 function run() {
-    console.log("World of Warcraft Crafting Profit Calculator");
+    logger.info("World of Warcraft Crafting Profit Calculator");
 
     const test_region = 'us';
     const test_server = 'hyjal';
@@ -649,16 +694,16 @@ function run() {
         .then((pd) => {
             price_data = pd;
         }).then(() => {
-            console.log('Saving output');
+            logger.info('Saving output');
         }).then(() => {
             return textFriendlyOutputFormat(price_data, 0);
         }).then((formatted_data) => {
             fs.writeFile('formatted_output', formatted_data, 'utf8', () => {
-                console.log('Raw output saved');
+                logger.info('Raw output saved');
             });
         }).then(() => {
             fs.writeFile('raw_output.json', JSON.stringify(price_data, null, 2), 'utf8', () => {
-                console.log('Formatted output saved');
+                logger.info('Formatted output saved');
             });
         }).finally(saveCache);
 }
