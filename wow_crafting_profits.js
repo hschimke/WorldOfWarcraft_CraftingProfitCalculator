@@ -6,7 +6,7 @@ const winston = require('winston');
 const logger = winston.createLogger({
     level: 'debug',
     format: winston.format.json(),
-    defaultMeta: { service: 'user-service' },
+    //defaultMeta: { service: 'user-service' },
     transports: [
         //
         // - Write all logs with level `error` and below to `error.log`
@@ -566,9 +566,16 @@ async function performProfitAnalysis(region, server, character_professions, item
 
             // Get prices for BOM
             let bom_prices = [];
+
+            let bom_promises = [];
+
             for (let reagent of item_bom.reagents) {
-                bom_prices.push(await performProfitAnalysis(region, server, character_professions, reagent.reagent.id, reagent.quantity));
+                bom_promises.push(performProfitAnalysis(region, server, character_professions, reagent.reagent.id, reagent.quantity));
             }
+
+            (await Promise.all(bom_promises)).forEach((price) => {
+                bom_prices.push(price);
+            });
 
             price_obj.recipe_options.push({
                 recipe: recipe,
