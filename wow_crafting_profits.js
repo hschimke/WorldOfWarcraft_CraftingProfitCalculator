@@ -688,7 +688,7 @@ function goldFormatter(price_in) {
     return `${gold}g ${silver}s ${copper}c`;
 }
 
-async function textFriendlyOutputFormat(price_data, indent) {
+async function textFriendlyOutputFormat(price_data, indent, region) {
     /*
      * Output format:
      * Item
@@ -716,11 +716,12 @@ async function textFriendlyOutputFormat(price_data, indent) {
     if (price_data.recipe_options != undefined) {
         for (let recipe_option of price_data.recipe_options) {
             const option_price = await recipeCostCalculator(recipe_option);
-            return_string += indentAdder(indent + 1) + `${recipe_option.recipe.recipe_id} : ${goldFormatter(option_price.high)}/${goldFormatter(option_price.low)}/${goldFormatter(option_price.average)}\n`
+            const recipe = await getBlizRecipeDetail(recipe_option.recipe.recipe_id, region);
+            return_string += indentAdder(indent + 1) + `${recipe.name} (${recipe_option.recipe.recipe_id}) : ${goldFormatter(option_price.high)}/${goldFormatter(option_price.low)}/${goldFormatter(option_price.average)}\n`
             return_string += '\n';
             if (recipe_option.prices != undefined) {
                 for (let opt of recipe_option.prices) {
-                    return_string += await textFriendlyOutputFormat(opt, indent + 2);
+                    return_string += await textFriendlyOutputFormat(opt, indent + 2, region);
                     return_string += '\n'
                 }
             }
@@ -757,7 +758,7 @@ function run() {
         }).then(() => {
             logger.info('Saving output');
         }).then(() => {
-            return textFriendlyOutputFormat(price_data, 0);
+            return textFriendlyOutputFormat(price_data, 0, test_region);
         }).then((formatted_data) => {
             fs.writeFile('formatted_output', formatted_data, 'utf8', () => {
                 logger.info('Raw output saved');
