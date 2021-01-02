@@ -567,9 +567,6 @@ async function performProfitAnalysis(region, server, character_professions, item
             // Get prices for BOM
             let bom_prices = [];
             for (let reagent of item_bom.reagents) {
-                //const bom_item_craftable = await checkIsCrafting( reagent.reagent.id, character_professions, region );
-                //const bom_item_ah_price = await getAHItemPrice( reagent.reagent.id , auction_house );
-
                 bom_prices.push(await performProfitAnalysis(region, server, character_professions, reagent.reagent.id, reagent.quantity));
             }
 
@@ -676,8 +673,12 @@ function indentAdder(level) {
     return str;
 }
 
-function goldFormatter(price) {
-    return price;
+function goldFormatter(price_in) {
+    const price = Math.trunc(price_in);
+    const copper = price % 100;
+    const silver = (((price % 10000) - copper))/100;
+    const gold = (price - (price % 10000))/10000;
+    return `${gold}g ${silver}s ${copper}c`;
 }
 
 async function textFriendlyOutputFormat(price_data, indent) {
@@ -697,20 +698,25 @@ async function textFriendlyOutputFormat(price_data, indent) {
 
     return_string += indentAdder(indent) + `${price_data.item_name} (${price_data.item_id})\n`;
     if ((price_data.ah_price != undefined) && (price_data.ah_price.bid.total_sales > 0)) {
-        return_string += indentAdder(indent + 1) + `AH Bid ${price_data.ah_price.bid.total_sales}: ${price_data.ah_price.bid.high}/${price_data.ah_price.bid.low}/${price_data.ah_price.bid.average}\n`;
+        return_string += indentAdder(indent + 1) + `AH Bid ${price_data.ah_price.bid.total_sales}: ${goldFormatter(price_data.ah_price.bid.high)}/${goldFormatter(price_data.ah_price.bid.low)}/${goldFormatter(price_data.ah_price.bid.average)}\n`;
     }
     if ((price_data.ah_price != undefined) && price_data.ah_price.buyout.total_sales > 0) {
-        return_string += indentAdder(indent + 1) + `AH Buyout ${price_data.ah_price.buyout.total_sales}: ${price_data.ah_price.buyout.high}/${price_data.ah_price.buyout.low}/${price_data.ah_price.buyout.average}\n`;
+        return_string += indentAdder(indent + 1) + `AH Buyout ${price_data.ah_price.buyout.total_sales}: ${goldFormatter(price_data.ah_price.buyout.high)}/${goldFormatter(price_data.ah_price.buyout.low)}/${goldFormatter(price_data.ah_price.buyout.average)}\n`;
     }
     if (price_data.vendor_price > 0) {
-        return_string += indentAdder(indent + 1) + `Vendor ${price_data.vendor_price}\n`;
+        return_string += indentAdder(indent + 1) + `Vendor ${goldFormatter(price_data.vendor_price)}\n`;
     }
-    if(price_data.recipe_options != undefined){
+    if (price_data.recipe_options != undefined) {
         for (let recipe_option of price_data.recipe_options) {
             const option_price = await recipeCostCalculator(recipe_option);
-            return_string += indentAdder(indent + 1) + `${recipe_option.recipe.recipe_id} : ${option_price.high}/${option_price.low}/${option_price.average}\n`
+            return_string += indentAdder(indent + 1) + `${recipe_option.recipe.recipe_id} : ${goldFormatter(option_price.high)}/${goldFormatter(option_price.low)}/${goldFormatter(option_price.average)}\n`
             return_string += '\n';
-            return_string += await textFriendlyOutputFormat(recipe_option,indent+2);
+            if (recipe_option.prices != undefined) {
+                for (let opt of recipe_option.prices) {
+                    return_string += await textFriendlyOutputFormat(opt, indent + 2);
+                    return_string += '\n'
+                }
+            }
         }
     }
 
@@ -756,4 +762,5 @@ function run() {
         }).finally(saveCache);
 }
 
-run();
+module.exports.run = run;
+module.exports.textFriendlyOutputFormat = textFriendlyOutputFormat;
