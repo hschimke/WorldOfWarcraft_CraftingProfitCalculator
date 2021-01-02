@@ -32,6 +32,8 @@ const { exit } = require('process');
 const clientID = '9d85a3dfca994efa969df07bd1e47695';
 const clientSecret = secrets.keys.client_secret;
 
+const raidbots_bonus_lists = require('./bonuses.json');
+
 const base_uri = 'api.blizzard.com';
 
 const authorization_uri = 'https://us.battle.net/oauth/token';
