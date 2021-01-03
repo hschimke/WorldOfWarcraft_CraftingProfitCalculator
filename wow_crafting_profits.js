@@ -807,24 +807,20 @@ async function textFriendlyOutputFormat(price_data, indent, region) {
 // [X] Check if there is a non-crafting/non-auction price for the components
 // [ ] Print the summary of the item price from auction house and the component prices
 
-function run() {
+function run(region, server, professions, item) {
     logger.info("World of Warcraft Crafting Profit Calculator");
-
-    const test_region = 'us';
-    const test_server = 'hyjal';
-    const test_character_professions = ['Jewelcrafting', 'Tailoring', 'Inscription', 'Enchanting', 'Blacksmithing'];
-    //const test_item = 171414;
-    const test_item = 173244;
 
     let price_data = null;
 
-    performProfitAnalysis(test_region, test_server, test_character_professions, test_item, 1)
+    logger.info(`Checking ${server} in ${region} for ${item} with available professions ${JSON.stringify(professions)}`);
+
+    performProfitAnalysis(region, server, professions, item, 1)
         .then((pd) => {
             price_data = pd;
         }).then(() => {
             logger.info('Saving output');
         }).then(() => {
-            return textFriendlyOutputFormat(price_data, 0, test_region);
+            return textFriendlyOutputFormat(price_data, 0, region);
         }).then((formatted_data) => {
             fs.writeFile('formatted_output', formatted_data, 'utf8', () => {
                 logger.info('Raw output saved');
