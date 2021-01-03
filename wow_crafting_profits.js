@@ -604,7 +604,10 @@ async function performProfitAnalysis(region, server, character_professions, item
                 bom_prices.push(price);
             });
 
-            const rank_level = recipe_id_list.indexOf(recipe.recipe_id) > -1 ? rankings.available_levels[rankings.rank_mapping[recipe_id_list.indexOf(recipe.recipe_id)]] : 0;
+            let rank_level = 0;
+            if( recipe_id_list.length > 1 ){
+                rank_level = recipe_id_list.indexOf(recipe.recipe_id) > -1 ? rankings.available_levels[rankings.rank_mapping[recipe_id_list.indexOf(recipe.recipe_id)]] : 0;
+            }
 
             price_obj.recipe_options.push({
                 recipe: recipe,
@@ -733,7 +736,7 @@ async function textFriendlyOutputFormat(price_data, indent, region) {
 
     let return_string = '';
 
-    return_string += indentAdder(indent) + `${price_data.item_name} (${price_data.item_id})\n`;
+    return_string += indentAdder(indent) + `${price_data.item_name} (${price_data.item_id}) Requires ${price_data.item_quantity}\n`;
     if ((price_data.ah_price != undefined) && (price_data.ah_price.bid.total_sales > 0)) {
         return_string += indentAdder(indent + 1) + `AH Bid ${price_data.ah_price.bid.total_sales}: ${goldFormatter(price_data.ah_price.bid.high)}/${goldFormatter(price_data.ah_price.bid.low)}/${goldFormatter(price_data.ah_price.bid.average)}\n`;
     }
