@@ -312,7 +312,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
                 check_scan_tier = true;
             }
             if (check_scan_tier) {
-                tier_checks.push(checkCraftingTier(skill_tier, check_profession_id, prof, recipe_options));
+                tier_checks.push(checkCraftingTier(skill_tier, check_profession_id, prof));
             }
         }
         await Promise.all(tier_checks);
@@ -320,7 +320,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
     local_cache.craftable[key] = recipe_options; //{craftable: found_craftable, recipe_id: found_recipe_id, crafting_profession: found_profession};
     return local_cache.craftable[key];
 
-    async function checkCraftingTier(skill_tier, check_profession_id, prof, recipe_options) {
+    async function checkCraftingTier(skill_tier, check_profession_id, prof) {
         logger.debug(`Checking: ${skill_tier.name} for: ${item_id}`);
         // Get a list of all recipes each level can do
         const skill_tier_detail = await getBlizSkillTierDetail(check_profession_id, skill_tier.id, region);
