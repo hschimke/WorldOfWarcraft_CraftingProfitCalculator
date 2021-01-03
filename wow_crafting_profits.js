@@ -83,6 +83,8 @@ const local_cache = {
     craftable: {}
 };
 
+const exclude_before_shadowlands = true;
+
 function saveCache() {
     fs.writeFile(cache_name, JSON.stringify(cached_data), 'utf8', () => {
         logger.info('Cache saved');
@@ -301,8 +303,13 @@ async function checkIsCrafting(item_id, character_professions, region) {
         const crafting_levels = profession_detail.skill_tiers;
 
         for (let skill_tier of crafting_levels) {
-            //only run on shadowlands tiers
-            if (skill_tier.name.includes('Shadowlands')) {
+            //only run on shadowlands tiers, unless exclude_before_shadowlands is set to false
+            //skill_tier.name.includes('Shadowlands') (is in shadowlands)
+            let check_scan_tier = skill_tier.name.includes('Shadowlands');
+            if( !exclude_before_shadowlands ){
+                check_scan_tier = true;
+            }
+            if (check_scan_tier) {
                 logger.debug(`Checking: ${skill_tier.name} for: ${item_id}`);
                 // Get a list of all recipes each level can do
                 const skill_tier_detail = await getBlizSkillTierDetail(check_profession_id, skill_tier.id, region);
