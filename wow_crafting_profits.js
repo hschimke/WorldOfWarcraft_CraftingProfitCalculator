@@ -622,8 +622,12 @@ async function performProfitAnalysis(region, server, character_professions, item
             let rank_AH = {};
             if (recipe_id_list.length > 1) {
                 rank_level = recipe_id_list.indexOf(recipe.recipe_id) > -1 ? rankings.available_levels[rankings.rank_mapping[recipe_id_list.indexOf(recipe.recipe_id)]] : 0;
-                logger.debug(`Looking for AH price for ${item_id} for level ${rank_level} using bonus is ${bonus_link[rank_level]}`);
-                rank_AH = await getAHItemPrice(item_id,auction_house,bonus_link[rank_level]);
+                if (bonus_link[rank_level] != undefined) {
+                    logger.debug(`Looking for AH price for ${item_id} for level ${rank_level} using bonus is ${bonus_link[rank_level]}`);
+                    rank_AH = await getAHItemPrice(item_id, auction_house, bonus_link[rank_level]);
+                } else {
+                    logger.debug(`Item ${item_id} has no auctions for level ${rank_level}`);
+                }
             }
 
             price_obj.recipe_options.push({
