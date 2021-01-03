@@ -358,9 +358,9 @@ async function checkIsCrafting(item_id, character_professions, region) {
                         recipe_options.craftable = true;
 
                     }
-                } else {
+                } /*else {
                     logger.debug(`Skipping Recipe: (${recipe.id}) "${recipe.name}"`);
-                }
+                }*/
             }
         }
     }
