@@ -427,7 +427,7 @@ async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
     auction_house.auctions.forEach((auction) => {
         if (auction.item.id == item_id) {
             //logger.debug(auction);
-            if (((bonus_level_required != undefined) && auction.bonus_lists.includes(bonus_level_required)) || (bonus_level_required == undefined)) {
+            if (((bonus_level_required != undefined) && (auction.item.hasOwnProperty('bonus_lists') && auction.item.bonus_lists.includes(bonus_level_required))) || (bonus_level_required == undefined)) {
                 if (auction.hasOwnProperty('buyout')) {
                     if (auction.buyout > buy_out_item_high) {
                         buy_out_item_high = auction.buyout;
@@ -580,11 +580,13 @@ async function performProfitAnalysis(region, server, character_professions, item
     // When that's the case we should actually return an entire extra set of price data based on each
     // possible bonus_list. They're actually different items, blizz just tells us they aren't.
     price_obj.bonus_lists = await getItemBonusLists(item_id, auction_house);
+    let bonus_link = {};
     for (let bl of price_obj.bonus_lists) {
         for (let b of bl) {
             const mod = getLvlModifierForBonus(b);
             if (mod != -1) {
                 const new_level = base_ilvl + mod
+                bonus_link[new_level] = b;
                 logger.debug(`Bonus level ${b} results in crafted ilvl of ${new_level}`);
             }
         }
@@ -612,14 +614,18 @@ async function performProfitAnalysis(region, server, character_professions, item
             });
 
             let rank_level = 0;
+            let rank_AH = {};
             if (recipe_id_list.length > 1) {
                 rank_level = recipe_id_list.indexOf(recipe.recipe_id) > -1 ? rankings.available_levels[rankings.rank_mapping[recipe_id_list.indexOf(recipe.recipe_id)]] : 0;
+                logger.debug(`Looking for AH price for ${item_id} for level ${rank_level} using bonus is ${bonus_link[rank_level]}`);
+                rank_AH = await getAHItemPrice(item_id,auction_house,bonus_link[rank_level]);
             }
 
             price_obj.recipe_options.push({
                 recipe: recipe,
                 prices: bom_prices,
-                rank: rank_level
+                rank: rank_level,
+                rank_ah: rank_AH,
             });
         }
     } else {
@@ -745,19 +751,25 @@ async function textFriendlyOutputFormat(price_data, indent, region) {
 
     return_string += indentAdder(indent) + `${price_data.item_name} (${price_data.item_id}) Requires ${price_data.item_quantity}\n`;
     if ((price_data.ah_price != undefined) && (price_data.ah_price.bid.total_sales > 0)) {
-        return_string += indentAdder(indent + 1) + `AH Bid ${price_data.ah_price.bid.total_sales}: ${goldFormatter(price_data.ah_price.bid.high)}/${goldFormatter(price_data.ah_price.bid.low)}/${goldFormatter(price_data.ah_price.bid.average)}\n`;
+        return_string += indentAdder(indent + 1) + `AH Bid ${price_data.ah_price.bid.total_sales}: ${goldFormatter(price_data.ah_price.bid.high * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.bid.low * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.bid.average * price_data.item_quantity)}\n`;
     }
     if ((price_data.ah_price != undefined) && price_data.ah_price.buyout.total_sales > 0) {
-        return_string += indentAdder(indent + 1) + `AH Buyout ${price_data.ah_price.buyout.total_sales}: ${goldFormatter(price_data.ah_price.buyout.high)}/${goldFormatter(price_data.ah_price.buyout.low)}/${goldFormatter(price_data.ah_price.buyout.average)}\n`;
+        return_string += indentAdder(indent + 1) + `AH Buyout ${price_data.ah_price.buyout.total_sales}: ${goldFormatter(price_data.ah_price.buyout.high * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.buyout.low * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.buyout.average * price_data.item_quantity)}\n`;
     }
     if (price_data.vendor_price > 0) {
-        return_string += indentAdder(indent + 1) + `Vendor ${goldFormatter(price_data.vendor_price)}\n`;
+        return_string += indentAdder(indent + 1) + `Vendor ${goldFormatter(price_data.vendor_price * price_data.item_quantity)}\n`;
     }
     if (price_data.recipe_options != undefined) {
         for (let recipe_option of price_data.recipe_options) {
             const option_price = await recipeCostCalculator(recipe_option);
             const recipe = await getBlizRecipeDetail(recipe_option.recipe.recipe_id, region);
-            return_string += indentAdder(indent + 1) + `${recipe.name} - ${recipe_option.rank} - (${recipe_option.recipe.recipe_id}) : ${goldFormatter(option_price.high)}/${goldFormatter(option_price.low)}/${goldFormatter(option_price.average)}\n`
+            return_string += indentAdder(indent + 1) + `${recipe.name} - ${recipe_option.rank} - (${recipe_option.recipe.recipe_id}) : ${goldFormatter(option_price.high)}/${goldFormatter(option_price.low)}/${goldFormatter(option_price.average)}\n`;
+            if ((recipe_option.rank_ah != undefined) && (recipe_option.rank_ah.bid != undefined) && (recipe_option.rank_ah.bid.total_sales > 0)) {
+                return_string += indentAdder(indent + 2) + `AH Bid ${recipe_option.rank_ah.bid.total_sales}: ${goldFormatter(recipe_option.rank_ah.bid.high)}/${goldFormatter(recipe_option.rank_ah.bid.low)}/${goldFormatter(recipe_option.rank_ah.bid.average)}\n`;
+            }
+            if ((recipe_option.rank_ah != undefined) && (recipe_option.rank_ah.buyout != undefined)  && recipe_option.rank_ah.buyout.total_sales > 0) {
+                return_string += indentAdder(indent + 2) + `AH Buyout ${recipe_option.rank_ah.buyout.total_sales}: ${goldFormatter(recipe_option.rank_ah.buyout.high)}/${goldFormatter(recipe_option.rank_ah.buyout.low)}/${goldFormatter(recipe_option.rank_ah.buyout.average)}\n`;
+            }
             return_string += '\n';
             if (recipe_option.prices != undefined) {
                 for (let opt of recipe_option.prices) {
