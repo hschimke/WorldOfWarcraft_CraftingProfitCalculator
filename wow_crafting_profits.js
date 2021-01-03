@@ -28,32 +28,11 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const secrets = require('./secrets.json');
-const { exit } = require('process');
 const clientID = '9d85a3dfca994efa969df07bd1e47695';
 const clientSecret = secrets.keys.client_secret;
 
 const raidbots_bonus_lists = require('./bonuses.json');
 const rankings = require('./rank_mappings.json');
-
-const base_uri = 'api.blizzard.com';
-
-const authorization_uri = 'https://us.battle.net/oauth/token';
-let clientAccessToken = {
-    access_token: '',
-    token_type: '',
-    expires_in: 0,
-    scope: '',
-    fetched: Date.now(),
-    checkExpired: function () {
-        let expired = true;
-        const current_time = Date.now();
-        const expire_time = this.fetched + (this.expires_in * 1000);
-        if (current_time < expire_time) {
-            expired = false;
-        }
-        return expired;
-    },
-};
 
 const cache_name = './data-cache.json';
 
@@ -81,6 +60,26 @@ try {
 
 const local_cache = {
     craftable: {}
+};
+
+const base_uri = 'api.blizzard.com';
+
+const authorization_uri = 'https://us.battle.net/oauth/token';
+let clientAccessToken = {
+    access_token: '',
+    token_type: '',
+    expires_in: 0,
+    scope: '',
+    fetched: Date.now(),
+    checkExpired: function () {
+        let expired = true;
+        const current_time = Date.now();
+        const expire_time = this.fetched + (this.expires_in * 1000);
+        if (current_time < expire_time) {
+            expired = false;
+        }
+        return expired;
+    },
 };
 
 const exclude_before_shadowlands = false;
