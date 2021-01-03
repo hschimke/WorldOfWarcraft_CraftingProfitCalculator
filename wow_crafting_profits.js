@@ -306,7 +306,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
             //only run on shadowlands tiers, unless exclude_before_shadowlands is set to false
             //skill_tier.name.includes('Shadowlands') (is in shadowlands)
             let check_scan_tier = skill_tier.name.includes('Shadowlands');
-            if( !exclude_before_shadowlands ){
+            if (!exclude_before_shadowlands) {
                 check_scan_tier = true;
             }
             if (check_scan_tier) {
@@ -427,7 +427,7 @@ async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
     auction_house.auctions.forEach((auction) => {
         if (auction.item.id == item_id) {
             //logger.debug(auction);
-            if(((bonus_level_required != undefined) && auction.bonus_lists.includes(bonus_level_required)) || (bonus_level_required == undefined)){
+            if (((bonus_level_required != undefined) && auction.bonus_lists.includes(bonus_level_required)) || (bonus_level_required == undefined)) {
                 if (auction.hasOwnProperty('buyout')) {
                     if (auction.buyout > buy_out_item_high) {
                         buy_out_item_high = auction.buyout;
@@ -529,10 +529,10 @@ async function getItemBonusLists(item_id, auction_house) {
     return bonus_lists_set;
 }
 
-function getLvlModifierForBonus(bonus_id){
-    if(raidbots_bonus_lists.hasOwnProperty(bonus_id)){
+function getLvlModifierForBonus(bonus_id) {
+    if (raidbots_bonus_lists.hasOwnProperty(bonus_id)) {
         return raidbots_bonus_lists[bonus_id].level;
-    }else{
+    } else {
         return -1;
     }
 }
@@ -580,10 +580,10 @@ async function performProfitAnalysis(region, server, character_professions, item
     // When that's the case we should actually return an entire extra set of price data based on each
     // possible bonus_list. They're actually different items, blizz just tells us they aren't.
     price_obj.bonus_lists = await getItemBonusLists(item_id, auction_house);
-    for( let bl of price_obj.bonus_lists ){
-        for( let b of bl ){
+    for (let bl of price_obj.bonus_lists) {
+        for (let b of bl) {
             const mod = getLvlModifierForBonus(b);
-            if(mod!=-1){
+            if (mod != -1) {
                 const new_level = base_ilvl + mod
                 logger.debug(`Bonus level ${b} results in crafted ilvl of ${new_level}`);
             }
@@ -612,7 +612,7 @@ async function performProfitAnalysis(region, server, character_professions, item
             });
 
             let rank_level = 0;
-            if( recipe_id_list.length > 1 ){
+            if (recipe_id_list.length > 1) {
                 rank_level = recipe_id_list.indexOf(recipe.recipe_id) > -1 ? rankings.available_levels[rankings.rank_mapping[recipe_id_list.indexOf(recipe.recipe_id)]] : 0;
             }
 
@@ -723,8 +723,8 @@ function indentAdder(level) {
 function goldFormatter(price_in) {
     const price = Math.trunc(price_in);
     const copper = price % 100;
-    const silver = (((price % 10000) - copper))/100;
-    const gold = (price - (price % 10000))/10000;
+    const silver = (((price % 10000) - copper)) / 100;
+    const gold = (price - (price % 10000)) / 10000;
     return `${gold}g ${silver}s ${copper}c`;
 }
 
