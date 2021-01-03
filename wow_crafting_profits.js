@@ -33,6 +33,7 @@ const clientID = '9d85a3dfca994efa969df07bd1e47695';
 const clientSecret = secrets.keys.client_secret;
 
 const raidbots_bonus_lists = require('./bonuses.json');
+const rankings = require('./rank_mappings.json');
 
 const base_uri = 'api.blizzard.com';
 
@@ -129,7 +130,7 @@ async function getBlizzardAPIResponse(region_code, authorization_token, data, ur
         }).json();
         return api_response;
     } catch (error) {
-        logger.warning('Issue fetching blizzard data: (' + `https://${region_code}.${base_uri}${uri}` + ') ' + error);
+        logger.error('Issue fetching blizzard data: (' + `https://${region_code}.${base_uri}${uri}` + ') ' + error);
     }
 }
 
@@ -275,7 +276,8 @@ async function checkIsCrafting(item_id, character_professions, region) {
 
     const recipe_options = {
         craftable: false,
-        recipes: []
+        recipes: [],
+        recipe_ids: []
     };
 
     // Check if a vendor is mentioned in the item description and if so just short circuit
@@ -335,6 +337,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
                                         crafting_profession: prof
                                     }
                                 )
+                                recipe_options.recipe_ids.push(recipe.id);
                                 recipe_options.craftable = true;
 
                             }
@@ -394,7 +397,7 @@ async function getAuctionHouse(server_id, server_region) {
  * @param {number} item_id 
  * @param {object} auction_house 
  */
-async function getAHItemPrice(item_id, auction_house) {
+async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
     // Find the item and return best, worst, average prices
     // Ignore everything but buyout auctions
     let buy_out_item_high = Number.MIN_VALUE;
@@ -417,24 +420,26 @@ async function getAHItemPrice(item_id, auction_house) {
     auction_house.auctions.forEach((auction) => {
         if (auction.item.id == item_id) {
             //logger.debug(auction);
-            if (auction.hasOwnProperty('buyout')) {
-                if (auction.buyout > buy_out_item_high) {
-                    buy_out_item_high = auction.buyout;
+            if(((bonus_level_required != undefined) && auction.bonus_lists.includes(bonus_level_required)) || (bonus_level_required == undefined)){
+                if (auction.hasOwnProperty('buyout')) {
+                    if (auction.buyout > buy_out_item_high) {
+                        buy_out_item_high = auction.buyout;
+                    }
+                    if (auction.buyout < buy_out_item_low) {
+                        buy_out_item_low = auction.buyout;
+                    }
+                    buy_out_average_counter += auction.quantity;
+                    buy_out_average_accumulator += (auction.buyout * auction.quantity);
+                } else {
+                    if (auction.unit_price > bid_item_high) {
+                        bid_item_high = auction.unit_price;
+                    }
+                    if (auction.unit_price < bid_item_low) {
+                        bid_item_low = auction.unit_price;
+                    }
+                    bid_average_counter += auction.quantity;
+                    bid_average_accumulator += (auction.unit_price * auction.quantity);
                 }
-                if (auction.buyout < buy_out_item_low) {
-                    buy_out_item_low = auction.buyout;
-                }
-                buy_out_average_counter += auction.quantity;
-                buy_out_average_accumulator += (auction.buyout * auction.quantity);
-            } else {
-                if (auction.unit_price > bid_item_high) {
-                    bid_item_high = auction.unit_price;
-                }
-                if (auction.unit_price < bid_item_low) {
-                    bid_item_low = auction.unit_price;
-                }
-                bid_average_counter += auction.quantity;
-                bid_average_accumulator += (auction.unit_price * auction.quantity);
             }
         }
     });
@@ -517,7 +522,15 @@ async function getItemBonusLists(item_id, auction_house) {
     return bonus_lists_set;
 }
 
-async function performProfitAnalysis(region, server, character_professions, item, qauntity) {
+function getLvlModifierForBonus(bonus_id){
+    if(raidbots_bonus_lists.hasOwnProperty(bonus_id)){
+        return raidbots_bonus_lists[bonus_id].level;
+    }else{
+        return -1;
+    }
+}
+
+async function performProfitAnalysis(region, server, character_professions, item, qauntity, desired_ilvl) {
     // Check if we have to figure out the item id ourselves
     let item_id = 0;
     if (Number.isFinite(item)) {
@@ -527,6 +540,8 @@ async function performProfitAnalysis(region, server, character_professions, item
     }
 
     const item_detail = await getItemDetails(item_id, region);
+
+    const base_ilvl = item_detail.level;
 
     let price_obj = {
         item_id: item_id,
@@ -558,6 +573,16 @@ async function performProfitAnalysis(region, server, character_professions, item
     // When that's the case we should actually return an entire extra set of price data based on each
     // possible bonus_list. They're actually different items, blizz just tells us they aren't.
     price_obj.bonus_lists = await getItemBonusLists(item_id, auction_house);
+    for( let bl of price_obj.bonus_lists ){
+        for( let b of bl ){
+            const mod = getLvlModifierForBonus(b);
+            if(mod!=-1){
+                const new_level = base_ilvl + mod
+                logger.debug(`Bonus level ${b} results in crafted ilvl of ${new_level}`);
+            }
+        }
+    }
+    const recipe_id_list = item_craftable.recipe_ids.sort();
 
     price_obj.recipe_options = [];
 
@@ -579,9 +604,12 @@ async function performProfitAnalysis(region, server, character_professions, item
                 bom_prices.push(price);
             });
 
+            const rank_level = recipe_id_list.indexOf(recipe.recipe_id) > -1 ? rankings.available_levels[rankings.rank_mapping[recipe_id_list.indexOf(recipe.recipe_id)]] : 0;
+
             price_obj.recipe_options.push({
                 recipe: recipe,
-                prices: bom_prices
+                prices: bom_prices,
+                rank: rank_level
             });
         }
     } else {
@@ -719,7 +747,7 @@ async function textFriendlyOutputFormat(price_data, indent, region) {
         for (let recipe_option of price_data.recipe_options) {
             const option_price = await recipeCostCalculator(recipe_option);
             const recipe = await getBlizRecipeDetail(recipe_option.recipe.recipe_id, region);
-            return_string += indentAdder(indent + 1) + `${recipe.name} (${recipe_option.recipe.recipe_id}) : ${goldFormatter(option_price.high)}/${goldFormatter(option_price.low)}/${goldFormatter(option_price.average)}\n`
+            return_string += indentAdder(indent + 1) + `${recipe.name} - ${recipe_option.rank} - (${recipe_option.recipe.recipe_id}) : ${goldFormatter(option_price.high)}/${goldFormatter(option_price.low)}/${goldFormatter(option_price.average)}\n`
             return_string += '\n';
             if (recipe_option.prices != undefined) {
                 for (let opt of recipe_option.prices) {
