@@ -491,6 +491,11 @@ async function findNoneAHPrice(item_id, region) {
         if (item.description.includes('vendor')) {
             vendor_price = item.purchase_price;
         }
+        if (!item.description.includes('auction')) {
+            vendor_price = item.purchase_price;
+        }
+    }else{
+        vendor_price = item.purchase_price;
     }
     return vendor_price;
 }
@@ -572,13 +577,18 @@ async function performProfitAnalysis(region, server, character_professions, item
     // Get Item AH price
     price_obj.ah_price = await getAHItemPrice(item_id, auction_house);
 
-    // Get NON AH price
-    price_obj.vendor_price = await findNoneAHPrice(item_id);
-
     price_obj.item_quantity = qauntity;
 
     const item_craftable = await checkIsCrafting(item_id, character_professions, region);
-
+    
+    // Get NON AH price
+    if(!item_craftable.craftable){
+        price_obj.vendor_price = await findNoneAHPrice(item_id);
+    }else{
+        price_obj.vendor_price = -1;
+    }
+    
+    
     price_obj.crafting_status = item_craftable;
 
     // Eventually bonus_lists should be treated as separate items and this should happen first
