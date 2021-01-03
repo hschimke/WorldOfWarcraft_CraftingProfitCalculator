@@ -301,6 +301,8 @@ async function checkIsCrafting(item_id, character_professions, region) {
         const profession_detail = await getBlizProfessionDetail(check_profession_id, region);
         const crafting_levels = profession_detail.skill_tiers;
 
+        let tier_checks = [];
+
         for (let skill_tier of crafting_levels) {
             //only run on shadowlands tiers, unless exclude_before_shadowlands is set to false
             //skill_tier.name.includes('Shadowlands') (is in shadowlands)
@@ -309,55 +311,59 @@ async function checkIsCrafting(item_id, character_professions, region) {
                 check_scan_tier = true;
             }
             if (check_scan_tier) {
-                logger.debug(`Checking: ${skill_tier.name} for: ${item_id}`);
-                // Get a list of all recipes each level can do
-                const skill_tier_detail = await getBlizSkillTierDetail(check_profession_id, skill_tier.id, region);
-                const categories = skill_tier_detail.categories;
-
-                for (let cat of categories) {
-                    for (let rec of cat.recipes) {
-                        const recipe = await getBlizRecipeDetail(rec.id, region);
-                        if (!(recipe.name.includes('Prospect') || recipe.name.includes('Mill'))) {
-                            let crafty = false;
-                            if (recipe.hasOwnProperty('alliance_crafted_item')) {
-                                if (recipe.alliance_crafted_item.id == item_id) {
-                                    crafty = true;
-                                }
-                            }
-                            if (recipe.hasOwnProperty('horde_crafted_item')) {
-                                if (recipe.horde_crafted_item.id == item_id) {
-                                    crafty = true;
-                                }
-                            }
-                            if (recipe.hasOwnProperty('crafted_item')) {
-                                if (recipe.crafted_item.id == item_id) {
-                                    crafty = true;
-                                }
-                            }
-                            if (crafty) {
-                                logger.debug(`Found recipe (${recipe.id}): ${recipe.name}`);
-
-                                recipe_options.recipes.push(
-                                    {
-                                        recipe_id: recipe.id,
-                                        crafting_profession: prof
-                                    }
-                                )
-                                recipe_options.recipe_ids.push(recipe.id);
-                                recipe_options.craftable = true;
-
-                            }
-                        } else {
-                            logger.debug(`Skipping Recipe: (${recipe.id}) "${recipe.name}"`);
-                        }
-                    }
-                }
-                // Check if the item_id is in the recipes
+                tier_checks.push(checkCraftingTier(skill_tier, check_profession_id, prof));
             }
         }
+        await Promise.all(tier_checks);
     }
     local_cache.craftable[key] = recipe_options; //{craftable: found_craftable, recipe_id: found_recipe_id, crafting_profession: found_profession};
     return local_cache.craftable[key];
+
+    async function checkCraftingTier(skill_tier, check_profession_id, prof) {
+        logger.debug(`Checking: ${skill_tier.name} for: ${item_id}`);
+        // Get a list of all recipes each level can do
+        const skill_tier_detail = await getBlizSkillTierDetail(check_profession_id, skill_tier.id, region);
+        const categories = skill_tier_detail.categories;
+
+        for (let cat of categories) {
+            for (let rec of cat.recipes) {
+                const recipe = await getBlizRecipeDetail(rec.id, region);
+                if (!(recipe.name.includes('Prospect') || recipe.name.includes('Mill'))) {
+                    let crafty = false;
+                    if (recipe.hasOwnProperty('alliance_crafted_item')) {
+                        if (recipe.alliance_crafted_item.id == item_id) {
+                            crafty = true;
+                        }
+                    }
+                    if (recipe.hasOwnProperty('horde_crafted_item')) {
+                        if (recipe.horde_crafted_item.id == item_id) {
+                            crafty = true;
+                        }
+                    }
+                    if (recipe.hasOwnProperty('crafted_item')) {
+                        if (recipe.crafted_item.id == item_id) {
+                            crafty = true;
+                        }
+                    }
+                    if (crafty) {
+                        logger.debug(`Found recipe (${recipe.id}): ${recipe.name}`);
+
+                        recipe_options.recipes.push(
+                            {
+                                recipe_id: recipe.id,
+                                crafting_profession: prof
+                            }
+                        );
+                        recipe_options.recipe_ids.push(recipe.id);
+                        recipe_options.craftable = true;
+
+                    }
+                } else {
+                    logger.debug(`Skipping Recipe: (${recipe.id}) "${recipe.name}"`);
+                }
+            }
+        }
+    }
 }
 
 async function getCraftingRecipe(recipe_id, region) {
@@ -425,7 +431,7 @@ async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
      */
     auction_house.auctions.forEach((auction) => {
         if (auction.item.id == item_id) {
-            logger.debug(auction);
+            //logger.debug(auction);
             if (((bonus_level_required != undefined) && (auction.item.hasOwnProperty('bonus_lists') && auction.item.bonus_lists.includes(bonus_level_required))) || (bonus_level_required == undefined)) {
                 if (auction.hasOwnProperty('buyout')) {
                     if (auction.buyout > buy_out_item_high) {
