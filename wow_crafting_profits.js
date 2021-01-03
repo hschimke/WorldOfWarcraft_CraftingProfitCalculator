@@ -83,7 +83,7 @@ const local_cache = {
     craftable: {}
 };
 
-const exclude_before_shadowlands = true;
+const exclude_before_shadowlands = false;
 
 function saveCache() {
     fs.writeFile(cache_name, JSON.stringify(cached_data), 'utf8', () => {
@@ -426,7 +426,7 @@ async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
      */
     auction_house.auctions.forEach((auction) => {
         if (auction.item.id == item_id) {
-            //logger.debug(auction);
+            logger.debug(auction);
             if (((bonus_level_required != undefined) && (auction.item.hasOwnProperty('bonus_lists') && auction.item.bonus_lists.includes(bonus_level_required))) || (bonus_level_required == undefined)) {
                 if (auction.hasOwnProperty('buyout')) {
                     if (auction.buyout > buy_out_item_high) {
@@ -691,9 +691,12 @@ async function recipeCostCalculator(recipe_option) {
             let high = Number.MIN_VALUE;
             let low = Number.MAX_VALUE;
 
+            let rc_price_promises = [];
             for (let opt of component.recipe_options) {
-                const recurse_price = await recipeCostCalculator(opt);
+                rc_price_promises.push( recipeCostCalculator(opt));
+            }
 
+            (await Promise.all(rc_price_promises)).forEach((recurse_price) => {
                 if (high < recurse_price.high * component.item_quantity) {
                     high = recurse_price.high * component.item_quantity;
                 }
@@ -704,7 +707,8 @@ async function recipeCostCalculator(recipe_option) {
 
                 ave_acc += recurse_price.average * component.item_quantity;
                 ave_cnt++;
-            }
+            });
+
             cost.low = low;
             cost.high = high;
             cost.average += ave_acc / ave_cnt;
