@@ -800,7 +800,8 @@ function run() {
     const test_region = 'us';
     const test_server = 'hyjal';
     const test_character_professions = ['Jewelcrafting', 'Tailoring', 'Inscription', 'Enchanting', 'Blacksmithing'];
-    const test_item = 171414;
+    //const test_item = 171414;
+    const test_item = 173244;
 
     let price_data = null;
 
