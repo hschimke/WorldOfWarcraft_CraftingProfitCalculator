@@ -1,6 +1,6 @@
 const fs = require('fs/promises');
 
-const global_cache_name = './data-cache.json';
+const global_cache_name = './global-cache.json';
 
 const auction_cache_fn = './auction-data.json';
 const profession_skills_cache_fn = './profession-skills-data.json';
@@ -8,7 +8,7 @@ const profession_recipe_cache_fn = './profession-recipe-data.json'
 const item_cache_fn = './item-data.json';
 const realm_cache_fn = './realm-data.json';
 
-const copy_from_old = false;
+//const copy_from_old = false;
 
 try {
     auction_data = require(auction_cache_fn);
@@ -59,6 +59,7 @@ try {
         connected_realm_dtm: {},
     }
 }
+/*
 try {
     cached_data = require(global_cache_name);
 } catch (e) {
@@ -98,6 +99,7 @@ if(copy_from_old == true){
     realm_data.connected_realm_data = cached_data.connected_realm_data;
     realm_data.connected_realm_dtm = cached_data.connected_realm_dtm;
 }
+*/
 
 const component_data = {
     fetched_auction_houses: auction_data.fetched_auction_houses,
