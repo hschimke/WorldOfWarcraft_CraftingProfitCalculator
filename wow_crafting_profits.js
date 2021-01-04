@@ -744,39 +744,83 @@ async function textFriendlyOutputFormat(price_data, indent, region) {
     */
 
     let return_string = '';
+    const object_output = {
+        name: price_data.item_name,
+        id: price_data.item_id,
+        required: price_data.item_quantity,
+        recipes: [],
+    };
 
     return_string += indentAdder(indent) + `${price_data.item_name} (${price_data.item_id}) Requires ${price_data.item_quantity}\n`;
     if ((price_data.ah_price != undefined) && (price_data.ah_price.bid.total_sales > 0)) {
+        object_output.bid = {
+            sales: price_data.ah_price.bid.total_sales,
+            high: price_data.ah_price.bid.high * price_data.item_quantity,
+            low: price_data.ah_price.bid.low * price_data.item_quantity,
+            average: price_data.ah_price.bid.average * price_data.item_quantity,
+        }
         return_string += indentAdder(indent + 1) + `AH Bid ${price_data.ah_price.bid.total_sales}: ${goldFormatter(price_data.ah_price.bid.high * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.bid.low * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.bid.average * price_data.item_quantity)}\n`;
     }
     if ((price_data.ah_price != undefined) && price_data.ah_price.buyout.total_sales > 0) {
+        object_output.buyout = {
+            sales: price_data.ah_price.buyout.total_sales,
+            high: price_data.ah_price.buyout.high * price_data.item_quantity,
+            low: price_data.ah_price.buyout.low * price_data.item_quantity,
+            average: price_data.ah_price.buyout.average * price_data.item_quantity,
+        }
         return_string += indentAdder(indent + 1) + `AH Buyout ${price_data.ah_price.buyout.total_sales}: ${goldFormatter(price_data.ah_price.buyout.high * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.buyout.low * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.buyout.average * price_data.item_quantity)}\n`;
     }
     if (price_data.vendor_price > 0) {
+        object_output.vendor = price_data.vendor_price * price_data.item_quantity
         return_string += indentAdder(indent + 1) + `Vendor ${goldFormatter(price_data.vendor_price * price_data.item_quantity)}\n`;
     }
     if (price_data.recipe_options != undefined) {
         for (let recipe_option of price_data.recipe_options) {
             const option_price = await recipeCostCalculator(recipe_option);
             const recipe = await getBlizRecipeDetail(recipe_option.recipe.recipe_id, region);
+            const obj_recipe = {
+                name: recipe.name,
+                rank: recipe_option.rank,
+                id: recipe_option.recipe.recipe_id,
+                high: option_price.high,
+                low: option_price.low,
+                average: option_price.average,
+                parts: [],
+            }
             return_string += indentAdder(indent + 1) + `${recipe.name} - ${recipe_option.rank} - (${recipe_option.recipe.recipe_id}) : ${goldFormatter(option_price.high)}/${goldFormatter(option_price.low)}/${goldFormatter(option_price.average)}\n`;
             if ((recipe_option.rank_ah != undefined) && (recipe_option.rank_ah.bid != undefined) && (recipe_option.rank_ah.bid.total_sales > 0)) {
+                obj_recipe.bid = {
+                    sales:recipe_option.rank_ah.bid.total_sales,
+                    high: recipe_option.rank_ah.bid.high,
+                    low: recipe_option.rank_ah.bid.low,
+                    average: recipe_option.rank_ah.bid.average,
+                };
                 return_string += indentAdder(indent + 2) + `AH Bid ${recipe_option.rank_ah.bid.total_sales}: ${goldFormatter(recipe_option.rank_ah.bid.high)}/${goldFormatter(recipe_option.rank_ah.bid.low)}/${goldFormatter(recipe_option.rank_ah.bid.average)}\n`;
             }
             if ((recipe_option.rank_ah != undefined) && (recipe_option.rank_ah.buyout != undefined)  && recipe_option.rank_ah.buyout.total_sales > 0) {
+                obj_recipe.buyout = {
+                    sales:recipe_option.rank_ah.buyout.total_sales,
+                    high: recipe_option.rank_ah.buyout.high,
+                    low: recipe_option.rank_ah.buyout.low,
+                    average: recipe_option.rank_ah.buyout.average,
+                };
                 return_string += indentAdder(indent + 2) + `AH Buyout ${recipe_option.rank_ah.buyout.total_sales}: ${goldFormatter(recipe_option.rank_ah.buyout.high)}/${goldFormatter(recipe_option.rank_ah.buyout.low)}/${goldFormatter(recipe_option.rank_ah.buyout.average)}\n`;
             }
             return_string += '\n';
             if (recipe_option.prices != undefined) {
                 for (let opt of recipe_option.prices) {
-                    return_string += await textFriendlyOutputFormat(opt, indent + 2, region);
+                    let [strfmt,objfmt] = await textFriendlyOutputFormat(opt, indent + 2, region); 
+                    obj_recipe.parts.push(objfmt)
+                    return_string += strfmt;
                     return_string += '\n'
                 }
             }
+
+            object_output.recipes.push(obj_recipe);
         }
     }
 
-    return return_string;
+    return [return_string,object_output];
 }
 
 //outline
@@ -805,12 +849,15 @@ function run(region, server, professions, item, count) {
         }).then(() => {
             return textFriendlyOutputFormat(price_data, 0, region);
         }).then((formatted_data) => {
-            fs.writeFile('formatted_output', formatted_data, 'utf8', () => {
-                logger.info('Raw output saved');
+            fs.writeFile('formatted_output', formatted_data[0], 'utf8', () => {
+                logger.info('Formatted output saved');
+            });
+            fs.writeFile('intermediate_output', JSON.stringify(formatted_data[1], null, 2), 'utf8', () => {
+                logger.info('Intermediate output saved');
             });
         }).then(() => {
             fs.writeFile('raw_output.json', JSON.stringify(price_data, null, 2), 'utf8', () => {
-                logger.info('Formatted output saved');
+                logger.info('Raw output saved');
             });
         }).finally(() => {
             cached_data.saveCache(logger);
