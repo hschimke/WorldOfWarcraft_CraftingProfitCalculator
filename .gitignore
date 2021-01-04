@@ -107,6 +107,7 @@ dist
 secrets.json
 
 # Cached Data
+cache/*.json
 data-cache.json
 
 # Output data
