@@ -2,6 +2,7 @@ const got = require('got');
 const yargs = require('yargs');
 const fs = require('fs');
 const winston = require('winston');
+const cached_data = require('./cache/wow-api-cache.js');
 
 const logger = winston.createLogger({
     level: 'debug',
@@ -34,30 +35,6 @@ const clientSecret = secrets.keys.client_secret;
 const raidbots_bonus_lists = require('./bonuses.json');
 const rankings = require('./rank_mappings.json');
 
-const cache_name = './data-cache.json';
-
-try {
-    cached_data = require(cache_name);
-} catch (e) {
-    cached_data = {
-        fetched_auction_houses: [],
-        fetched_auctions_data: {},
-        auction_house_fetch_dtm: {},
-        fetched_profession_skill_tier_details: [],
-        fetched_profession_skill_tier_detail_data: {},
-        fetched_profession_skill_tier_dtm: {},
-        fetched_profession_recipe_details: [],
-        fetched_profession_recipe_detail_data: {},
-        fetched_profession_recipe_detail_dtm: {},
-        fetched_items: [],
-        fetched_item_data: {},
-        fetched_item_dtm: {},
-        connected_realms: [],
-        connected_realm_data: {},
-        connected_realm_dtm: {}
-    };
-}
-
 const local_cache = {
     craftable: {}
 };
@@ -83,12 +60,6 @@ let clientAccessToken = {
 };
 
 const exclude_before_shadowlands = false;
-
-function saveCache() {
-    fs.writeFile(cache_name, JSON.stringify(cached_data), 'utf8', () => {
-        logger.info('Cache saved');
-    });
-}
 
 async function getAuthorizationToken() {
     if (clientAccessToken.checkExpired()) {
@@ -842,7 +813,9 @@ function run(region, server, professions, item, count) {
             fs.writeFile('raw_output.json', JSON.stringify(price_data, null, 2), 'utf8', () => {
                 logger.info('Formatted output saved');
             });
-        }).finally(saveCache);
+        }).finally(() => {
+            cached_data.saveCache(logger);
+        });
 }
 
 module.exports.run = run;
