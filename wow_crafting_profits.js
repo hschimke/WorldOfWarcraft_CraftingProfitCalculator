@@ -681,24 +681,15 @@ async function recipeCostCalculator(recipe_option) {
             let low = Number.MAX_VALUE;
             let average = 0;
             let count = 0;
-            if (component.ah_price.bid.total_sales > 0) {
-                average += component.ah_price.bid.average;
-                if (component.ah_price.bid.high > high) {
-                    high = component.ah_price.bid.high;
+            if(component.ah_price.total_sales>0){
+                average += component.ah_price.average;
+                if (component.ah_price.high > high) {
+                    high = component.ah_price.high;
                 }
-                if (component.ah_price.bid.low < low) {
-                    low = component.ah_price.bid.low;
+                if (component.ah_price.low < low) {
+                    low = component.ah_price.low;
                 }
-                count++;
-            } if (component.ah_price.buyout.total_sales > 0) {
-                average += component.ah_price.buyout.average;
-                if (component.ah_price.buyout.high > high) {
-                    high = component.ah_price.buyout.high;
-                }
-                if (component.ah_price.buyout.low < low) {
-                    low = component.ah_price.buyout.low;
-                }
-                count++;
+                count ++;
             }
             cost.average += (average / count) * component.item_quantity;
             cost.high += high * component.item_quantity;
@@ -781,23 +772,14 @@ async function textFriendlyOutputFormat(price_data, indent, region) {
     };
 
     return_string += indentAdder(indent) + `${price_data.item_name} (${price_data.item_id}) Requires ${price_data.item_quantity}\n`;
-    if ((price_data.ah_price != undefined) && (price_data.ah_price.bid.total_sales > 0)) {
-        object_output.bid = {
-            sales: price_data.ah_price.bid.total_sales,
-            high: price_data.ah_price.bid.high * price_data.item_quantity,
-            low: price_data.ah_price.bid.low * price_data.item_quantity,
-            average: price_data.ah_price.bid.average * price_data.item_quantity,
+    if((price_data.ah_price != undefined) && (price_data.ah_price.total_sales > 0)) {
+        object_output.ah = {
+            sales: price_data.ah_price.total_sales,
+            high: price_data.ah_price.high * price_data.item_quantity,
+            low: price_data.ah_price.low * price_data.item_quantity,
+            average: price_data.ah_price.average * price_data.item_quantity,
         }
-        return_string += indentAdder(indent + 1) + `AH Bid ${price_data.ah_price.bid.total_sales}: ${goldFormatter(price_data.ah_price.bid.high * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.bid.low * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.bid.average * price_data.item_quantity)}\n`;
-    }
-    if ((price_data.ah_price != undefined) && price_data.ah_price.buyout.total_sales > 0) {
-        object_output.buyout = {
-            sales: price_data.ah_price.buyout.total_sales,
-            high: price_data.ah_price.buyout.high * price_data.item_quantity,
-            low: price_data.ah_price.buyout.low * price_data.item_quantity,
-            average: price_data.ah_price.buyout.average * price_data.item_quantity,
-        }
-        return_string += indentAdder(indent + 1) + `AH Buyout ${price_data.ah_price.buyout.total_sales}: ${goldFormatter(price_data.ah_price.buyout.high * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.buyout.low * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.buyout.average * price_data.item_quantity)}\n`;
+        return_string += indentAdder(indent + 1) + `AH ${price_data.ah_price.total_sales}: ${goldFormatter(price_data.ah_price.high * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.low * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.average * price_data.item_quantity)}\n`;
     }
     if (price_data.vendor_price > 0) {
         object_output.vendor = price_data.vendor_price * price_data.item_quantity
@@ -817,23 +799,14 @@ async function textFriendlyOutputFormat(price_data, indent, region) {
                 parts: [],
             }
             return_string += indentAdder(indent + 1) + `${recipe.name} - ${recipe_option.rank} - (${recipe_option.recipe.recipe_id}) : ${goldFormatter(option_price.high)}/${goldFormatter(option_price.low)}/${goldFormatter(option_price.average)}\n`;
-            if ((recipe_option.rank_ah != undefined) && (recipe_option.rank_ah.bid != undefined) && (recipe_option.rank_ah.bid.total_sales > 0)) {
-                obj_recipe.bid = {
-                    sales:recipe_option.rank_ah.bid.total_sales,
-                    high: recipe_option.rank_ah.bid.high,
-                    low: recipe_option.rank_ah.bid.low,
-                    average: recipe_option.rank_ah.bid.average,
+            if ((recipe_option.rank_ah != undefined) && (recipe_option.rank_ah.total_sales > 0)) {
+                obj_recipe.ah = {
+                    sales:recipe_option.rank_ah.total_sales,
+                    high: recipe_option.rank_ah.high,
+                    low: recipe_option.rank_ah.low,
+                    average: recipe_option.rank_ah.average,
                 };
-                return_string += indentAdder(indent + 2) + `AH Bid ${recipe_option.rank_ah.bid.total_sales}: ${goldFormatter(recipe_option.rank_ah.bid.high)}/${goldFormatter(recipe_option.rank_ah.bid.low)}/${goldFormatter(recipe_option.rank_ah.bid.average)}\n`;
-            }
-            if ((recipe_option.rank_ah != undefined) && (recipe_option.rank_ah.buyout != undefined)  && recipe_option.rank_ah.buyout.total_sales > 0) {
-                obj_recipe.buyout = {
-                    sales:recipe_option.rank_ah.buyout.total_sales,
-                    high: recipe_option.rank_ah.buyout.high,
-                    low: recipe_option.rank_ah.buyout.low,
-                    average: recipe_option.rank_ah.buyout.average,
-                };
-                return_string += indentAdder(indent + 2) + `AH Buyout ${recipe_option.rank_ah.buyout.total_sales}: ${goldFormatter(recipe_option.rank_ah.buyout.high)}/${goldFormatter(recipe_option.rank_ah.buyout.low)}/${goldFormatter(recipe_option.rank_ah.buyout.average)}\n`;
+                return_string += indentAdder(indent + 2) + `AH ${recipe_option.rank_ah.total_sales}: ${goldFormatter(recipe_option.rank_ah.high)}/${goldFormatter(recipe_option.rank_ah.low)}/${goldFormatter(recipe_option.rank_ah.average)}\n`;
             }
             return_string += '\n';
             if (recipe_option.prices != undefined) {
