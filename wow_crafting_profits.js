@@ -413,15 +413,6 @@ async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
             //logger.debug(auction);
             if (((bonus_level_required != undefined) && (auction.item.hasOwnProperty('bonus_lists') && auction.item.bonus_lists.includes(bonus_level_required))) || (bonus_level_required == undefined)) {
                 if (auction.hasOwnProperty('buyout')) {
-                    if (auction.buyout > buy_out_item_high) {
-                        buy_out_item_high = auction.buyout;
-                    }
-                    if (auction.buyout < buy_out_item_low) {
-                        buy_out_item_low = auction.buyout;
-                    }
-                    buy_out_average_counter += auction.quantity;
-                    buy_out_average_accumulator += (auction.buyout * auction.quantity);
-
                     if (auction.buyout > auction_high) {
                         auction_high = auction.buyout;
                     }
@@ -430,15 +421,6 @@ async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
                     }
                     auction_average_accumulator += (auction.buyout * auction.quantity);
                 } else {
-                    if (auction.unit_price > bid_item_high) {
-                        bid_item_high = auction.unit_price;
-                    }
-                    if (auction.unit_price < bid_item_low) {
-                        bid_item_low = auction.unit_price;
-                    }
-                    bid_average_counter += auction.quantity;
-                    bid_average_accumulator += (auction.unit_price * auction.quantity);
-
                     if (auction.unit_price > auction_high) {
                         auction_high = auction.unit_price;
                     }
@@ -451,24 +433,10 @@ async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
             }
         }
     });
-    buy_out_item_average = buy_out_average_accumulator / buy_out_average_counter;
-    bid_item_average = bid_average_accumulator / bid_average_counter;
 
     auction_average = auction_average_accumulator / auction_counter;
 
     return {
-        buyout: {
-            high: buy_out_item_high,
-            low: buy_out_item_low,
-            total_sales: buy_out_average_counter,
-            average: buy_out_item_average
-        },
-        bid: {
-            high: bid_item_high,
-            low: bid_item_low,
-            total_sales: bid_average_counter,
-            average: bid_item_average
-        },
         high: auction_high,
         low: auction_low,
         average: auction_average,
