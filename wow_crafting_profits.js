@@ -397,6 +397,12 @@ async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
     let bid_average_counter = 0;
     let bid_average_accumulator = 0;
 
+    let auction_high = Number.MIN_VALUE;
+    let auction_low = Number.MAX_VALUE;
+    let auction_average = 0;
+    let auction_counter = 0;
+    let auction_average_accumulator = 0;
+
     /**
      * Issue: for items with multiple version availble on the auction house
      * you will find that they all have the same id. The difference comes
@@ -415,6 +421,14 @@ async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
                     }
                     buy_out_average_counter += auction.quantity;
                     buy_out_average_accumulator += (auction.buyout * auction.quantity);
+
+                    if (auction.buyout > auction_high) {
+                        auction_high = auction.buyout;
+                    }
+                    if (auction.buyout < auction_low) {
+                        auction_low = auction.buyout;
+                    }
+                    auction_average_accumulator += (auction.buyout * auction.quantity);
                 } else {
                     if (auction.unit_price > bid_item_high) {
                         bid_item_high = auction.unit_price;
@@ -424,12 +438,23 @@ async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
                     }
                     bid_average_counter += auction.quantity;
                     bid_average_accumulator += (auction.unit_price * auction.quantity);
+
+                    if (auction.unit_price > auction_high) {
+                        auction_high = auction.unit_price;
+                    }
+                    if (auction.unit_price < auction_low) {
+                        auction_low = auction.unit_price;
+                    }
+                    auction_average_accumulator += (auction.unit_price * auction.quantity);
                 }
+                auction_counter += auction.quantity;
             }
         }
     });
     buy_out_item_average = buy_out_average_accumulator / buy_out_average_counter;
     bid_item_average = bid_average_accumulator / bid_average_counter;
+
+    auction_average = auction_average_accumulator / auction_counter;
 
     return {
         buyout: {
@@ -443,7 +468,11 @@ async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
             low: bid_item_low,
             total_sales: bid_average_counter,
             average: bid_item_average
-        }
+        },
+        high: auction_high,
+        low: auction_low,
+        average: auction_average,
+        total_sales: auction_counter,
     };
 }
 
