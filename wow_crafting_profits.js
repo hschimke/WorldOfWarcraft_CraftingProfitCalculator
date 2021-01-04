@@ -167,6 +167,7 @@ async function getConnectedRealmId(server_name, server_region) {
 
         // Pull the data for each connection until you find one with the server name in question
         for (let realm_href of all_connected_realms.connected_realms) {
+            logger.debug(`Check realm with href: ${realm_href.href}`);
             const hr = realm_href.href;
             const connected_realm_detail = await got(hr, {
                 reponseType: 'json',
@@ -180,7 +181,9 @@ async function getConnectedRealmId(server_name, server_region) {
             const realm_list = connected_realm_detail.realms;
             let found_realm = false;
             for (let rlm of realm_list) {
-                if (rlm.name['en_US'].localeCompare(server_name, undefined, { sensitivity: 'accent' })) {
+                logger.debug(`Realm ${rlm.name['en_US']}`);
+                if (rlm.name['en_US'].localeCompare(server_name, undefined, { sensitivity: 'accent' }) == 0) {
+                    logger.debug(`Realm ${rlm} matches ${server_name}`);
                     found_realm = true;
                     break;
                 }
@@ -817,14 +820,14 @@ async function textFriendlyOutputFormat(price_data, indent, region) {
 // [X] Check if there is a non-crafting/non-auction price for the components
 // [ ] Print the summary of the item price from auction house and the component prices
 
-function run(region, server, professions, item) {
+function run(region, server, professions, item, count) {
     logger.info("World of Warcraft Crafting Profit Calculator");
 
     let price_data = null;
 
     logger.info(`Checking ${server} in ${region} for ${item} with available professions ${JSON.stringify(professions)}`);
 
-    performProfitAnalysis(region, server, professions, item, 1)
+    performProfitAnalysis(region, server, professions, item, count)
         .then((pd) => {
             price_data = pd;
         }).then(() => {

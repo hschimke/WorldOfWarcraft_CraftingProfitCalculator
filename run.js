@@ -6,8 +6,8 @@ const test_character_professions = ['Jewelcrafting', 'Tailoring', 'Inscription',
 //blacksmithing
 //const test_item = 171414;
 //tailoring
-//const test_item = 173244;
+const test_item = 173244;
 //simple wood
-const test_item = 4470;
+//const test_item = 4470;
 
-app.run(test_region,test_server,test_character_professions,test_item);
+app.run(test_region,test_server,test_character_professions,test_item,1);
