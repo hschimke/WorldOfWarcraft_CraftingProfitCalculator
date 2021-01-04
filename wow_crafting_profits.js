@@ -1,5 +1,4 @@
 const got = require('got');
-const yargs = require('yargs');
 const fs = require('fs');
 const winston = require('winston');
 const cached_data = require('./cache/wow-api-cache.js');
