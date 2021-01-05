@@ -925,9 +925,11 @@ class Inventory {
      ] }
     */
     constructor(raw_inventory_data){
+        if( raw_inventory_data != undefined ){
         for( let item of raw_inventory_data.inventory ){
             this.#inventory_overlay[item.id] = item.quantity;
         }
+    }
     }
     itemInInventory(item_id){
         return this.#internal_inventory.hasOwnProperty(item_id);
@@ -976,7 +978,7 @@ function run(region, server, professions, item, count) {
             return generateOutputFormat(price_data, region);
         }).then((output_data) => {
             output_data.shopping_lists = constructShoppingList(output_data,// TEST INVENTORY ITEM
-                new Inventory(
+                /*new Inventory(
                     {
                         inventory:[
                             {
@@ -985,7 +987,9 @@ function run(region, server, professions, item, count) {
                                 quantity: 14
                             }
                         ]
-                    }));
+                    })*/
+                    new Inventory()
+                    );
             return output_data;
         }).then((output_data) => {
             fs.writeFile('intermediate_output.json', JSON.stringify(output_data, null, 2), 'utf8', () => {
