@@ -24,7 +24,7 @@ const logger = winston.createLogger({
 if (process.env.NODE_ENV !== 'production') {
     logger.add(new winston.transports.Console({
         format: winston.format.simple(),
-        level: 'info',
+        level: 'debug',
     }));
 }
 
@@ -813,6 +813,111 @@ function textFriendlyOutputFormat(output_data, indent) {
     return return_string;
 }
 
+function getShoppingListRanks(intermediate_data){
+    const ranks = [];
+    for( let recipe of intermediate_data.recipes ){
+        ranks.push( recipe.rank );
+    }
+    return ranks;
+}
+
+// TODO Needs to handle item in inventory, currently only works if all of the available items are in inventory
+// Probably add to the builder loop to get how many neede.
+function build_shopping_list(intermediate_data, on_hand, rank_requested){
+    let shopping_list = [];
+
+    logger.debug(`Build shopping list for ${intermediate_data.name} (${intermediate_data.id}) rank ${rank_requested}`);
+
+    if(on_hand.itemInInventory(intermediate_data.id) && (on_hand.itemCount(item_id) >= intermediate_data.required) ){
+        shopping_list.push({
+            id: intermediate_data.id,
+            name: intermediate_data.name,
+            quantity: 0,
+        });
+        on_hand.adjustInventory(intermediate_data.id,(intermediate_data.required * -1));
+        logger.debug(`${intermediate_data.id} already available in inventory`);
+    }else if(intermediate_data.recipes.length==0){
+        shopping_list.push({
+            id: intermediate_data.id,
+            name: intermediate_data.name,
+            quantity: intermediate_data.required,
+        });
+        logger.debug(`${intermediate_data.name} (${intermediate_data.id}) cannot be crafted and unavailable in inventory.`);
+    }else{
+        for( let recipe of intermediate_data.recipes ){
+            if(recipe.rank == rank_requested){
+                for(let part of recipe.parts){
+                    // Only top level searches can have ranks
+                    build_shopping_list(part,on_hand,0).forEach((sl)=>{
+                        let al = sl;
+                        al.required = part.required * sl.required;
+                        shopping_list.push(al);
+                    });
+                }
+            }else{
+                logger.debug(`Skipping recipe ${recipe.id} because its rank (${recipe.rank}) does not match the requested rank (${rank_requested})`);
+            }
+        }
+    }
+
+    // Build the return shopping list.
+    let tmp = {};
+    let ret_list = [];
+    for( let list_element of shopping_list ){
+        if( !tmp.hasOwnProperty(list_element.id) ){
+            tmp[list_element.id] = {
+                    id: list_element.id,
+                    name: list_element.name,
+                    quantity: 0
+                };
+        }
+        tmp[list_element.id].quantity += list_element.quantity;
+    }
+    Object.keys(tmp).forEach((id) => {
+        ret_list.push(tmp[id]);
+    });
+
+    return ret_list;
+}
+
+class Inventory {
+    #internal_inventory = {};
+    #inventory_overlay = {};
+
+    /*
+     Expected input is:
+     { "inventory": [
+         {
+             "id": id,
+             "quantity": count
+         }
+     ] }
+    */
+    constructor(raw_inventory_data){
+        for( let item in raw_inventory_data.inventory ){
+            this.#inventory_overlay[item.id] = item.quantity;
+        }
+    }
+    itemInInventory(item_id){
+        return this.#internal_inventory.hasOwnProperty(item_id);
+    }
+    itemCount(item_id){
+        const is_in_inventory = this.itemInInventory(item_id);
+        const has_overlay = this.#inventory_overlay.hasOwnProperty(item_id);
+        let available = 0;
+        available += is_in_inventory ? this.#internal_inventory[item_id] : 0;
+        available += has_overlay ? this.#inventory_overlay[item_id] : 0;
+        
+        return available;
+    }
+    adjustInventory(item_id, adjustment_delta){
+        if( !this.#inventory_overlay.hasOwnProperty(item_id) ){
+            this.#inventory_overlay[item_id] = 0;
+        }
+        this.#inventory_overlay[item_id] += adjustment_delta;
+    }
+}
+
 //outline
 // [X] Get the item and server from the user
 // [X] If the item is a string then get the item ID from bliz
@@ -839,7 +944,13 @@ function run(region, server, professions, item, count) {
         }).then(() => {
             return generateOutputFormat(price_data, region);
         }).then((output_data) => {
-            fs.writeFile('intermediate_output', JSON.stringify(output_data, null, 2), 'utf8', () => {
+            output_data.shopping_lists = {};
+            for( let rank of getShoppingListRanks(output_data)){
+                output_data.shopping_lists[rank] = build_shopping_list(output_data,new Inventory({inventory:[{id:173249, quantity: 1}]}), rank);
+            }
+            return output_data;
+        }).then((output_data) => {
+            fs.writeFile('intermediate_output.json', JSON.stringify(output_data, null, 2), 'utf8', () => {
                 logger.info('Intermediate output saved');
             });
             return output_data;

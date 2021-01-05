@@ -117,7 +117,7 @@ data-cache.json
 output.json
 raw_output.json
 formatted_output
-intermediate_output
+intermediate_output.json
 
 # Yarn future
 .yarn/*
