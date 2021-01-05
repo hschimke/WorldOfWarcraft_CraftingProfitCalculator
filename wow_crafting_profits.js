@@ -821,8 +821,7 @@ function getShoppingListRanks(intermediate_data){
     return ranks;
 }
 
-// TODO Needs to handle item in inventory, currently only works if all of the available items are in inventory
-// Probably add to the builder loop to get how many neede.
+// SOUL DUST ISSUE. DOES NOT HANDLE IT AT ALL
 function build_shopping_list(intermediate_data, on_hand, rank_requested){
     let shopping_list = [];
 
@@ -859,7 +858,7 @@ function build_shopping_list(intermediate_data, on_hand, rank_requested){
                         build_shopping_list(part, on_hand, 0).forEach((sl) => {
                             let al = sl;
                             logger.debug(`Need ${al.quantity} of ${al.name} (${al.id}) for each of ${needed}`)
-                            al.quantity = part.required * sl.quantity * needed;
+                            al.quantity = part.required *  needed;
                             shopping_list.push(al);
                         });
                     }
@@ -873,6 +872,7 @@ function build_shopping_list(intermediate_data, on_hand, rank_requested){
     // Build the return shopping list.
     let tmp = {};
     let ret_list = [];
+    //logger.debug(shopping_list);
     for( let list_element of shopping_list ){
         if( !tmp.hasOwnProperty(list_element.id) ){
             tmp[list_element.id] = {
