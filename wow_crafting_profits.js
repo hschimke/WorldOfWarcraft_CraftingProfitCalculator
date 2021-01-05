@@ -1,7 +1,7 @@
 const got = require('got');
 const fs = require('fs');
 const winston = require('winston');
-const cached_data = require('./cache/wow-api-cache.js');
+const cached_data = require('./cache/cached-data-sources.js');
 
 const logger = winston.createLogger({
     level: 'debug',
@@ -31,8 +31,8 @@ const secrets = require('./secrets.json');
 const clientID = '9d85a3dfca994efa969df07bd1e47695';
 const clientSecret = secrets.keys.client_secret;
 
-const raidbots_bonus_lists = require('./bonuses.json');
-const rankings = require('./rank_mappings.json');
+const raidbots_bonus_lists = cached_data.bonuses;
+const rankings = cached_data.rank_mappings;
 
 const local_cache = {
     craftable: {}

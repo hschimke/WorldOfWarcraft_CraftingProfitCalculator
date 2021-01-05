@@ -12,6 +12,8 @@ const test_character_professions = ['Jewelcrafting', 'Tailoring', 'Alchemy', 'In
 //const test_item = 4470;
 // Flask
 //const test_item = 171276;
+// Bracers
+//173249
 
 const argv = yargs
     .option('region', {
@@ -36,7 +38,7 @@ const argv = yargs
         description: 'Item',
         alias: 'i',
         type: 'number',
-        default: 173244,
+        default: 173249,
     })
     .help()
     .alias('help', 'h')

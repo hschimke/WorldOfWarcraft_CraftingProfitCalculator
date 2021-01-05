@@ -8,7 +8,26 @@ const profession_recipe_cache_fn = './profession-recipe-data.json'
 const item_cache_fn = './item-data.json';
 const realm_cache_fn = './realm-data.json';
 
+const bonuses_cache_fn = './bonuses.json';
+const rank_mappings_cache_fn = './rank-mappings.json';
+
 //const copy_from_old = false;
+
+try {
+    bonuses_cache = require(bonuses_cache_fn);
+}catch(e){
+    // We should actually get the bonuses from the source if it's missing.
+    bonuses_cache = {};
+}
+
+try {
+    rank_mappings_cache = require(rank_mappings_cache_fn);
+}catch(e){
+    rank_mappings_cache = {
+        available_levels: [190,210,225,235],
+        rank_mapping: [0,1,2,3],
+    };
+}
 
 try {
     auction_data = require(auction_cache_fn);
@@ -139,3 +158,5 @@ async function saveCache(logger) {
 
 module.exports = component_data;
 module.exports.saveCache = saveCache;
+module.exports.bonuses = bonuses_cache;
+module.exports.rank_mappings = rank_mappings_cache;

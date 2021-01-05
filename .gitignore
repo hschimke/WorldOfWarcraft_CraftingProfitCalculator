@@ -109,6 +109,8 @@ secrets.json
 # Cached Data
 cache/*.json
 data-cache.json
+!cache/bonuses.json
+!cache/rank-mappings.json
 
 # Output data
 output.json
