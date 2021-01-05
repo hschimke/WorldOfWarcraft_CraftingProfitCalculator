@@ -854,7 +854,7 @@ function build_shopping_list(intermediate_data, on_hand, rank_requested){
             for (let recipe of intermediate_data.recipes) {
                 // Make sure the recipe isn't on the exclusion list
                 if (shopping_recipe_exclusions.exclusions.includes(recipe.id)) {
-                    logger.debug(`${recipe.name} (${recipe.id}) is no the exclusion list. Add it directly`);
+                    logger.debug(`${recipe.name} (${recipe.id}) is on the exclusion list. Add it directly`);
                     shopping_list.push({
                         id: intermediate_data.id,
                         name: intermediate_data.name,
@@ -867,7 +867,7 @@ function build_shopping_list(intermediate_data, on_hand, rank_requested){
                             build_shopping_list(part, on_hand, 0).forEach((sl) => {
                                 let al = sl;
                                 logger.debug(`Need ${al.quantity} of ${al.name} (${al.id}) for each of ${needed}`)
-                                al.quantity = part.required * needed;
+                                al.quantity = al.quantity * needed;
                                 shopping_list.push(al);
                             });
                         }
@@ -972,8 +972,9 @@ function run(region, server, professions, item, count) {
                         {
                             inventory:[
                                 {
-                                    id:1,
-                                    quantity: 10
+                                    id:172230,
+                                    //id:1,
+                                    quantity: 13
                                 }
                             ]
                         }),
