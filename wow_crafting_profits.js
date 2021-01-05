@@ -718,20 +718,7 @@ function goldFormatter(price_in) {
     return `${gold}g ${silver}s ${copper}c`;
 }
 
-async function textFriendlyOutputFormat(price_data, indent, region) {
-    /*
-     * Output format:
-     * Item
-     *   Price Data (hih/low/average)
-     *   Recipe Options
-     *     Recipe
-     *       Component Price
-     *   Best Component Crafting Cost
-     *   Worst Componenet Crafting Cost
-     *   Average Component Crafting Cost
-    */
-
-    let return_string = '';
+async function generateOutputFormat(price_data, region){
     const object_output = {
         name: price_data.item_name,
         id: price_data.item_id,
@@ -739,7 +726,6 @@ async function textFriendlyOutputFormat(price_data, indent, region) {
         recipes: [],
     };
 
-    return_string += indentAdder(indent) + `${price_data.item_name} (${price_data.item_id}) Requires ${price_data.item_quantity}\n`;
     if((price_data.ah_price != undefined) && (price_data.ah_price.total_sales > 0)) {
         object_output.ah = {
             sales: price_data.ah_price.total_sales,
@@ -747,11 +733,9 @@ async function textFriendlyOutputFormat(price_data, indent, region) {
             low: price_data.ah_price.low * price_data.item_quantity,
             average: price_data.ah_price.average * price_data.item_quantity,
         }
-        return_string += indentAdder(indent + 1) + `AH ${price_data.ah_price.total_sales}: ${goldFormatter(price_data.ah_price.high * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.low * price_data.item_quantity)}/${goldFormatter(price_data.ah_price.average * price_data.item_quantity)}\n`;
     }
     if (price_data.vendor_price > 0) {
         object_output.vendor = price_data.vendor_price * price_data.item_quantity
-        return_string += indentAdder(indent + 1) + `Vendor ${goldFormatter(price_data.vendor_price * price_data.item_quantity)}\n`;
     }
     if (price_data.recipe_options != undefined) {
         for (let recipe_option of price_data.recipe_options) {
@@ -766,7 +750,6 @@ async function textFriendlyOutputFormat(price_data, indent, region) {
                 average: option_price.average,
                 parts: [],
             }
-            return_string += indentAdder(indent + 1) + `${recipe.name} - ${recipe_option.rank} - (${recipe_option.recipe.recipe_id}) : ${goldFormatter(option_price.high)}/${goldFormatter(option_price.low)}/${goldFormatter(option_price.average)}\n`;
             if ((recipe_option.rank_ah != undefined) && (recipe_option.rank_ah.total_sales > 0)) {
                 obj_recipe.ah = {
                     sales:recipe_option.rank_ah.total_sales,
@@ -774,15 +757,10 @@ async function textFriendlyOutputFormat(price_data, indent, region) {
                     low: recipe_option.rank_ah.low,
                     average: recipe_option.rank_ah.average,
                 };
-                return_string += indentAdder(indent + 2) + `AH ${recipe_option.rank_ah.total_sales}: ${goldFormatter(recipe_option.rank_ah.high)}/${goldFormatter(recipe_option.rank_ah.low)}/${goldFormatter(recipe_option.rank_ah.average)}\n`;
             }
-            return_string += '\n';
             if (recipe_option.prices != undefined) {
                 for (let opt of recipe_option.prices) {
-                    let [strfmt,objfmt] = await textFriendlyOutputFormat(opt, indent + 2, region); 
-                    obj_recipe.parts.push(objfmt)
-                    return_string += strfmt;
-                    return_string += '\n'
+                    obj_recipe.parts.push(await generateOutputFormat(opt, region));
                 }
             }
 
@@ -790,7 +768,50 @@ async function textFriendlyOutputFormat(price_data, indent, region) {
         }
     }
 
-    return [return_string,object_output];
+    return object_output;
+}
+
+function textFriendlyOutputFormat(output_data, indent) {
+    /*
+     * Output format:
+     * Item
+     *   Price Data (hih/low/average)
+     *   Recipe Options
+     *     Recipe
+     *       Component Price
+     *   Best Component Crafting Cost
+     *   Worst Componenet Crafting Cost
+     *   Average Component Crafting Cost
+    */
+
+    let return_string = '';
+
+    return_string += indentAdder(indent) + `${output_data.name} (${output_data.id}) Requires ${output_data.required}\n`;
+    if((output_data.ah != undefined) && (output_data.ah.sales > 0)) {
+        return_string += indentAdder(indent + 1) + `AH ${output_data.ah.sales}: ${goldFormatter(output_data.ah.high * output_data.required)}/${goldFormatter(output_data.ah.low * outout_data.required)}/${goldFormatter(output_data.ah.average * output_data.required)}\n`;
+    }
+    if (output_data.vendor > 0) {
+        return_string += indentAdder(indent + 1) + `Vendor ${goldFormatter(output_data.vendor * output_data.required)}\n`;
+    }
+    if (output_data.recipes != undefined) {
+        for (let recipe_option of output_data.recipes) {
+            //const option_price = await recipeCostCalculator(recipe_option);
+            //const recipe = await getBlizRecipeDetail(recipe_option.recipe.recipe_id, region);
+            return_string += indentAdder(indent + 1) + `${recipe_option.name} - ${recipe_option.rank} - (${recipe_option.id}) : ${goldFormatter(recipe_option.high)}/${goldFormatter(recipe_option.low)}/${goldFormatter(recipe_option.average)}\n`;
+            if ((recipe_option.ah != undefined) && (recipe_option.ah.sales > 0)) {
+                return_string += indentAdder(indent + 2) + `AH ${recipe_option.ah.sales}: ${goldFormatter(recipe_option.ah.high)}/${goldFormatter(recipe_option.ah.low)}/${goldFormatter(recipe_option.ah.average)}\n`;
+            }
+            return_string += '\n';
+            if (recipe_option.parts != undefined) {
+                for (let opt of recipe_option.parts) {
+                    return_string += textFriendlyOutputFormat(opt, indent + 2)
+                    return_string += '\n'
+                }
+            }
+        }
+    }
+
+    return return_string;
 }
 
 //outline
