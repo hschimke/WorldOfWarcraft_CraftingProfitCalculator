@@ -822,58 +822,69 @@ function getShoppingListRanks(intermediate_data){
     return ranks;
 }
 
-function build_shopping_list(intermediate_data, on_hand, rank_requested){
+function constructShoppingList(intermediate_data, on_hand){
+    const shopping_lists = {};
+    for( let rank of getShoppingListRanks(intermediate_data)){
+        const shopping_list = build_shopping_list(intermediate_data, rank);
+        for(let li of shopping_list){
+            let needed = li.quantity;
+            let available = on_hand.itemCount(li.id);
+
+            logger.debug(`${li.name} (${li.id}) ${needed} needed with ${available} available`);
+            if(needed <= available){
+                logger.debug(`${li.name} (${li.id}) used ${needed} of the available ${available}`);
+                needed = 0;
+                on_hand.adjustInventory(li.id,(needed*-1));
+            }else if((needed > available) && (available!=0)){
+                needed -= available;
+                logger.debug(`${li.name} (${li.id}) used all of the available ${available} and still need ${needed}`);
+                on_hand.adjustInventory(li.id,(available*-1));
+            }
+
+            li.quantity = needed;
+        }
+        shopping_lists[rank] = shopping_list;
+    }
+    return shopping_lists;
+}
+
+function build_shopping_list(intermediate_data, rank_requested){
     let shopping_list = [];
 
     logger.debug(`Build shopping list for ${intermediate_data.name} (${intermediate_data.id}) rank ${rank_requested}`);
 
     let needed = intermediate_data.required;
-    let available = on_hand.itemCount(intermediate_data.id);
 
-    // First, use all that are available
-    if(available >= needed){
-        on_hand.adjustInventory(intermediate_data.id,(needed*-1));
-        logger.debug(`${intermediate_data.name} (${intermediate_data.id}) already available in inventory, used ${needed} of ${available}`);
-        needed = 0;
-    }else if((available > 0) && (available < needed)){
-        on_hand.adjustInventory(intermediate_data.id,(available*-1));
-        logger.debug(`${intermediate_data.name} (${intermediate_data.id}) partially available in inventory, used all ${available}`);
-        needed -= available;
-    }
-
-    // Second, if we still need some
-    if (needed > 0) {
-        if (intermediate_data.recipes.length == 0) {
-            shopping_list.push({
-                id: intermediate_data.id,
-                name: intermediate_data.name,
-                quantity: intermediate_data.required,
-            });
-            logger.debug(`${intermediate_data.name} (${intermediate_data.id}) cannot be crafted and unavailable in inventory.`);
-        } else {
-            for (let recipe of intermediate_data.recipes) {
-                // Make sure the recipe isn't on the exclusion list
-                if (shopping_recipe_exclusions.exclusions.includes(recipe.id)) {
-                    logger.debug(`${recipe.name} (${recipe.id}) is on the exclusion list. Add it directly`);
-                    shopping_list.push({
-                        id: intermediate_data.id,
-                        name: intermediate_data.name,
-                        quantity: intermediate_data.required,
-                    });
-                } else {
-                    if (recipe.rank == rank_requested) {
-                        for (let part of recipe.parts) {
-                            // Only top level searches can have ranks
-                            build_shopping_list(part, on_hand, 0).forEach((sl) => {
-                                let al = sl;
-                                logger.debug(`Need ${al.quantity} of ${al.name} (${al.id}) for each of ${needed}`)
-                                al.quantity = al.quantity * needed;
-                                shopping_list.push(al);
-                            });
-                        }
-                    } else {
-                        logger.debug(`Skipping recipe ${recipe.id} because its rank (${recipe.rank}) does not match the requested rank (${rank_requested})`);
+    if (intermediate_data.recipes.length == 0) {
+        shopping_list.push({
+            id: intermediate_data.id,
+            name: intermediate_data.name,
+            quantity: intermediate_data.required,
+        });
+        logger.debug(`${intermediate_data.name} (${intermediate_data.id}) cannot be crafted.`);
+    } else {
+        for (let recipe of intermediate_data.recipes) {
+            // Make sure the recipe isn't on the exclusion list
+            if (shopping_recipe_exclusions.exclusions.includes(recipe.id)) {
+                logger.debug(`${recipe.name} (${recipe.id}) is on the exclusion list. Add it directly`);
+                shopping_list.push({
+                    id: intermediate_data.id,
+                    name: intermediate_data.name,
+                    quantity: intermediate_data.required,
+                });
+            } else {
+                if (recipe.rank == rank_requested) {
+                    for (let part of recipe.parts) {
+                        // Only top level searches can have ranks
+                        build_shopping_list(part, 0).forEach((sl) => {
+                            let al = sl;
+                            logger.debug(`Need ${al.quantity} of ${al.name} (${al.id}) for each of ${needed}`)
+                            al.quantity = al.quantity * needed;
+                            shopping_list.push(al);
+                        });
                     }
+                } else {
+                    logger.debug(`Skipping recipe ${recipe.id} because its rank (${recipe.rank}) does not match the requested rank (${rank_requested})`);
                 }
             }
         }
@@ -964,22 +975,17 @@ function run(region, server, professions, item, count) {
         }).then(() => {
             return generateOutputFormat(price_data, region);
         }).then((output_data) => {
-            output_data.shopping_lists = {};
-            for( let rank of getShoppingListRanks(output_data)){
-                output_data.shopping_lists[rank] = build_shopping_list(output_data,
-                    // TEST INVENTORY ITEM
-                    new Inventory(
-                        {
-                            inventory:[
-                                {
-                                    id:172230,
-                                    //id:1,
-                                    quantity: 13
-                                }
-                            ]
-                        }),
-                    rank);
-            }
+            output_data.shopping_lists = constructShoppingList(output_data,// TEST INVENTORY ITEM
+                new Inventory(
+                    {
+                        inventory:[
+                            {
+                                id:172230,
+                                //id:1,
+                                quantity: 14
+                            }
+                        ]
+                    }));
             return output_data;
         }).then((output_data) => {
             fs.writeFile('intermediate_output.json', JSON.stringify(output_data, null, 2), 'utf8', () => {
