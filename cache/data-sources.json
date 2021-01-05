@@ -1,0 +1,14 @@
+{
+    "sources": [
+        {
+            "source_name": "Raidbots bonuses mappings",
+            "href": "https://www.raidbots.com/static/data/live/bonuses.json",
+            "local_fn": "bonuses.json"
+        },
+        {
+            "source_name": "Calculated rank mappings for recipes",
+            "href": "",
+            "local_fn": "rank-mappings.json"
+        }
+    ]
+}

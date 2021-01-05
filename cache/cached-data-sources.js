@@ -17,6 +17,7 @@ try {
     bonuses_cache = require(bonuses_cache_fn);
 }catch(e){
     // We should actually get the bonuses from the source if it's missing.
+    // use data-sources.json as a source.
     bonuses_cache = {};
 }
 
