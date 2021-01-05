@@ -10,6 +10,7 @@ const realm_cache_fn = './realm-data.json';
 
 const bonuses_cache_fn = './bonuses.json';
 const rank_mappings_cache_fn = './rank-mappings.json';
+const shopping_recipe_exclusion_list_fn = './shopping-recipe-exclusion-list.json'
 
 //const copy_from_old = false;
 
@@ -27,6 +28,14 @@ try {
     rank_mappings_cache = {
         available_levels: [190,210,225,235],
         rank_mapping: [0,1,2,3],
+    };
+}
+
+try {
+    shopping_recipe_exclusion_list = require(shopping_recipe_exclusion_list_fn);
+}catch(e){
+    shopping_recipe_exclusion_list = {
+        exclusions: [],
     };
 }
 
@@ -161,3 +170,4 @@ module.exports = component_data;
 module.exports.saveCache = saveCache;
 module.exports.bonuses = bonuses_cache;
 module.exports.rank_mappings = rank_mappings_cache;
+module.exports.shopping_recipe_exclusions = shopping_recipe_exclusion_list;

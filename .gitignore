@@ -112,6 +112,7 @@ data-cache.json
 !cache/bonuses.json
 !cache/rank-mappings.json
 !cache/data-sources.json
+!cache/shopping-recipe-exclusion-list.json
 
 # Output data
 output.json

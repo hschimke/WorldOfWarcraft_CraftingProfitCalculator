@@ -34,6 +34,7 @@ const clientSecret = secrets.keys.client_secret;
 
 const raidbots_bonus_lists = cached_data.bonuses;
 const rankings = cached_data.rank_mappings;
+const shopping_recipe_exclusions = cached_data.shopping_recipe_exclusions;
 
 const local_cache = {
     craftable: {}
@@ -821,7 +822,6 @@ function getShoppingListRanks(intermediate_data){
     return ranks;
 }
 
-// SOUL DUST ISSUE. DOES NOT HANDLE IT AT ALL
 function build_shopping_list(intermediate_data, on_hand, rank_requested){
     let shopping_list = [];
 
@@ -852,18 +852,28 @@ function build_shopping_list(intermediate_data, on_hand, rank_requested){
             logger.debug(`${intermediate_data.name} (${intermediate_data.id}) cannot be crafted and unavailable in inventory.`);
         } else {
             for (let recipe of intermediate_data.recipes) {
-                if (recipe.rank == rank_requested) {
-                    for (let part of recipe.parts) {
-                        // Only top level searches can have ranks
-                        build_shopping_list(part, on_hand, 0).forEach((sl) => {
-                            let al = sl;
-                            logger.debug(`Need ${al.quantity} of ${al.name} (${al.id}) for each of ${needed}`)
-                            al.quantity = part.required *  needed;
-                            shopping_list.push(al);
-                        });
-                    }
+                // Make sure the recipe isn't on the exclusion list
+                if (shopping_recipe_exclusions.exclusions.includes(recipe.id)) {
+                    logger.debug(`${recipe.name} (${recipe.id}) is no the exclusion list. Add it directly`);
+                    shopping_list.push({
+                        id: intermediate_data.id,
+                        name: intermediate_data.name,
+                        quantity: intermediate_data.required,
+                    });
                 } else {
-                    logger.debug(`Skipping recipe ${recipe.id} because its rank (${recipe.rank}) does not match the requested rank (${rank_requested})`);
+                    if (recipe.rank == rank_requested) {
+                        for (let part of recipe.parts) {
+                            // Only top level searches can have ranks
+                            build_shopping_list(part, on_hand, 0).forEach((sl) => {
+                                let al = sl;
+                                logger.debug(`Need ${al.quantity} of ${al.name} (${al.id}) for each of ${needed}`)
+                                al.quantity = part.required * needed;
+                                shopping_list.push(al);
+                            });
+                        }
+                    } else {
+                        logger.debug(`Skipping recipe ${recipe.id} because its rank (${recipe.rank}) does not match the requested rank (${rank_requested})`);
+                    }
                 }
             }
         }
@@ -962,7 +972,7 @@ function run(region, server, professions, item, count) {
                         {
                             inventory:[
                                 {
-                                    id:172231,
+                                    id:1,
                                     quantity: 10
                                 }
                             ]
