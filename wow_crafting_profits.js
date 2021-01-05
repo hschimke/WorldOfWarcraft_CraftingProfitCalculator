@@ -13,7 +13,7 @@ const logger = winston.createLogger({
         // - Write all logs with level `info` and below to `combined.log`
         //
         new winston.transports.File({ filename: 'error.log', level: 'error' }),
-        new winston.transports.File({ filename: 'combined.log' }),
+        //new winston.transports.File({ filename: 'combined.log' }),
     ],
 });
 
@@ -24,6 +24,7 @@ const logger = winston.createLogger({
 if (process.env.NODE_ENV !== 'production') {
     logger.add(new winston.transports.Console({
         format: winston.format.simple(),
+        level: 'info',
     }));
 }
 
@@ -258,7 +259,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
     const item_detail = await getItemDetails(item_id, region);
     if (item_detail.hasOwnProperty('description')) {
         if (item_detail.description.includes('vendor')) {
-            logger.info('Skipping vendor recipe');
+            logger.debug('Skipping vendor recipe');
             local_cache.craftable[key] = recipe_options;
             return local_cache.craftable[key];
         }
@@ -319,7 +320,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
                         }
                     }
                     if (crafty) {
-                        logger.debug(`Found recipe (${recipe.id}): ${recipe.name}`);
+                        logger.info(`Found recipe (${recipe.id}): ${recipe.name} for (${item_detail.id}) ${item_detail.name}`);
 
                         recipe_options.recipes.push(
                             {
@@ -643,7 +644,7 @@ async function recipeCostCalculator(recipe_option) {
             cost.high += component.vendor_price * component.item_quantity;
             cost.low += component.vendor_price * component.item_quantity;
             cost.average += component.vendor_price * component.item_quantity;
-            logger.debug('Use vendor price');
+            logger.debug(`Use vendor price for ${component.item_name} (${component.item_id})`);
         } else if (component.crafting_status.craftable == false) {
             let high = Number.MIN_VALUE;
             let low = Number.MAX_VALUE;
@@ -662,9 +663,9 @@ async function recipeCostCalculator(recipe_option) {
             cost.average += (average / count) * component.item_quantity;
             cost.high += high * component.item_quantity;
             cost.low += low * component.item_quantity;
-            logger.debug('Using AH price: uncraftable');
+            logger.debug(`Use auction price for uncraftable item ${component.item_name} (${component.item_id})`);
         } else {
-            logger.debug('Using recursion price')
+            logger.debug(`Recursive check for item ${component.item_name} (${component.item_id})`);
             let ave_acc = 0;
             let ave_cnt = 0;
 
@@ -696,10 +697,6 @@ async function recipeCostCalculator(recipe_option) {
     }
 
     return cost;
-}
-
-async function recipeCostPrint(recipe_option) {
-
 }
 
 function indentAdder(level) {
