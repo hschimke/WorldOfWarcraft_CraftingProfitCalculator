@@ -758,10 +758,14 @@ async function generateOutputFormat(price_data, region){
                     average: recipe_option.rank_ah.average,
                 };
             }
+            let prom_list = [];
             if (recipe_option.prices != undefined) {
                 for (let opt of recipe_option.prices) {
-                    obj_recipe.parts.push(await generateOutputFormat(opt, region));
+                    prom_list.push(generateOutputFormat(opt, region));
                 }
+                (await Promise.all(prom_list)).forEach((data) => {
+                    obj_recipe.parts.push(data);
+                });
             }
 
             object_output.recipes.push(obj_recipe);
@@ -788,15 +792,13 @@ function textFriendlyOutputFormat(output_data, indent) {
 
     return_string += indentAdder(indent) + `${output_data.name} (${output_data.id}) Requires ${output_data.required}\n`;
     if((output_data.ah != undefined) && (output_data.ah.sales > 0)) {
-        return_string += indentAdder(indent + 1) + `AH ${output_data.ah.sales}: ${goldFormatter(output_data.ah.high * output_data.required)}/${goldFormatter(output_data.ah.low * outout_data.required)}/${goldFormatter(output_data.ah.average * output_data.required)}\n`;
+        return_string += indentAdder(indent + 1) + `AH ${output_data.ah.sales}: ${goldFormatter(output_data.ah.high)}/${goldFormatter(output_data.ah.low)}/${goldFormatter(output_data.ah.average)}\n`;
     }
     if (output_data.vendor > 0) {
-        return_string += indentAdder(indent + 1) + `Vendor ${goldFormatter(output_data.vendor * output_data.required)}\n`;
+        return_string += indentAdder(indent + 1) + `Vendor ${goldFormatter(output_data.vendor)}\n`;
     }
     if (output_data.recipes != undefined) {
         for (let recipe_option of output_data.recipes) {
-            //const option_price = await recipeCostCalculator(recipe_option);
-            //const recipe = await getBlizRecipeDetail(recipe_option.recipe.recipe_id, region);
             return_string += indentAdder(indent + 1) + `${recipe_option.name} - ${recipe_option.rank} - (${recipe_option.id}) : ${goldFormatter(recipe_option.high)}/${goldFormatter(recipe_option.low)}/${goldFormatter(recipe_option.average)}\n`;
             if ((recipe_option.ah != undefined) && (recipe_option.ah.sales > 0)) {
                 return_string += indentAdder(indent + 2) + `AH ${recipe_option.ah.sales}: ${goldFormatter(recipe_option.ah.high)}/${goldFormatter(recipe_option.ah.low)}/${goldFormatter(recipe_option.ah.average)}\n`;
@@ -838,13 +840,17 @@ function run(region, server, professions, item, count) {
         }).then(() => {
             logger.info('Saving output');
         }).then(() => {
-            return textFriendlyOutputFormat(price_data, 0, region);
-        }).then((formatted_data) => {
-            fs.writeFile('formatted_output', formatted_data[0], 'utf8', () => {
-                logger.info('Formatted output saved');
-            });
-            fs.writeFile('intermediate_output', JSON.stringify(formatted_data[1], null, 2), 'utf8', () => {
+            return generateOutputFormat(price_data, region);
+        }).then((output_data) => {
+            fs.writeFile('intermediate_output', JSON.stringify(output_data, null, 2), 'utf8', () => {
                 logger.info('Intermediate output saved');
+            });
+            return output_data;
+        }).then((output_data) => {
+            return textFriendlyOutputFormat(output_data,0);
+        }).then((formatted_data) => {
+            fs.writeFile('formatted_output', formatted_data, 'utf8', () => {
+                logger.info('Formatted output saved');
             });
         }).then(() => {
             fs.writeFile('raw_output.json', JSON.stringify(price_data, null, 2), 'utf8', () => {
