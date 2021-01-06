@@ -6,7 +6,7 @@ CraftingProfitCalculator_data_NS.Addon = CraftingProfitCalculator_data_
 local CraftingProfitCalculator_data = CraftingProfitCalculator_data_NS.Addon
 
 CraftingProfitCalculator_data.debug_level = 10
-CraftingProfitCalculator_data.debug_printing = true
+CraftingProfitCalculator_data.debug_printing = false
 function CraftingProfitCalculator_data:Debug (str, ...)
     if self.debug_printing == true then
         if ... then str = str:format(...) end
@@ -65,7 +65,7 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 		 if inventory[itemID] == nil then
 			 inventory[itemID] = 0
 		 end
-		 GetRealmID()[itemID] = inventory[itemID] + itemCount
+		 inventory[itemID] = inventory[itemID] + itemCount
 	 end
  end
 	 -- Check Reagentbank
@@ -83,7 +83,9 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 		 end
 	 end
 	 prof1, prof2, archaeology, fishing, cooking = GetProfessions()
-	 professions = {prof1, prof2}
+	 prof1name, icon, skillLevel, maxSkillLevel, numAbilities, spelloffset, skillLine, skillModifier, specializationIndex, specializationOffset = GetProfessionInfo(prof1)
+	 prof2name, icon, skillLevel, maxSkillLevel, numAbilities, spelloffset, skillLine, skillModifier, specializationIndex, specializationOffset = GetProfessionInfo(prof2)
+	 professions = {prof1name, prof2name}
 
 	 realm = {}
 	 realm['region_id'] = GetCurrentRegion()
@@ -96,13 +98,13 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 	 return_data['professions'] = professions
 	 return_data['realm'] = realm
 	 
-	 local playerName, rlmn = UnitName("player")
-	 CraftingProfitCalculator_dataDB[playerName .. '-' .. rlmn] = return_data
+	 local playerName, _ = UnitName("player")
+	 CraftingProfitCalculator_data:Debug(playerName)
+	 CraftingProfitCalculator_dataDB[playerName] = return_data
 	 
 	 CraftingProfitCalculator_data:Debug('make json')
-	 json_data = CraftingProfitCalculator_data:makeJSON(return_data)	 
-
-	 print( json_data)
+	 json_data = CraftingProfitCalculator_data:makeJSON(playerName)	 
+	 CraftingProfitCalculator_data:Debug(json_data)
 
      -- show the appropriate frames
      CPCCopyFrame:Show()
@@ -119,6 +121,7 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
  end
  
  function CraftingProfitCalculator_data:makeJSON(character)
+	 CraftingProfitCalculator_data:Debug('building json')
 	 local str = '{'
 	 if character == nil then
 		 -- Check everyone
@@ -126,27 +129,46 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 	 else
 		 -- Check one character
 		 data = CraftingProfitCalculator_dataDB[character]	 
+		 CraftingProfitCalculator_data:Debug('Using ' .. character .. '\'s data')
 	 end
 	 -- First inventory
+	 CraftingProfitCalculator_data:Debug('Inventory')
 	 str = str .. '"inventory": ['
+	 local first = true
 	 for key,value in pairs(data.inventory)
 	 do
-		 str = str .. '{"id": ' .. key ',"quantity:":'..value'},'
+		 if first == true
+		 then 
+			 first = false
+		 else
+			 str = str .. ',' 
+		 end
+		 CraftingProfitCalculator_data:Debug(key .. ' - '.. value)
+		 str = str .. '{"id": ' .. key .. ',"quantity:":'..value .. '}'
 	 end
 	 str = str .. '],'
 	 -- Professions
+	 CraftingProfitCalculator_data:Debug('Professions')
 	 str = str .. '"professions":['
+	 first = true
 	 for _, prof in ipairs(data.professions) do
-	     str = str .. '"' .. prof .. '",'
+		 if first == true
+		 then 
+			 first = false
+		 else
+			 str = str .. ',' 
+		 end
+	     str = str .. '"' .. prof .. '"'
 	 end
 	 str = str .. '],'
 	 -- Realm Data
+	 CraftingProfitCalculator_data:Debug('Realm data')
 	 str = str .. '"realm":{'
 	 str = str .. '"region_id":' .. data.realm['region_id'] .. ','
 	 str = str .. '"region_name":"' .. data.realm['region_name'] .. '",'
 	 str = str .. '"realm_id":' .. data.realm['realm_id'] .. ','
-	 str = str .. '"realm_name":"' .. data.realm['realm_name'] .. '",'
-	 str = str .. '},'
+	 str = str .. '"realm_name":"' .. data.realm['realm_name'] .. '"'
+	 str = str .. '}'
 	 str = str .. '}'
 	 return str
  end
