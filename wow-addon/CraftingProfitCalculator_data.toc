@@ -5,4 +5,5 @@
 ## Version: 20210105
 ## SavedVariables: CraftingProfitCalculator_dataDB
 
+ui.xml
 core.lua

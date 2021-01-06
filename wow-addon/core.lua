@@ -101,7 +101,21 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 	 
 	 CraftingProfitCalculator_data:Debug('make json')
 	 json_data = CraftingProfitCalculator_data:makeJSON(return_data)	 
-     print( json_data )
+
+	 print( json_data)
+
+     -- show the appropriate frames
+     CPCCopyFrame:Show()
+     CPCCopyFrameScroll:Show()
+     CPCCopyFrameScrollText:Show()
+     CPCCopyFrameScrollText:SetText(json_data)
+     CPCCopyFrameScrollText:HighlightText()
+     CPCCopyFrameScrollText:SetScript("OnEscapePressed", function(self)
+       CPCCopyFrame:Hide()
+     end)
+     CPCCopyFrameButton:SetScript("OnClick", function(self)
+       CPCCopyFrame:Hide()
+     end)
  end
  
  function CraftingProfitCalculator_data:makeJSON(character)
