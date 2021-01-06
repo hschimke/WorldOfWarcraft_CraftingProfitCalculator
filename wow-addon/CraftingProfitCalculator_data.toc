@@ -3,7 +3,6 @@
 ## Notes: Constructs CraftingProfitCalculator export strings
 ## Author: hschimke
 ## Version: 20210105
-## OptionalDependencies: 
 ## SavedVariables: CraftingProfitCalculator_dataDB
 
 core.lua
