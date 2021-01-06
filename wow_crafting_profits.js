@@ -840,10 +840,20 @@ function constructShoppingList(intermediate_data, on_hand){
             }else if((needed > available) && (available!=0)){
                 needed -= available;
                 logger.debug(`${li.name} (${li.id}) used all of the available ${available} and still need ${needed}`);
-                on_hand.adjustInventory(li.id,(available*-1));
+                on_hand.adjustInventory(li.id, (available * -1));
             }
 
             li.quantity = needed;
+
+            // Update the cost for this list item
+            if (li.cost.vendor != undefined) {
+                li.cost.vendor *= li.quantity;
+            }
+            if (li.ah != undefined) {
+                li.ah.high *= li.quantity;
+                li.ah.low *= li.quantity;
+                li.ah.average *= li.quantity;
+            }
         }
         shopping_lists[rank] = shopping_list;
     }
@@ -862,6 +872,10 @@ function build_shopping_list(intermediate_data, rank_requested){
             id: intermediate_data.id,
             name: intermediate_data.name,
             quantity: intermediate_data.required,
+            cost: {
+                ah: intermediate_data.ah,
+                vendor: intermediate_data.vendor,
+            },
         });
         logger.debug(`${intermediate_data.name} (${intermediate_data.id}) cannot be crafted.`);
     } else {
@@ -873,6 +887,10 @@ function build_shopping_list(intermediate_data, rank_requested){
                     id: intermediate_data.id,
                     name: intermediate_data.name,
                     quantity: intermediate_data.required,
+                    cost: {
+                        ah: intermediate_data.ah,
+                        vendor: intermediate_data.vendor,
+                    },
                 });
             } else {
                 if (recipe.rank == rank_requested) {
@@ -901,7 +919,8 @@ function build_shopping_list(intermediate_data, rank_requested){
             tmp[list_element.id] = {
                     id: list_element.id,
                     name: list_element.name,
-                    quantity: 0
+                    quantity: 0,
+                    cost: list_element.cost,
                 };
         }
         tmp[list_element.id].quantity += list_element.quantity;
