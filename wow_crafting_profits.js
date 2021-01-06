@@ -1,7 +1,9 @@
 const got = require('got');
 const fs = require('fs');
 const winston = require('winston');
+
 const cached_data = require('./cache/cached-data-sources');
+const { Inventory } = require("./Inventory");
 
 const logger = winston.createLogger({
     level: 'debug',
@@ -29,7 +31,6 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const secrets = require('./secrets.json');
-const { Inventory } = require("./Inventory");
 const clientID = '9d85a3dfca994efa969df07bd1e47695';
 const clientSecret = secrets.keys.client_secret;
 
