@@ -6,7 +6,7 @@ CraftingProfitCalculator_data_NS.Addon = CraftingProfitCalculator_data_
 local CraftingProfitCalculator_data = CraftingProfitCalculator_data_NS.Addon
 
 CraftingProfitCalculator_data.debug_level = 10
-CraftingProfitCalculator_data.debug_printing = false
+CraftingProfitCalculator_data.debug_printing = true
 function CraftingProfitCalculator_data:Debug (str, ...)
     if self.debug_printing == true then
         if ... then str = str:format(...) end
@@ -29,10 +29,44 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
  -- https://github.com/tomrus88/BlizzardInterfaceCode/blob/master/Interface/FrameXML/Constants.lua
  
  function CraftingProfitCalculator_data:init()
-	 SLASH_CPC1 = "/cpc"
-	 SlashCmdList["CPC"] = function(msg)
-		 CraftingProfitCalculator_data:run()
-	 end 
+	SLASH_CPCA1 = "/cpca"
+	SLASH_CPCC1 = "/cpcc"
+	SlashCmdList["CPCC"] = function(msg)
+		CraftingProfitCalculator_data:run_character()
+	end 
+	SlashCmdList["CPCA"] = function(msg)
+	   CraftingProfitCalculator_data:run_all_characters()
+   end
+ end
+
+ function CraftingProfitCalculator_data:run_character()
+	local playerName, _ = UnitName("player")
+	CraftingProfitCalculator_data:run()
+	json_data = CraftingProfitCalculator_data:makeJSON(playerName)	 
+	CraftingProfitCalculator_data:Debug(json_data)
+	CraftingProfitCalculator_data:show(json_data)
+ end
+
+ function CraftingProfitCalculator_data:run_all_characters()
+	CraftingProfitCalculator_data:run()
+	json_data = CraftingProfitCalculator_data:makeJSON(nil)	 
+	CraftingProfitCalculator_data:Debug(json_data)
+	CraftingProfitCalculator_data:show(json_data)
+ end
+
+ function CraftingProfitCalculator_data:show(json_data)
+	-- show the appropriate frames
+	CPCCopyFrame:Show()
+	CPCCopyFrameScroll:Show()
+	CPCCopyFrameScrollText:Show()
+	CPCCopyFrameScrollText:SetText(json_data)
+	CPCCopyFrameScrollText:HighlightText()
+	CPCCopyFrameScrollText:SetScript("OnEscapePressed", function(self)
+	  CPCCopyFrame:Hide()
+	end)
+	CPCCopyFrameButton:SetScript("OnClick", function(self)
+	  CPCCopyFrame:Hide()
+	end)
  end
  
  function CraftingProfitCalculator_data:run()
@@ -56,18 +90,18 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 	 end
 	 -- Check Primary Bank
 	CraftingProfitCalculator_data:Debug('Bank has ' .. CraftingProfitCalculator_data:getBagSlotCount(BANK_CONTAINER) .. ' slots.')
- slotCount = CraftingProfitCalculator_data:getBagSlotCount(BANK_CONTAINER)
- CraftingProfitCalculator_data:Debug('Bag: ' .. BANK_CONTAINER .. ' has ' .. slotCount .. ' slots.')
- for slot = 1, slotCount, 1
- do
-	 itemID, itemCount = CraftingProfitCalculator_data:getBagSlotItem(BANK_CONTAINER,slot)
-	 if itemID ~= nil then
-		 if inventory[itemID] == nil then
-			 inventory[itemID] = 0
+ 	slotCount = CraftingProfitCalculator_data:getBagSlotCount(BANK_CONTAINER)
+ 	CraftingProfitCalculator_data:Debug('Bag: ' .. BANK_CONTAINER .. ' has ' .. slotCount .. ' slots.')
+ 	for slot = 1, slotCount, 1
+	 do
+		 itemID, itemCount = CraftingProfitCalculator_data:getBagSlotItem(BANK_CONTAINER,slot)
+		 if itemID ~= nil then
+			 if inventory[itemID] == nil then
+				 inventory[itemID] = 0
+			 end
+			 inventory[itemID] = inventory[itemID] + itemCount
 		 end
-		 inventory[itemID] = inventory[itemID] + itemCount
-	 end
- end
+ 	end
 	 -- Check Reagentbank
 	 CraftingProfitCalculator_data:Debug('Reagentbank has ' .. CraftingProfitCalculator_data:getBagSlotCount(REAGENTBANK_CONTAINER) .. ' slots.')
 	 slotCount = CraftingProfitCalculator_data:getBagSlotCount(REAGENTBANK_CONTAINER)
@@ -100,35 +134,57 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 	 
 	 local playerName, _ = UnitName("player")
 	 CraftingProfitCalculator_data:Debug(playerName)
-	 CraftingProfitCalculator_dataDB[playerName] = return_data
+	 local fn = GetCurrentRegionName()..'-'..GetRealmName()
+	 CraftingProfitCalculator_data:Debug(fn)
+	 CraftingProfitCalculator_dataDB[fn] = {}
+	 CraftingProfitCalculator_dataDB[fn][playerName] = return_data
 	 
 	 CraftingProfitCalculator_data:Debug('make json')
-	 json_data = CraftingProfitCalculator_data:makeJSON(playerName)	 
-	 CraftingProfitCalculator_data:Debug(json_data)
-
-     -- show the appropriate frames
-     CPCCopyFrame:Show()
-     CPCCopyFrameScroll:Show()
-     CPCCopyFrameScrollText:Show()
-     CPCCopyFrameScrollText:SetText(json_data)
-     CPCCopyFrameScrollText:HighlightText()
-     CPCCopyFrameScrollText:SetScript("OnEscapePressed", function(self)
-       CPCCopyFrame:Hide()
-     end)
-     CPCCopyFrameButton:SetScript("OnClick", function(self)
-       CPCCopyFrame:Hide()
-     end)
  end
  
  function CraftingProfitCalculator_data:makeJSON(character)
 	 CraftingProfitCalculator_data:Debug('building json')
+	 local fn = GetCurrentRegionName()..'-'..GetRealmName()
 	 local str = '{'
 	 if character == nil then
 		 -- Check everyone
 		 data = {}
+		 data.inventory = {}
+		 data.professions = {}
+		 data.realm = {}
+		 for chr,character_data in pairs(CraftingProfitCalculator_dataDB[fn])
+		 do
+			-- inventory
+			for ikey,ivalue in pairs(character_data.inventory)
+			do
+				if data.inventory[ikey] == nil then
+					data.inventory[ikey] = 0
+				end
+				data.inventory[ikey] = data.inventory[ikey] + ivalue
+			end
+			-- professions
+			for pkey,pvalue in ipairs(character_data.professions)
+			do
+				local exists = false
+				for lk,lv in ipairs(data.professions)
+				do
+					if lv == pvalue then
+						exist = true
+					end
+				end
+				if exist == false then
+					table.insert(data.professions,pvalue)
+				end
+			end
+		 end
+		 -- realm
+		 realm['region_id'] = GetCurrentRegion()
+	 	realm['region_name'] = GetCurrentRegionName()
+	 	realm['realm_id'] = GetRealmID()
+		 realm['realm_name'] = GetRealmName()
 	 else
 		 -- Check one character
-		 data = CraftingProfitCalculator_dataDB[character]	 
+		 data = CraftingProfitCalculator_dataDB[fn][character]	 
 		 CraftingProfitCalculator_data:Debug('Using ' .. character .. '\'s data')
 	 end
 	 -- First inventory
