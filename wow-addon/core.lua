@@ -31,26 +31,32 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
  function CraftingProfitCalculator_data:init()
 	SLASH_CPCA1 = "/cpca"
 	SLASH_CPCC1 = "/cpcc"
+	SLASH_CPCR1 = "/cpcr"
 	SlashCmdList["CPCC"] = function(msg)
 		CraftingProfitCalculator_data:run_character()
 	end 
 	SlashCmdList["CPCA"] = function(msg)
 	   CraftingProfitCalculator_data:run_all_characters()
    end
+	SlashCmdList["CPCR"] = function(msg)
+   	 CraftingProfitCalculator_data:run()
+  	end
  end
 
  function CraftingProfitCalculator_data:run_character()
 	local playerName, _ = UnitName("player")
 	CraftingProfitCalculator_data:run()
+	CraftingProfitCalculator_data:Debug(playerName)
 	json_data = CraftingProfitCalculator_data:makeJSON(playerName)	 
-	CraftingProfitCalculator_data:Debug(json_data)
+--	CraftingProfitCalculator_data:Debug(json_data)
 	CraftingProfitCalculator_data:show(json_data)
  end
 
  function CraftingProfitCalculator_data:run_all_characters()
 	CraftingProfitCalculator_data:run()
+	CraftingProfitCalculator_data:Debug('All characters')
 	json_data = CraftingProfitCalculator_data:makeJSON(nil)	 
-	CraftingProfitCalculator_data:Debug(json_data)
+--	CraftingProfitCalculator_data:Debug(json_data)
 	CraftingProfitCalculator_data:show(json_data)
  end
 
@@ -136,7 +142,9 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 	 CraftingProfitCalculator_data:Debug(playerName)
 	 local fn = GetCurrentRegionName()..'-'..GetRealmName()
 	 CraftingProfitCalculator_data:Debug(fn)
-	 CraftingProfitCalculator_dataDB[fn] = {}
+	 if CraftingProfitCalculator_dataDB[fn] == nil then
+		 CraftingProfitCalculator_dataDB[fn] = {}
+	 end
 	 CraftingProfitCalculator_dataDB[fn][playerName] = return_data
 	 
 	 CraftingProfitCalculator_data:Debug('make json')
@@ -147,6 +155,7 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 	 local fn = GetCurrentRegionName()..'-'..GetRealmName()
 	 local str = '{'
 	 if character == nil then
+		 CraftingProfitCalculator_data:Debug('RUNNING ON nil INPUT')
 		 -- Check everyone
 		 data = {}
 		 data.inventory = {}
@@ -154,6 +163,7 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 		 data.realm = {}
 		 for chr,character_data in pairs(CraftingProfitCalculator_dataDB[fn])
 		 do
+			 CraftingProfitCalculator_data:Debug('Add data for character: ' .. chr)
 			-- inventory
 			for ikey,ivalue in pairs(character_data.inventory)
 			do
@@ -163,25 +173,17 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 				data.inventory[ikey] = data.inventory[ikey] + ivalue
 			end
 			-- professions
-			for pkey,pvalue in ipairs(character_data.professions)
+			for _,pvalue in ipairs(character_data.professions)
 			do
-				local exists = false
-				for lk,lv in ipairs(data.professions)
-				do
-					if lv == pvalue then
-						exist = true
-					end
-				end
-				if exist == false then
-					table.insert(data.professions,pvalue)
-				end
+				CraftingProfitCalculator_data:Debug('profession: ' .. pvalue)
+				table.insert(data.professions,pvalue)
 			end
 		 end
 		 -- realm
-		 realm['region_id'] = GetCurrentRegion()
-	 	realm['region_name'] = GetCurrentRegionName()
-	 	realm['realm_id'] = GetRealmID()
-		 realm['realm_name'] = GetRealmName()
+		 data.realm['region_id'] = GetCurrentRegion()
+	 	data.realm['region_name'] = GetCurrentRegionName()
+	 	data.realm['realm_id'] = GetRealmID()
+		 data.realm['realm_name'] = GetRealmName()
 	 else
 		 -- Check one character
 		 data = CraftingProfitCalculator_dataDB[fn][character]	 
@@ -199,7 +201,7 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 		 else
 			 str = str .. ',' 
 		 end
-		 CraftingProfitCalculator_data:Debug(key .. ' - '.. value)
+		 --CraftingProfitCalculator_data:Debug(key .. ' - '.. value)
 		 str = str .. '{"id": ' .. key .. ',"quantity:":'..value .. '}'
 	 end
 	 str = str .. '],'
