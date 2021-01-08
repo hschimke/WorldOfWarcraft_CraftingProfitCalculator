@@ -20,13 +20,13 @@ const argv = yargs
         description: 'Region',
         alias: 'r',
         type: 'string',
-        default: 'us',
+        default: 'US',
     })
     .option('server', {
         description: 'Server',
         alias: 's',
         type: 'string',
-        default: 'hyjal',
+        default: 'Hyjal',
     })
     .option('profession', {
         description: 'Profession',
@@ -89,4 +89,3 @@ try {
 }
 
 app.run(region, server, professions, item, character_config_json, 1);
-//console.log(character_config_json);

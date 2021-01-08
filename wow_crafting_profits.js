@@ -954,7 +954,7 @@ async function run(region, server, professions, item, json_config, count) {
     logger.info(`Checking ${server} in ${region} for ${item} with available professions ${JSON.stringify(professions)}`);
 
     try {
-        const price_data = await performProfitAnalysis(region.toLowerCase(), server, professions, item, count);
+        const price_data = await performProfitAnalysis(region, server, professions, item, count);
         logger.info('Saving output');
         const intermediate_data = await generateOutputFormat(price_data, region);
         intermediate_data.shopping_lists = constructShoppingList(intermediate_data, new Inventory(json_config));
