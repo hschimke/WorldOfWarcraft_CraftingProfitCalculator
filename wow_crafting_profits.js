@@ -953,31 +953,52 @@ async function run(region, server, professions, item, json_config, count) {
 
     logger.info(`Checking ${server} in ${region} for ${item} with available professions ${JSON.stringify(professions)}`);
 
+    let intermediate_data = {};
+    let price_data = {};
+    let formatted_data = {};
+
     try {
-        const price_data = await performProfitAnalysis(region, server, professions, item, count);
-        logger.info('Saving output');
-        const intermediate_data = await generateOutputFormat(price_data, region);
+        price_data = await performProfitAnalysis(region, server, professions, item, count);
+        //logger.info('Saving output');
+        intermediate_data = await generateOutputFormat(price_data, region);
         intermediate_data.shopping_lists = constructShoppingList(intermediate_data, json_config);
-        await fs.writeFile('intermediate_output.json', JSON.stringify(intermediate_data, null, 2), 'utf8');
-        logger.info('Intermediate output saved');
-        const formatted_data = await textFriendlyOutputFormat(intermediate_data, 0);
-        await fs.writeFile('formatted_output', formatted_data, 'utf8');
-        logger.info('Formatted output saved');
-        await fs.writeFile('raw_output.json', JSON.stringify(price_data, null, 2), 'utf8');
-        logger.info('Raw output saved');
+        //await fs.writeFile('intermediate_output.json', JSON.stringify(intermediate_data, null, 2), 'utf8');
+        //logger.info('Intermediate output saved');
+        formatted_data = await textFriendlyOutputFormat(intermediate_data, 0);
+        //await fs.writeFile('formatted_output', formatted_data, 'utf8');
+        //logger.info('Formatted output saved');
+        //await fs.writeFile('raw_output.json', JSON.stringify(price_data, null, 2), 'utf8');
+        //logger.info('Raw output saved');
     } finally {
         await cached_data.saveCache(logger);
     }
+
+    return {
+        price: price_data,
+        intermediate: intermediate_data,
+        formatted: formatted_data,
+    }
+}
+
+async function output(price_data, intermediate_data, formatted_data){
+    logger.info('Saving output');
+    await fs.writeFile('intermediate_output.json', JSON.stringify(intermediate_data, null, 2), 'utf8');
+    logger.info('Intermediate output saved');
+    await fs.writeFile('formatted_output', formatted_data, 'utf8');
+    logger.info('Formatted output saved');
+    await fs.writeFile('raw_output.json', JSON.stringify(price_data, null, 2), 'utf8');
+    logger.info('Raw output saved');
 }
 
 async function runWithJSONConfig(json_config) {
-    await run(json_config.realm_region,
+    const {price, intermediate, formatted} = await run(json_config.realm_region,
         json_config.realm_name,
         json_config.professions,
         json_config.item_id,
         json_config,
         json_config.item_count
     );
+    await output(price, intermediate, formatted);
 }
 
 module.exports.run = run;
