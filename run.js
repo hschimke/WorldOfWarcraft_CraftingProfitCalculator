@@ -1,5 +1,6 @@
 const yargs = require('yargs');
 const app = require('./wow_crafting_profits.js');
+const { RunConfiguration } = require('./RunConfiguration');
 
 const test_region = 'us';
 const test_server = 'hyjal';
@@ -88,4 +89,14 @@ try {
     console.log('JSON character input cannot be parsed.')
 }
 
-app.run(region, server, professions, item, character_config_json, 1);
+const config = new RunConfiguration({
+    inventory: character_config_json.inventory,
+    professions: professions,
+    realm: {
+        realm_name: server,
+        region_name: region,
+    },
+},item,1);
+
+//app.run(region, server, professions, item, character_config_json, 1);
+app.runWithJSONConfig(config);

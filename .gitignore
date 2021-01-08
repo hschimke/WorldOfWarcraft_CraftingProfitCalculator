@@ -127,3 +127,6 @@ intermediate_output.json
 !.yarn/sdks
 !.yarn/versions
 .pnp.*
+
+# Test data
+test_data/*

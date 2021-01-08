@@ -3,7 +3,7 @@ const fs = require('fs/promises');
 const winston = require('winston');
 
 const cached_data = require('./cache/cached-data-sources');
-const { Inventory } = require("./Inventory");
+const { RunConfiguration } = require("./RunConfiguration");
 
 const logger = winston.createLogger({
     level: 'debug',
@@ -957,7 +957,7 @@ async function run(region, server, professions, item, json_config, count) {
         const price_data = await performProfitAnalysis(region, server, professions, item, count);
         logger.info('Saving output');
         const intermediate_data = await generateOutputFormat(price_data, region);
-        intermediate_data.shopping_lists = constructShoppingList(intermediate_data, new Inventory(json_config));
+        intermediate_data.shopping_lists = constructShoppingList(intermediate_data, json_config);
         await fs.writeFile('intermediate_output.json', JSON.stringify(intermediate_data, null, 2), 'utf8');
         logger.info('Intermediate output saved');
         const formatted_data = await textFriendlyOutputFormat(intermediate_data, 0);
@@ -970,13 +970,13 @@ async function run(region, server, professions, item, json_config, count) {
     }
 }
 
-async function runWithJSONConfig(json_config, item, count) {
-    await run(json_config.realm.region_name,
-        json_config.realm.realm_name,
-        Array.from(new Set(json_config.professions)),
-        item,
+async function runWithJSONConfig(json_config) {
+    await run(json_config.realm_region,
+        json_config.realm_name,
+        json_config.professions,
+        json_config.item_id,
         json_config,
-        count
+        json_config.item_count
     );
 }
 
