@@ -77,7 +77,7 @@ try {
     }
 
     if (good) {
-        profession = Array.from(new Set(character_config_json.professions));
+        professions = Array.from(new Set(character_config_json.professions));
 
         if (argv.json) {
             region = character_config_json.realm.region_name;
@@ -88,4 +88,4 @@ try {
     console.log('JSON character input cannot be parsed.')
 }
 
-app.run(region, server, profession, item, character_config_json, 1);
+app.run(region, server, professions, item, character_config_json, 1);
