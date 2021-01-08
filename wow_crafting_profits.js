@@ -1,5 +1,5 @@
 const got = require('got');
-const fs = require('fs');
+const fs = require('fs/promises');
 const winston = require('winston');
 
 const cached_data = require('./cache/cached-data-sources');
@@ -300,45 +300,50 @@ async function checkIsCrafting(item_id, character_professions, region) {
         logger.debug(`Checking: ${skill_tier.name} for: ${item_id}`);
         // Get a list of all recipes each level can do
         const skill_tier_detail = await getBlizSkillTierDetail(check_profession_id, skill_tier.id, region);
-        const categories = skill_tier_detail.categories;
 
-        for (let cat of categories) {
-            for (let rec of cat.recipes) {
-                const recipe = await getBlizRecipeDetail(rec.id, region);
-                if (!(recipe.name.includes('Prospect') || recipe.name.includes('Mill'))) {
-                    let crafty = false;
-                    if (recipe.hasOwnProperty('alliance_crafted_item')) {
-                        if (recipe.alliance_crafted_item.id == item_id) {
-                            crafty = true;
-                        }
-                    }
-                    if (recipe.hasOwnProperty('horde_crafted_item')) {
-                        if (recipe.horde_crafted_item.id == item_id) {
-                            crafty = true;
-                        }
-                    }
-                    if (recipe.hasOwnProperty('crafted_item')) {
-                        if (recipe.crafted_item.id == item_id) {
-                            crafty = true;
-                        }
-                    }
-                    if (crafty) {
-                        logger.info(`Found recipe (${recipe.id}): ${recipe.name} for (${item_detail.id}) ${item_detail.name}`);
+        if (skill_tier_detail.categories != undefined) {
+            const categories = skill_tier_detail.categories;
 
-                        recipe_options.recipes.push(
-                            {
-                                recipe_id: recipe.id,
-                                crafting_profession: prof
+            for (let cat of categories) {
+                for (let rec of cat.recipes) {
+                    const recipe = await getBlizRecipeDetail(rec.id, region);
+                    if (!(recipe.name.includes('Prospect') || recipe.name.includes('Mill'))) {
+                        let crafty = false;
+                        if (recipe.hasOwnProperty('alliance_crafted_item')) {
+                            if (recipe.alliance_crafted_item.id == item_id) {
+                                crafty = true;
                             }
-                        );
-                        recipe_options.recipe_ids.push(recipe.id);
-                        recipe_options.craftable = true;
+                        }
+                        if (recipe.hasOwnProperty('horde_crafted_item')) {
+                            if (recipe.horde_crafted_item.id == item_id) {
+                                crafty = true;
+                            }
+                        }
+                        if (recipe.hasOwnProperty('crafted_item')) {
+                            if (recipe.crafted_item.id == item_id) {
+                                crafty = true;
+                            }
+                        }
+                        if (crafty) {
+                            logger.info(`Found recipe (${recipe.id}): ${recipe.name} for (${item_detail.id}) ${item_detail.name}`);
 
-                    }
-                } /*else {
+                            recipe_options.recipes.push(
+                                {
+                                    recipe_id: recipe.id,
+                                    crafting_profession: prof
+                                }
+                            );
+                            recipe_options.recipe_ids.push(recipe.id);
+                            recipe_options.craftable = true;
+
+                        }
+                    } /*else {
                     logger.debug(`Skipping Recipe: (${recipe.id}) "${recipe.name}"`);
                 }*/
+                }
             }
+        }else{
+            logger.debug(`Skill tier ${skill_tier.name} has no categories.`);
         }
     }
 }
@@ -943,54 +948,38 @@ function build_shopping_list(intermediate_data, rank_requested){
 // [X] Check if there is a non-crafting/non-auction price for the components
 // [ ] Print the summary of the item price from auction house and the component prices
 
-function run(region, server, professions, item, json_config, count) {
+async function run(region, server, professions, item, json_config, count) {
     logger.info("World of Warcraft Crafting Profit Calculator");
-
-    let price_data = null;
 
     logger.info(`Checking ${server} in ${region} for ${item} with available professions ${JSON.stringify(professions)}`);
 
-    performProfitAnalysis(region, server, professions, item, count)
-        .then((pd) => {
-            price_data = pd;
-        }).then(() => {
-            logger.info('Saving output');
-        }).then(() => {
-            return generateOutputFormat(price_data, region);
-        }).then((output_data) => {
-            output_data.shopping_lists = constructShoppingList(output_data,// TEST INVENTORY ITEM
-                /*new Inventory(
-                    {
-                        inventory:[
-                            {
-                                id:172230,
-                                //id:1,
-                                quantity: 14
-                            }
-                        ]
-                    })*/
-                    new Inventory()
-                    );
-            return output_data;
-        }).then((output_data) => {
-            fs.writeFile('intermediate_output.json', JSON.stringify(output_data, null, 2), 'utf8', () => {
-                logger.info('Intermediate output saved');
-            });
-            return output_data;
-        }).then((output_data) => {
-            return textFriendlyOutputFormat(output_data,0);
-        }).then((formatted_data) => {
-            fs.writeFile('formatted_output', formatted_data, 'utf8', () => {
-                logger.info('Formatted output saved');
-            });
-        }).then(() => {
-            fs.writeFile('raw_output.json', JSON.stringify(price_data, null, 2), 'utf8', () => {
-                logger.info('Raw output saved');
-            });
-        }).finally(() => {
-            cached_data.saveCache(logger);
-        });
+    try {
+        const price_data = await performProfitAnalysis(region.toLowerCase(), server, professions, item, count);
+        logger.info('Saving output');
+        const intermediate_data = await generateOutputFormat(price_data, region);
+        intermediate_data.shopping_lists = constructShoppingList(intermediate_data, new Inventory(json_config));
+        await fs.writeFile('intermediate_output.json', JSON.stringify(intermediate_data, null, 2), 'utf8');
+        logger.info('Intermediate output saved');
+        const formatted_data = await textFriendlyOutputFormat(intermediate_data, 0);
+        await fs.writeFile('formatted_output', formatted_data, 'utf8');
+        logger.info('Formatted output saved');
+        await fs.writeFile('raw_output.json', JSON.stringify(price_data, null, 2), 'utf8');
+        logger.info('Raw output saved');
+    } finally {
+        await cached_data.saveCache(logger);
+    }
+}
+
+async function runWithJSONConfig(json_config, item, count) {
+    await run(json_config.realm.region_name,
+        json_config.realm.realm_name,
+        Array.from(new Set(json_config.professions)),
+        item,
+        json_config,
+        count
+    );
 }
 
 module.exports.run = run;
 module.exports.textFriendlyOutputFormat = textFriendlyOutputFormat;
+module.exports.runWithJSONConfig = runWithJSONConfig;

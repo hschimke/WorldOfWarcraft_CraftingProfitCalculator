@@ -32,7 +32,7 @@ const argv = yargs
         description: 'Profession',
         alias: 'p',
         type: 'string',
-        default: ['Jewelcrafting', 'Tailoring', 'Alchemy', 'Inscription', 'Enchanting', 'Blacksmithing'],
+        default: ['Jewelcrafting', 'Tailoring', 'Alchemy', 'Inscription', 'Enchanting', 'Blacksmithing', 'Mining'],
     })
     .option('item', {
         description: 'Item',
@@ -51,7 +51,7 @@ const argv = yargs
     .alias('help', 'h')
     .argv;
 
-let character_config_json = {};
+let character_config_json = {inventory:[]};
 let region = argv.region;
 let server = argv.server;
 let professions = argv.profession;
@@ -89,3 +89,4 @@ try {
 }
 
 app.run(region, server, professions, item, character_config_json, 1);
+//console.log(character_config_json);
