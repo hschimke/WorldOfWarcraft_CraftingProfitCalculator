@@ -943,7 +943,7 @@ function build_shopping_list(intermediate_data, rank_requested){
 // [X] Check if there is a non-crafting/non-auction price for the components
 // [ ] Print the summary of the item price from auction house and the component prices
 
-function run(region, server, professions, item, count) {
+function run(region, server, professions, item, json_config, count) {
     logger.info("World of Warcraft Crafting Profit Calculator");
 
     let price_data = null;

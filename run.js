@@ -40,8 +40,52 @@ const argv = yargs
         type: 'number',
         default: 171276,
     })
+    .option('json_config', {
+        description: 'JSON configuration data',
+        alias: 'j',
+        type: 'string',
+        default: '',
+    })
+    .command('json', 'Use JSON to configure region, realm, and professions')
     .help()
     .alias('help', 'h')
     .argv;
 
-app.run(argv.region,argv.server,argv.profession,argv.item,1);
+let character_config_json = {};
+let region = argv.region;
+let server = argv.server;
+let professions = argv.profession;
+let item = argv.item;
+
+try {
+    character_config_json = JSON.parse(argv.json_config);
+    let good = true;
+    let has_inventory = true;
+    let has_professions = true;
+    let has_realm = true;
+    if (!character_config_json.hasOwnProperty('inventory')) {
+        good = false;
+        has_inventory = false;
+    }
+    if (!character_config_json.hasOwnProperty('professions')) {
+        good = false;
+        has_professions = false;
+    }
+    if (!character_config_json.hasOwnProperty('realm')) {
+        good = false;
+        has_realm = false;
+    }
+
+    if (good) {
+        profession = Array.from(new Set(character_config_json.professions));
+
+        if (argv.json) {
+            region = character_config_json.realm.region_name;
+            server = character_config_json.realm.realm_name;
+        }
+    }
+} catch (e) {
+    console.log('JSON character input cannot be parsed.')
+}
+
+app.run(region, server, profession, item, character_config_json, 1);
