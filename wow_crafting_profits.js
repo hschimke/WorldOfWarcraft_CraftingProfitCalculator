@@ -342,7 +342,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
                 }*/
                 }
             }
-        }else{
+        } else {
             logger.debug(`Skill tier ${skill_tier.name} has no categories.`);
         }
     }
@@ -473,7 +473,7 @@ async function findNoneAHPrice(item_id, region) {
         if (!item.description.includes('auction')) {
             vendor_price = item.purchase_price;
         }
-    }else{
+    } else {
         vendor_price = item.purchase_price;
     }
     return vendor_price;
@@ -559,15 +559,15 @@ async function performProfitAnalysis(region, server, character_professions, item
     price_obj.item_quantity = qauntity;
 
     const item_craftable = await checkIsCrafting(item_id, character_professions, region);
-    
+
     // Get NON AH price
-    if(!item_craftable.craftable){
+    if (!item_craftable.craftable) {
         price_obj.vendor_price = await findNoneAHPrice(item_id);
-    }else{
+    } else {
         price_obj.vendor_price = -1;
     }
-    
-    
+
+
     price_obj.crafting_status = item_craftable;
 
     // Eventually bonus_lists should be treated as separate items and this should happen first
@@ -658,7 +658,7 @@ async function recipeCostCalculator(recipe_option) {
             let low = Number.MAX_VALUE;
             let average = 0;
             let count = 0;
-            if(component.ah_price.total_sales>0){
+            if (component.ah_price.total_sales > 0) {
                 average += component.ah_price.average;
                 if (component.ah_price.high > high) {
                     high = component.ah_price.high;
@@ -666,7 +666,7 @@ async function recipeCostCalculator(recipe_option) {
                 if (component.ah_price.low < low) {
                     low = component.ah_price.low;
                 }
-                count ++;
+                count++;
             }
             cost.average += (average / count) * component.item_quantity;
             cost.high += high * component.item_quantity;
@@ -682,7 +682,7 @@ async function recipeCostCalculator(recipe_option) {
 
             let rc_price_promises = [];
             for (let opt of component.recipe_options) {
-                rc_price_promises.push( recipeCostCalculator(opt));
+                rc_price_promises.push(recipeCostCalculator(opt));
             }
 
             (await Promise.all(rc_price_promises)).forEach((recurse_price) => {
@@ -723,7 +723,7 @@ function goldFormatter(price_in) {
     return `${gold}g ${silver}s ${copper}c`;
 }
 
-async function generateOutputFormat(price_data, region){
+async function generateOutputFormat(price_data, region) {
     const object_output = {
         name: price_data.item_name,
         id: price_data.item_id,
@@ -731,7 +731,7 @@ async function generateOutputFormat(price_data, region){
         recipes: [],
     };
 
-    if((price_data.ah_price != undefined) && (price_data.ah_price.total_sales > 0)) {
+    if ((price_data.ah_price != undefined) && (price_data.ah_price.total_sales > 0)) {
         object_output.ah = {
             sales: price_data.ah_price.total_sales,
             high: price_data.ah_price.high * price_data.item_quantity,
@@ -757,7 +757,7 @@ async function generateOutputFormat(price_data, region){
             }
             if ((recipe_option.rank_ah != undefined) && (recipe_option.rank_ah.total_sales > 0)) {
                 obj_recipe.ah = {
-                    sales:recipe_option.rank_ah.total_sales,
+                    sales: recipe_option.rank_ah.total_sales,
                     high: recipe_option.rank_ah.high,
                     low: recipe_option.rank_ah.low,
                     average: recipe_option.rank_ah.average,
@@ -796,7 +796,7 @@ function textFriendlyOutputFormat(output_data, indent) {
     let return_string = '';
 
     return_string += indentAdder(indent) + `${output_data.name} (${output_data.id}) Requires ${output_data.required}\n`;
-    if((output_data.ah != undefined) && (output_data.ah.sales > 0)) {
+    if ((output_data.ah != undefined) && (output_data.ah.sales > 0)) {
         return_string += indentAdder(indent + 1) + `AH ${output_data.ah.sales}: ${goldFormatter(output_data.ah.high)}/${goldFormatter(output_data.ah.low)}/${goldFormatter(output_data.ah.average)}\n`;
     }
     if (output_data.vendor > 0) {
@@ -821,28 +821,28 @@ function textFriendlyOutputFormat(output_data, indent) {
     return return_string;
 }
 
-function getShoppingListRanks(intermediate_data){
+function getShoppingListRanks(intermediate_data) {
     const ranks = [];
-    for( let recipe of intermediate_data.recipes ){
-        ranks.push( recipe.rank );
+    for (let recipe of intermediate_data.recipes) {
+        ranks.push(recipe.rank);
     }
     return ranks;
 }
 
-function constructShoppingList(intermediate_data, on_hand){
+function constructShoppingList(intermediate_data, on_hand) {
     const shopping_lists = {};
-    for( let rank of getShoppingListRanks(intermediate_data)){
+    for (let rank of getShoppingListRanks(intermediate_data)) {
         const shopping_list = build_shopping_list(intermediate_data, rank);
-        for(let li of shopping_list){
+        for (let li of shopping_list) {
             let needed = li.quantity;
             let available = on_hand.itemCount(li.id);
 
             logger.debug(`${li.name} (${li.id}) ${needed} needed with ${available} available`);
-            if(needed <= available){
+            if (needed <= available) {
                 logger.debug(`${li.name} (${li.id}) used ${needed} of the available ${available}`);
                 needed = 0;
-                on_hand.adjustInventory(li.id,(needed*-1));
-            }else if((needed > available) && (available!=0)){
+                on_hand.adjustInventory(li.id, (needed * -1));
+            } else if ((needed > available) && (available != 0)) {
                 needed -= available;
                 logger.debug(`${li.name} (${li.id}) used all of the available ${available} and still need ${needed}`);
                 on_hand.adjustInventory(li.id, (available * -1));
@@ -865,7 +865,7 @@ function constructShoppingList(intermediate_data, on_hand){
     return shopping_lists;
 }
 
-function build_shopping_list(intermediate_data, rank_requested){
+function build_shopping_list(intermediate_data, rank_requested) {
     let shopping_list = [];
 
     logger.debug(`Build shopping list for ${intermediate_data.name} (${intermediate_data.id}) rank ${rank_requested}`);
@@ -919,14 +919,14 @@ function build_shopping_list(intermediate_data, rank_requested){
     let tmp = {};
     let ret_list = [];
     //logger.debug(shopping_list);
-    for( let list_element of shopping_list ){
-        if( !tmp.hasOwnProperty(list_element.id) ){
+    for (let list_element of shopping_list) {
+        if (!tmp.hasOwnProperty(list_element.id)) {
             tmp[list_element.id] = {
-                    id: list_element.id,
-                    name: list_element.name,
-                    quantity: 0,
-                    cost: list_element.cost,
-                };
+                id: list_element.id,
+                name: list_element.name,
+                quantity: 0,
+                cost: list_element.cost,
+            };
         }
         tmp[list_element.id].quantity += list_element.quantity;
     }
@@ -959,16 +959,9 @@ async function run(region, server, professions, item, json_config, count) {
 
     try {
         price_data = await performProfitAnalysis(region, server, professions, item, count);
-        //logger.info('Saving output');
         intermediate_data = await generateOutputFormat(price_data, region);
         intermediate_data.shopping_lists = constructShoppingList(intermediate_data, json_config);
-        //await fs.writeFile('intermediate_output.json', JSON.stringify(intermediate_data, null, 2), 'utf8');
-        //logger.info('Intermediate output saved');
         formatted_data = await textFriendlyOutputFormat(intermediate_data, 0);
-        //await fs.writeFile('formatted_output', formatted_data, 'utf8');
-        //logger.info('Formatted output saved');
-        //await fs.writeFile('raw_output.json', JSON.stringify(price_data, null, 2), 'utf8');
-        //logger.info('Raw output saved');
     } finally {
         await cached_data.saveCache(logger);
     }
@@ -980,7 +973,7 @@ async function run(region, server, professions, item, json_config, count) {
     }
 }
 
-async function output(price_data, intermediate_data, formatted_data){
+async function output(price_data, intermediate_data, formatted_data) {
     logger.info('Saving output');
     await fs.writeFile('intermediate_output.json', JSON.stringify(intermediate_data, null, 2), 'utf8');
     logger.info('Intermediate output saved');
@@ -991,7 +984,7 @@ async function output(price_data, intermediate_data, formatted_data){
 }
 
 async function runWithJSONConfig(json_config) {
-    const {price, intermediate, formatted} = await run(json_config.realm_region,
+    const { price, intermediate, formatted } = await run(json_config.realm_region,
         json_config.realm_name,
         json_config.professions,
         json_config.item_id,
