@@ -98,5 +98,4 @@ const config = new RunConfiguration({
     },
 },item,1);
 
-//app.run(region, server, professions, item, character_config_json, 1);
-app.runWithJSONConfig(config);
+app.cliRun(config);

@@ -941,14 +941,10 @@ async function run(region, server, professions, item, json_config, count) {
     let price_data = {};
     let formatted_data = {};
 
-    try {
-        price_data = await performProfitAnalysis(region, server, professions, item, count);
-        intermediate_data = await generateOutputFormat(price_data, region);
-        intermediate_data.shopping_lists = constructShoppingList(intermediate_data, json_config);
-        formatted_data = await textFriendlyOutputFormat(intermediate_data, 0);
-    } finally {
-        await cached_data.saveCache(logger);
-    }
+    price_data = await performProfitAnalysis(region, server, professions, item, count);
+    intermediate_data = await generateOutputFormat(price_data, region);
+    intermediate_data.shopping_lists = constructShoppingList(intermediate_data, json_config);
+    formatted_data = await textFriendlyOutputFormat(intermediate_data, 0);
 
     return {
         price: price_data,
@@ -957,7 +953,11 @@ async function run(region, server, professions, item, json_config, count) {
     }
 }
 
-async function output(price_data, intermediate_data, formatted_data) {
+async function shutdown() {
+    await cached_data.saveCache(logger);
+}
+
+async function saveOutput(price_data, intermediate_data, formatted_data) {
     logger.info('Saving output');
     await fs.writeFile('intermediate_output.json', JSON.stringify(intermediate_data, null, 2), 'utf8');
     logger.info('Intermediate output saved');
@@ -968,16 +968,23 @@ async function output(price_data, intermediate_data, formatted_data) {
 }
 
 async function runWithJSONConfig(json_config) {
-    const { price, intermediate, formatted } = await run(json_config.realm_region,
+    return await run(json_config.realm_region,
         json_config.realm_name,
         json_config.professions,
         json_config.item_id,
         json_config,
         json_config.item_count
     );
-    await output(price, intermediate, formatted);
 }
 
-module.exports.run = run;
-module.exports.textFriendlyOutputFormat = textFriendlyOutputFormat;
+async function cliRun(json_config) {
+    try {
+        const { price, intermediate, formatted } = await runWithJSONConfig(json_config);
+        await saveOutput(price, intermediate, formatted);
+    } finally {
+        await shutdown();
+    }
+}
+
 module.exports.runWithJSONConfig = runWithJSONConfig;
+module.exports.cliRun = cliRun;
