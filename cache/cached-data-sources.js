@@ -7,6 +7,7 @@ const profession_skills_cache_fn = './profession-skills-data.json';
 const profession_recipe_cache_fn = './profession-recipe-data.json'
 const item_cache_fn = './item-data.json';
 const realm_cache_fn = './realm-data.json';
+const craftable_by_professions_cache_fn = './craftable-by-professions-data.json'
 
 const bonuses_cache_fn = './bonuses.json';
 const rank_mappings_cache_fn = './rank-mappings.json';
@@ -28,6 +29,14 @@ try {
     rank_mappings_cache = {
         available_levels: [190,210,225,235],
         rank_mapping: [0,1,2,3],
+    };
+}
+
+try {
+    craftable_by_professions_cache = require(craftable_by_professions_cache_fn);
+}catch(e){
+    craftable_by_professions_cache = {
+        craftable: {},
     };
 }
 
@@ -161,6 +170,7 @@ async function saveCache(logger) {
         fs.writeFile(`cache/${profession_recipe_cache_fn}`, JSON.stringify(profession_recipe_data), 'utf8'),
         fs.writeFile(`cache/${item_cache_fn}`, JSON.stringify(item_data), 'utf8'),
         fs.writeFile(`cache/${realm_cache_fn}`, JSON.stringify(realm_data), 'utf8'),
+        fs.writeFile(`cache/${craftable_by_professions_cache_fn}`,JSON.stringify(craftable_by_professions_cache), 'utf8'),
     ]);
 
     logger.info('Cache saved');
@@ -171,3 +181,4 @@ module.exports.saveCache = saveCache;
 module.exports.bonuses = bonuses_cache;
 module.exports.rank_mappings = rank_mappings_cache;
 module.exports.shopping_recipe_exclusions = shopping_recipe_exclusion_list;
+module.exports.craftable_by_professions_cache = craftable_by_professions_cache;

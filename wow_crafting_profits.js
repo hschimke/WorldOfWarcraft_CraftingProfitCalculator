@@ -37,10 +37,7 @@ const clientSecret = secrets.keys.client_secret;
 const raidbots_bonus_lists = cached_data.bonuses;
 const rankings = cached_data.rank_mappings;
 const shopping_recipe_exclusions = cached_data.shopping_recipe_exclusions;
-
-const local_cache = {
-    craftable: {}
-};
+const craftable_by_professions_cache = cached_data.craftable_by_professions_cache;
 
 const base_uri = 'api.blizzard.com';
 
@@ -93,7 +90,6 @@ async function getAuthorizationToken() {
 
 async function getBlizzardAPIResponse(region_code, authorization_token, data, uri) {
     try {
-        // CHECK OUT TEMPLATE STRING FOR MORE USEES
         const api_response = await got(`https://${region_code}.${base_uri}${uri}`, {
             reponseType: 'json',
             method: 'GET',
@@ -246,8 +242,8 @@ async function getBlizRecipeDetail(recipe_id, region) {
 async function checkIsCrafting(item_id, character_professions, region) {
     // Check if we've already run this check, and if so return the cached version, otherwise keep on
     const key = `${region}::${item_id}::${character_professions}`;
-    if (local_cache.craftable.hasOwnProperty(key)) {
-        return local_cache.craftable[key];
+    if (craftable_by_professions_cache.craftable.hasOwnProperty(key)) {
+        return craftable_by_professions_cache.craftable[key];
     }
 
     const profession_list = await getBlizProfessionsList(region);
@@ -263,8 +259,8 @@ async function checkIsCrafting(item_id, character_professions, region) {
     if (item_detail.hasOwnProperty('description')) {
         if (item_detail.description.includes('vendor')) {
             logger.debug('Skipping vendor recipe');
-            local_cache.craftable[key] = recipe_options;
-            return local_cache.craftable[key];
+            craftable_by_professions_cache.craftable[key] = recipe_options;
+            return craftable_by_professions_cache.craftable[key];
         }
     }
 
@@ -293,8 +289,8 @@ async function checkIsCrafting(item_id, character_professions, region) {
         }
         await Promise.all(tier_checks);
     }
-    local_cache.craftable[key] = recipe_options; //{craftable: found_craftable, recipe_id: found_recipe_id, crafting_profession: found_profession};
-    return local_cache.craftable[key];
+    craftable_by_professions_cache.craftable[key] = recipe_options; //{craftable: found_craftable, recipe_id: found_recipe_id, crafting_profession: found_profession};
+    return craftable_by_professions_cache.craftable[key];
 
     async function checkCraftingTier(skill_tier, check_profession_id, prof) {
         logger.debug(`Checking: ${skill_tier.name} for: ${item_id}`);
@@ -393,18 +389,6 @@ async function getAuctionHouse(server_id, server_region) {
  */
 async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
     // Find the item and return best, worst, average prices
-    // Ignore everything but buyout auctions
-    let buy_out_item_high = Number.MIN_VALUE;
-    let buy_out_item_low = Number.MAX_VALUE;
-    let buy_out_item_average = 0;
-    let buy_out_average_counter = 0;
-    let buy_out_average_accumulator = 0;
-
-    let bid_item_high = Number.MIN_VALUE;
-    let bid_item_low = Number.MAX_VALUE;
-    let bid_item_average = 0;
-    let bid_average_counter = 0;
-    let bid_average_accumulator = 0;
 
     let auction_high = Number.MIN_VALUE;
     let auction_low = Number.MAX_VALUE;
