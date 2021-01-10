@@ -242,7 +242,7 @@ async function getBlizRecipeDetail(recipe_id, region) {
 async function checkIsCrafting(item_id, character_professions, region) {
     // Check if we've already run this check, and if so return the cached version, otherwise keep on
     const key = `${region}::${item_id}::${character_professions}`;
-    if (craftable_by_professions_cache.craftable.hasOwnProperty(key)) {
+    if (key in craftable_by_professions_cache.craftable) {
         return craftable_by_professions_cache.craftable[key];
     }
 
@@ -256,7 +256,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
 
     // Check if a vendor is mentioned in the item description and if so just short circuit
     const item_detail = await getItemDetails(item_id, region);
-    if (item_detail.hasOwnProperty('description')) {
+    if ('description' in item_detail) {
         if (item_detail.description.includes('vendor')) {
             logger.debug('Skipping vendor recipe');
             craftable_by_professions_cache.craftable[key] = recipe_options;
@@ -305,17 +305,17 @@ async function checkIsCrafting(item_id, character_professions, region) {
                     const recipe = await getBlizRecipeDetail(rec.id, region);
                     if (!(recipe.name.includes('Prospect') || recipe.name.includes('Mill'))) {
                         let crafty = false;
-                        if (recipe.hasOwnProperty('alliance_crafted_item')) {
+                        if ('alliance_crafted_item' in recipe) {
                             if (recipe.alliance_crafted_item.id == item_id) {
                                 crafty = true;
                             }
                         }
-                        if (recipe.hasOwnProperty('horde_crafted_item')) {
+                        if ('horde_crafted_item' in recipe) {
                             if (recipe.horde_crafted_item.id == item_id) {
                                 crafty = true;
                             }
                         }
-                        if (recipe.hasOwnProperty('crafted_item')) {
+                        if ('crafted_item' in recipe) {
                             if (recipe.crafted_item.id == item_id) {
                                 crafty = true;
                             }
@@ -351,7 +351,7 @@ async function getCraftingRecipe(recipe_id, region) {
 async function getAuctionHouse(server_id, server_region) {
     // Download the auction house for the server_id
     // If the auction house is older than an hour then remove it from the cached_data.fetched_auction_houses array
-    if (cached_data.auction_house_fetch_dtm.hasOwnProperty(server_id)) {
+    if (server_id in cached_data.auction_house_fetch_dtm) {
         if ((cached_data.auction_house_fetch_dtm[server_id] + 3.6e+6) < Date.now()) {
             logger.info('Auction house is out of date, fetching it fresh.')
             const index = cached_data.fetched_auction_houses.indexOf(server_id);
@@ -404,8 +404,8 @@ async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
     auction_house.auctions.forEach((auction) => {
         if (auction.item.id == item_id) {
             //logger.debug(auction);
-            if (((bonus_level_required != undefined) && (auction.item.hasOwnProperty('bonus_lists') && auction.item.bonus_lists.includes(bonus_level_required))) || (bonus_level_required == undefined)) {
-                if (auction.hasOwnProperty('buyout')) {
+            if (((bonus_level_required != undefined) && (('bonus_lists' in auction.item) && auction.item.bonus_lists.includes(bonus_level_required))) || (bonus_level_required == undefined)) {
+                if ('buyout' in auction) {
                     if (auction.buyout > auction_high) {
                         auction_high = auction.buyout;
                     }
@@ -450,7 +450,7 @@ async function findNoneAHPrice(item_id, region) {
     // if it does then return -1, if it doesn't return the 'purchase_price' options
     const item = await getItemDetails(item_id, region);
     let vendor_price = -1;
-    if (item.hasOwnProperty('description')) {
+    if ('description' in item) {
         if (item.description.includes('vendor')) {
             vendor_price = item.purchase_price;
         }
@@ -479,7 +479,7 @@ async function getItemBonusLists(item_id, auction_house) {
     let bonus_lists_set = [];
     auction_house.auctions.forEach((auction) => {
         if (auction.item.id == item_id) {
-            if (auction.item.hasOwnProperty('bonus_lists')) {
+            if ('bonus_lists' in auction.item) {
                 bonus_lists.push(auction.item.bonus_lists);
             }
         }
@@ -503,7 +503,7 @@ async function getItemBonusLists(item_id, auction_house) {
 }
 
 function getLvlModifierForBonus(bonus_id) {
-    if (raidbots_bonus_lists.hasOwnProperty(bonus_id)) {
+    if (bonus_id in raidbots_bonus_lists) {
         return raidbots_bonus_lists[bonus_id].level;
     } else {
         return -1;
@@ -806,7 +806,7 @@ function textFriendlyOutputFormat(output_data, indent) {
 
     //logger.debug('Building formatted shopping list');
     // Add lists if it's appropriate
-    if(output_data.hasOwnProperty('shopping_lists')){
+    if('shopping_lists' in output_data){
         return_string += indentAdder(indent) + `Shopping List For: ${output_data.name}\n`;
         for( let list of Object.keys(output_data.shopping_lists) ){
             return_string += indentAdder(indent+1) + `List for rank ${list}\n`;
@@ -927,7 +927,7 @@ function build_shopping_list(intermediate_data, rank_requested) {
     let ret_list = [];
     //logger.debug(shopping_list);
     for (let list_element of shopping_list) {
-        if (!tmp.hasOwnProperty(list_element.id)) {
+        if (!(list_element.id in tmp)) {
             tmp[list_element.id] = {
                 id: list_element.id,
                 name: list_element.name,

@@ -37,11 +37,11 @@ class RunConfiguration {
         return this.#item_count;
     }
     itemInInventory(item_id) {
-        return this.#internal_inventory.hasOwnProperty(item_id);
+        return item_id in this.#internal_inventory;
     }
     itemCount(item_id) {
         const is_in_inventory = this.itemInInventory(item_id);
-        const has_overlay = this.#inventory_overlay.hasOwnProperty(item_id);
+        const has_overlay = item_id in this.#inventory_overlay;
         let available = 0;
         available += is_in_inventory ? this.#internal_inventory[item_id] : 0;
         available += has_overlay ? this.#inventory_overlay[item_id] : 0;
@@ -49,7 +49,7 @@ class RunConfiguration {
         return available;
     }
     adjustInventory(item_id, adjustment_delta) {
-        if (!this.#inventory_overlay.hasOwnProperty(item_id)) {
+        if (!(item_id in this.#inventory_overlay)) {
             this.#inventory_overlay[item_id] = 0;
         }
         this.#inventory_overlay[item_id] += adjustment_delta;
