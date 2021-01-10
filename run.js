@@ -39,7 +39,7 @@ const argv = yargs
         description: 'Item',
         alias: 'i',
         type: 'number',
-        default: 171276,
+        default: 173244,
     })
     .option('json_config', {
         description: 'JSON configuration data',
