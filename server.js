@@ -7,7 +7,6 @@ const app = express();
 const port = 3000;
 
 app.use(express.urlencoded({ extended: false }));
-//app.use(express.static('html'));
 
 app.get('/', (req, res) => {
     res.sendFile(path.resolve('html/json_form.html'));

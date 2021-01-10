@@ -6,7 +6,7 @@ CraftingProfitCalculator_data_NS.Addon = CraftingProfitCalculator_data_
 local CraftingProfitCalculator_data = CraftingProfitCalculator_data_NS.Addon
 
 CraftingProfitCalculator_data.debug_level = 10
-CraftingProfitCalculator_data.debug_printing = true
+CraftingProfitCalculator_data.debug_printing = false
 function CraftingProfitCalculator_data:Debug (str, ...)
     if self.debug_printing == true then
         if ... then str = str:format(...) end
@@ -48,7 +48,6 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 	CraftingProfitCalculator_data:run()
 	CraftingProfitCalculator_data:Debug(playerName)
 	json_data = CraftingProfitCalculator_data:makeJSON(playerName)	 
---	CraftingProfitCalculator_data:Debug(json_data)
 	CraftingProfitCalculator_data:show(json_data)
  end
 
@@ -56,7 +55,6 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 	CraftingProfitCalculator_data:run()
 	CraftingProfitCalculator_data:Debug('All characters')
 	json_data = CraftingProfitCalculator_data:makeJSON(nil)	 
---	CraftingProfitCalculator_data:Debug(json_data)
 	CraftingProfitCalculator_data:show(json_data)
  end
 
@@ -191,7 +189,7 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 	 end
 	 -- First inventory
 	 CraftingProfitCalculator_data:Debug('Inventory')
-	 str = str .. '"inventory": ['
+	 str = str .. '"inventory":['
 	 local first = true
 	 for key,value in pairs(data.inventory)
 	 do
@@ -202,7 +200,7 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 			 str = str .. ',' 
 		 end
 		 --CraftingProfitCalculator_data:Debug(key .. ' - '.. value)
-		 str = str .. '{"id": ' .. key .. ',"quantity:":'..value .. '}'
+		 str = str .. '{"id":' .. key .. ',"quantity:":'..value .. '}'
 	 end
 	 str = str .. '],'
 	 -- Professions
