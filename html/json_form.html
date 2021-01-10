@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Crafting Profits Calculator</title>
+</head>
+
+<body>
+    <h1>Crafting Profit Calculator</h1>
+    <form method="post" action="/show_output">
+        <label for="item_id">Item ID:</label>
+        <br />
+        <input type="text" name="item_id" />
+        <br />
+        <label for="addon_data">Addon Data</label>
+        <br />
+        <textarea name="addon_data" rows="20" cols="100"></textarea>
+        <br />
+        <input type="submit" value="Run" />
+        <input type="hidden" name="type" value="json" />
+    </form>
+</body>
+
+</html>

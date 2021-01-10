@@ -779,7 +779,7 @@ function textFriendlyOutputFormat(output_data, indent) {
 
     let return_string = '';
 
-    logger.debug('Building Formatted Price List');
+    //logger.debug('Building Formatted Price List');
 
     return_string += indentAdder(indent) + `${output_data.name} (${output_data.id}) Requires ${output_data.required}\n`;
     if ((output_data.ah != undefined) && (output_data.ah.sales > 0)) {
@@ -804,7 +804,7 @@ function textFriendlyOutputFormat(output_data, indent) {
         }
     }
 
-    logger.debug('Building formatted shopping list');
+    //logger.debug('Building formatted shopping list');
     // Add lists if it's appropriate
     if(output_data.hasOwnProperty('shopping_lists')){
         return_string += indentAdder(indent) + `Shopping List For: ${output_data.name}\n`;
