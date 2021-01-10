@@ -31,7 +31,12 @@ app.post('/show_output', (req, res) => {
     const config = new RunConfiguration(JSON.parse(req.body.addon_data),Number(req.body.item_id),1);
     CraftingProfitCalculator.runWithJSONConfig(config).then((data) => {
         const { price, intermediate, formatted } = data;
-        res.send(formatted);
+        res.send(`
+        <html><head></head>
+        <body>
+        <pre>${formatted}</pre>
+        </body>
+        </html>`);
     });
 });
 
@@ -41,6 +46,6 @@ const server = app.listen(port, () => {
 
 process.on('SIGINT', () => {
     console.log('SIGTERM signal received: closing HTTP server')
-    //CraftingProfitCalculator.shutdown();
+    CraftingProfitCalculator.shutdown();
     server.close();
 });
