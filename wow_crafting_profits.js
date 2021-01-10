@@ -987,4 +987,5 @@ async function cliRun(json_config) {
 }
 
 module.exports.runWithJSONConfig = runWithJSONConfig;
+module.exports.shutdown = shutdown;
 module.exports.cliRun = cliRun;
