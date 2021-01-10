@@ -802,6 +802,25 @@ function textFriendlyOutputFormat(output_data, indent) {
         }
     }
 
+    // Add lists if it's appropriate
+    if(output_data.hasOwnProperty('shopping_lists')){
+        return_string += indentAdder(indent) + '---Shopping List---\n';
+        for( let list of Object.keys(output_data.shopping_lists) ){
+            return_string += indentAdder(indent+1) + `List for rank ${list}\n`;
+            for( let li of output_data.shopping_lists[list]){
+                return_string += indentAdder(indent+2) + `[${li.quantity}] -- ${li.name} (${li.id})\n`;
+                return_string += indentAdder(indent+3);
+                if(li.cost.vendor != undefined){
+                    return_string += `vendor: ${goldFormatter(li.cost.vendor)} `;
+                }
+                if(li.cost.ah != undefined){
+                    return_string += `ah: ${goldFormatter(li.cost.ah.high)}/${goldFormatter(li.cost.ah.low)}/${goldFormatter(li.cost.ah.average)} `;
+                }
+                return_string += `\n`;
+            }
+        }
+    }
+
     return return_string;
 }
 
