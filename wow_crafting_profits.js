@@ -460,6 +460,9 @@ async function findNoneAHPrice(item_id, region) {
     } else {
         vendor_price = item.purchase_price;
     }
+    if('purchase_quantity' in item){
+        vendor_price = vendor_price / item.purchase_quantity;
+    }
     return vendor_price;
 }
 
@@ -820,7 +823,6 @@ function textFriendlyOutputFormat(output_data, indent) {
                     return_string += indentAdder(indent+10);
                     return_string += `ah: ${goldFormatter(li.cost.ah.high)}/${goldFormatter(li.cost.ah.low)}/${goldFormatter(li.cost.ah.average)}\n`;
                 }
-                //return_string += `\n`;
             }
         }
     }
