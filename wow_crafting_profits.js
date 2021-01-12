@@ -42,7 +42,7 @@ const craftable_by_professions_cache = cached_data.craftable_by_professions_cach
 const base_uri = 'api.blizzard.com';
 
 const authorization_uri = 'https://us.battle.net/oauth/token';
-let clientAccessToken = {
+const clientAccessToken = {
     access_token: '',
     token_type: '',
     expires_in: 0,
@@ -63,6 +63,7 @@ const exclude_before_shadowlands = false;
 
 async function getAuthorizationToken() {
     if (clientAccessToken.checkExpired()) {
+        logger.debug('Access token expired, fetching fresh.');
         try {
             const auth_response = await got(authorization_uri, {
                 responseType: 'json',
@@ -106,7 +107,77 @@ async function getBlizzardAPIResponse(region_code, authorization_token, data, ur
 }
 
 //To Do: No idea how to get id from name
-async function getItemId(item_name) { }
+async function getItemId(region, item_name) {
+    logger.info(`Searching for itemId for ${item_name}`);
+    // Possible solution:
+    // Loop through each page and check items until you get an exact match, then return the first match. This
+    // won't always work but it might work slightly more often than doing nothing.
+
+    const search_api_uri = '/data/wow/search/item';
+    let item_id = -1;
+
+    // Step 1: Get the initial results to see if we get anything
+    const initial_page = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+        'namespace': 'static-us',
+        'locale': 'en_US',
+        'name.en_US': item_name,
+        'orderby': 'id:desc',
+    },
+        search_api_uri);
+
+    // Check how many pages, if there are more pages, loop through them and fetch each.
+    const page_count = initial_page.pageCount;
+    logger.debug(`Found ${page_count} pages for item search ${item_name}`);
+    if (page_count > 0) {
+        // Check if results are on the first page
+        let page_item_id = await checkPageSearchResults(initial_page, item_name);
+        if (page_item_id > 0) {
+            // We found it, we're done!
+            item_id = page_item_id;
+            logger.debug(`Found ${item_id} for ${item_name} on first page.`);
+        } else {
+            // loop through all the remaining pages and check
+            for (let cp = initial_page.page; cp <= page_count; cp++) {
+                logger.debug(`Checking page ${cp} for ${item_name}`);
+                if (page_item_id <= 0) {
+                    const current_page = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+                        'namespace': 'static-us',
+                        'locale': 'en_US',
+                        'name.en_US': item_name,
+                        'orderby': 'id:desc',
+                        '_page': cp,
+                    },
+                        search_api_uri);
+                    page_item_id = await checkPageSearchResults(current_page, item_name);
+                    if (page_item_id > 0) {
+                        item_id = page_item_id;
+                        logger.debug(`Found ${item_id} for ${item_name} on page ${cp} of ${page_count}.`);
+                        break;
+                    }
+                }
+            }
+        }
+    } else {
+        // We didn't get any results, that's an error
+        logger.error(`No items match search ${item_name}`);
+        throw ('No Results');
+    }
+    return item_id;
+
+}
+
+async function checkPageSearchResults(page, item_name) {
+    let found_item_id = -1;
+    for (let result of page.results) {
+        //console.log(result);
+        if (result.data.name['en_US'].localeCompare(item_name, undefined, { sensitivity: 'accent' }) == 0) {
+            logger.debug(`Found ${item_name} with id ${result.data.id}`);
+            found_item_id = result.data.id;
+            break;
+        }
+    }
+    return found_item_id;
+}
 
 async function getConnectedRealmId(server_name, server_region) {
     const connected_realm_key = `${server_region}::${server_name}`;
@@ -460,7 +531,7 @@ async function findNoneAHPrice(item_id, region) {
     } else {
         vendor_price = item.purchase_price;
     }
-    if('purchase_quantity' in item){
+    if ('purchase_quantity' in item) {
         vendor_price = vendor_price / item.purchase_quantity;
     }
     return vendor_price;
@@ -516,10 +587,17 @@ function getLvlModifierForBonus(bonus_id) {
 async function performProfitAnalysis(region, server, character_professions, item, qauntity, desired_ilvl) {
     // Check if we have to figure out the item id ourselves
     let item_id = 0;
-    if (Number.isFinite(item)) {
+    if (Number.isFinite(Number(item))) {
         item_id = item;
     } else {
-        item_id = await getItemId(item);
+        // Warning, THIS DOES NOT WORK
+        //logger.error('Cannot search for items by name.');
+        //throw('Cannot search for items by name.');
+        item_id = await getItemId(region, item);
+        if (item_id < 0) {
+            logger.error(`No itemId could be found for ${item}`);
+            throw (new Error(`No itemId could be found for ${item}`));
+        }
     }
 
     const item_detail = await getItemDetails(item_id, region);
@@ -809,18 +887,18 @@ function textFriendlyOutputFormat(output_data, indent) {
 
     //logger.debug('Building formatted shopping list');
     // Add lists if it's appropriate
-    if('shopping_lists' in output_data){
+    if ('shopping_lists' in output_data) {
         return_string += indentAdder(indent) + `Shopping List For: ${output_data.name}\n`;
-        for( let list of Object.keys(output_data.shopping_lists) ){
-            return_string += indentAdder(indent+1) + `List for rank ${list}\n`;
-            for( let li of output_data.shopping_lists[list]){
-                return_string += indentAdder(indent+2) + `[${(new String(li.quantity)).padStart(8,' ')}] -- ${li.name} (${li.id})\n`;
-                if(li.cost.vendor != undefined){
-                    return_string += indentAdder(indent+10);
+        for (let list of Object.keys(output_data.shopping_lists)) {
+            return_string += indentAdder(indent + 1) + `List for rank ${list}\n`;
+            for (let li of output_data.shopping_lists[list]) {
+                return_string += indentAdder(indent + 2) + `[${(new String(li.quantity)).padStart(8, ' ')}] -- ${li.name} (${li.id})\n`;
+                if (li.cost.vendor != undefined) {
+                    return_string += indentAdder(indent + 10);
                     return_string += `vendor: ${goldFormatter(li.cost.vendor)}\n`;
                 }
-                if(li.cost.ah != undefined){
-                    return_string += indentAdder(indent+10);
+                if (li.cost.ah != undefined) {
+                    return_string += indentAdder(indent + 10);
                     return_string += `ah: ${goldFormatter(li.cost.ah.high)}/${goldFormatter(li.cost.ah.low)}/${goldFormatter(li.cost.ah.average)}\n`;
                 }
             }

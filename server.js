@@ -30,9 +30,9 @@ app.post('/show_output', (req, res) => {
                 realm_name: req.body.server,
                 region_name: req.body.region,
             },
-        },Number(req.body.item_id),Number(req.body.count));
+        },Number(req.body.item_id),req.body.count);
     }else if( req.body.type == 'json'){
-        config = new RunConfiguration(json_data,Number(req.body.item_id), 1);
+        config = new RunConfiguration(json_data,req.body.item_id, 1);
     }
     CraftingProfitCalculator.runWithJSONConfig(config).then((data) => {
         const { price, intermediate, formatted } = data;

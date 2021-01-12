@@ -38,8 +38,8 @@ const argv = yargs
     .option('item', {
         description: 'Item',
         alias: 'i',
-        type: 'number',
-        default: 171276,
+        type: 'string',
+        default: '171276',
     })
     .option('json_config', {
         description: 'JSON configuration data',
@@ -88,7 +88,6 @@ try {
 } catch (e) {
     console.log('JSON character input cannot be parsed.')
 }
-
 const config = new RunConfiguration({
     inventory: character_config_json.inventory,
     professions: professions,
