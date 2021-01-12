@@ -590,9 +590,6 @@ async function performProfitAnalysis(region, server, character_professions, item
     if (Number.isFinite(Number(item))) {
         item_id = item;
     } else {
-        // Warning, THIS DOES NOT WORK
-        //logger.error('Cannot search for items by name.');
-        //throw('Cannot search for items by name.');
         item_id = await getItemId(region, item);
         if (item_id < 0) {
             logger.error(`No itemId could be found for ${item}`);
@@ -1043,12 +1040,16 @@ async function run(region, server, professions, item, json_config, count) {
 
     let intermediate_data = {};
     let price_data = {};
-    let formatted_data = {};
+    let formatted_data = 'NO DATA';
 
-    price_data = await performProfitAnalysis(region, server, professions, item, count);
-    intermediate_data = await generateOutputFormat(price_data, region);
-    intermediate_data.shopping_lists = constructShoppingList(intermediate_data, json_config);
-    formatted_data = await textFriendlyOutputFormat(intermediate_data, 0);
+    try {
+        price_data = await performProfitAnalysis(region, server, professions, item, count);
+        intermediate_data = await generateOutputFormat(price_data, region);
+        intermediate_data.shopping_lists = constructShoppingList(intermediate_data, json_config);
+        formatted_data = await textFriendlyOutputFormat(intermediate_data, 0);
+    } catch (e) {
+        logger.error(`Error building output for ${region}:${server} ${item}`);
+    }
 
     return {
         price: price_data,
