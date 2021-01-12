@@ -598,6 +598,7 @@ async function performProfitAnalysis(region, server, character_professions, item
             logger.error(`No itemId could be found for ${item}`);
             throw (new Error(`No itemId could be found for ${item}`));
         }
+        logger.info(`Found ${item_id} for ${item}`);
     }
 
     const item_detail = await getItemDetails(item_id, region);
