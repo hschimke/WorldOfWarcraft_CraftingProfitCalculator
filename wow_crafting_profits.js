@@ -113,6 +113,10 @@ async function getItemId(region, item_name) {
     // Loop through each page and check items until you get an exact match, then return the first match. This
     // won't always work but it might work slightly more often than doing nothing.
 
+    if (cached_data.item_search_terms.includes(item_name)) {
+        return cached_data.item_search_cache[item_name];
+    }
+
     const search_api_uri = '/data/wow/search/item';
     let item_id = -1;
 
@@ -162,8 +166,14 @@ async function getItemId(region, item_name) {
         logger.error(`No items match search ${item_name}`);
         throw ('No Results');
     }
-    return item_id;
 
+    if (item_id > 0) {
+        cached_data.item_search_terms.push(item_name);
+        cached_data.item_search_cache[item_name] = item_id;
+        cached_data.item_search_cache_dtm[item_name] = Date.now();
+    }
+
+    return item_id;
 }
 
 async function checkPageSearchResults(page, item_name) {
