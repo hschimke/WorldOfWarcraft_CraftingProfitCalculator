@@ -1,3 +1,4 @@
+'use strict';
 const got = require('got');
 const fs = require('fs/promises');
 const winston = require('winston');
@@ -624,7 +625,7 @@ async function performProfitAnalysis(region, server, character_professions, item
     logger.debug(`Connected Realm ID: ${server_id}`);
 
     //Get the auction house
-    auction_house = await getAuctionHouse(server_id, region);
+    const auction_house = await getAuctionHouse(server_id, region);
 
     // Get Item AH price
     price_obj.ah_price = await getAHItemPrice(item_id, auction_house);
@@ -1058,7 +1059,7 @@ async function run(region, server, professions, item, json_config, count) {
         intermediate_data.shopping_lists = constructShoppingList(intermediate_data, json_config);
         formatted_data = await textFriendlyOutputFormat(intermediate_data, 0);
     } catch (e) {
-        logger.error(`Error building output for ${region}:${server} ${item}`);
+        logger.error(`Error building output for ${region}:${server} ${item}`, e);
     }
 
     return {

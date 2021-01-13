@@ -1,3 +1,4 @@
+'use strict';
 class RunConfiguration {
     #internal_inventory = {};
     #inventory_overlay = {};
