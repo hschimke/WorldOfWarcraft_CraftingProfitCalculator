@@ -1,6 +1,6 @@
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
-import {cliRun} from './wow_crafting_profits.mjs';
+import { cliRun } from './wow_crafting_profits.mjs';
 import { RunConfiguration } from './RunConfiguration.mjs';
 
 const test_region = 'us';
@@ -53,7 +53,7 @@ const argv = yargs(hideBin(process.argv))
     .alias('help', 'h')
     .argv;
 
-let character_config_json = {inventory:[]};
+let character_config_json = { inventory: [] };
 let region = argv.region;
 let server = argv.server;
 let professions = argv.profession;
@@ -96,6 +96,6 @@ const config = new RunConfiguration({
         realm_name: server,
         region_name: region,
     },
-},item,1);
+}, item, 1);
 
 cliRun(config);
