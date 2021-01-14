@@ -13,7 +13,7 @@ class RunConfiguration {
             for (let item of raw_configuration_data.inventory) {
                 this.#inventory_overlay[item.id] = item.quantity;
             }
-            for(let prof of raw_configuration_data.professions){
+            for (let prof of raw_configuration_data.professions) {
                 this.#professions.push(prof);
             }
             this.#realm_name = raw_configuration_data.realm.realm_name;
