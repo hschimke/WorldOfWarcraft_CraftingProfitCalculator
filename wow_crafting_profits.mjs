@@ -5,7 +5,7 @@ import winston from 'winston';
 
 //import { RunConfiguration } from './RunConfiguration.mjs';
 
-import cached_data, { component_data, saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list, craftable_by_professions_cache } from './cache/cached-data-sources.mjs';
+import cached_data, { component_data, saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list, craftable_by_professions_cache, cacheCheck, cacheGet, cacheSet } from './cache/cached-data-sources.mjs';
 //const cached_data = component_data;
 const raidbots_bonus_lists = bonuses_cache;
 const rankings = rank_mappings_cache;
@@ -110,8 +110,8 @@ async function getBlizzardAPIResponse(region_code, authorization_token, data, ur
 async function getItemId(region, item_name) {
     logger.info(`Searching for itemId for ${item_name}`);
 
-    if (cached_data.item_search_terms.includes(item_name)) {
-        return cached_data.item_search_cache[item_name];
+    if (cacheCheck('item_search_cache', item_name)) {
+        return cacheGet('item_search_cache',item_name);
     }
 
     const search_api_uri = '/data/wow/search/item';
@@ -165,9 +165,7 @@ async function getItemId(region, item_name) {
     }
 
     if (item_id > 0) {
-        cached_data.item_search_terms.push(item_name);
-        cached_data.item_search_cache[item_name] = item_id;
-        cached_data.item_search_cache_dtm[item_name] = Date.now();
+        cacheSet('item_search_cache', item_name, item_id);
     }
 
     return item_id;
@@ -189,82 +187,84 @@ async function getItemId(region, item_name) {
 async function getConnectedRealmId(server_name, server_region) {
     const connected_realm_key = `${server_region}::${server_name}`;
 
-    if (!cached_data.connected_realms.includes(connected_realm_key)) {
-        cached_data.connected_realms.push(connected_realm_key);
+    if (cacheCheck('connected_realm_data', connected_realm_key)) {
+        return cacheGet('connected_realm_data', connected_realm_key);
+    }
 
-        const list_connected_realms_api = '/data/wow/connected-realm/index';
-        const get_connected_realm_api = '/data/wow/connected-realm'; // /{connectedRealmId}
-        const list_connected_realms_form = {
-            'namespace': 'dynamic-us',
-            'locale': 'en_US'
-        };
-        const get_connected_realm_form = {
-            'namespace': 'dynamic-us',
-            'locale': 'en_US'
-        };
-        const access_token = await getAuthorizationToken();
+    const list_connected_realms_api = '/data/wow/connected-realm/index';
+    const get_connected_realm_api = '/data/wow/connected-realm'; // /{connectedRealmId}
+    const list_connected_realms_form = {
+        'namespace': 'dynamic-us',
+        'locale': 'en_US'
+    };
+    const get_connected_realm_form = {
+        'namespace': 'dynamic-us',
+        'locale': 'en_US'
+    };
+    const access_token = await getAuthorizationToken();
 
-        let realm_id = 0;
+    let realm_id = 0;
 
-        // Get a list of all connected realms
-        const all_connected_realms = await getBlizzardAPIResponse(
-            server_region,
-            access_token,
-            list_connected_realms_form,
-            list_connected_realms_api);
+    // Get a list of all connected realms
+    const all_connected_realms = await getBlizzardAPIResponse(
+        server_region,
+        access_token,
+        list_connected_realms_form,
+        list_connected_realms_api);
 
-        // Pull the data for each connection until you find one with the server name in question
-        for (let realm_href of all_connected_realms.connected_realms) {
-            logger.debug(`Check realm with href: ${realm_href.href}`);
-            const hr = realm_href.href;
-            const connected_realm_detail = await got(hr, {
-                reponseType: 'json',
-                method: 'GET',
-                headers: {
-                    'Connection': 'keep-alive',
-                    'Authorization': `Bearer ${access_token.access_token}`
-                },
-                searchparams: get_connected_realm_form
-            }).json();
-            const realm_list = connected_realm_detail.realms;
-            let found_realm = false;
-            for (let rlm of realm_list) {
-                logger.debug(`Realm ${rlm.name['en_US']}`);
-                if (rlm.name['en_US'].localeCompare(server_name, undefined, { sensitivity: 'accent' }) == 0) {
-                    logger.debug(`Realm ${rlm} matches ${server_name}`);
-                    found_realm = true;
-                    break;
-                }
-            }
-            if (found_realm == true) {
-                realm_id = connected_realm_detail.id;
+    // Pull the data for each connection until you find one with the server name in question
+    for (let realm_href of all_connected_realms.connected_realms) {
+        logger.debug(`Check realm with href: ${realm_href.href}`);
+        const hr = realm_href.href;
+        const connected_realm_detail = await got(hr, {
+            reponseType: 'json',
+            method: 'GET',
+            headers: {
+                'Connection': 'keep-alive',
+                'Authorization': `Bearer ${access_token.access_token}`
+            },
+            searchparams: get_connected_realm_form
+        }).json();
+        const realm_list = connected_realm_detail.realms;
+        let found_realm = false;
+        for (let rlm of realm_list) {
+            logger.debug(`Realm ${rlm.name['en_US']}`);
+            if (rlm.name['en_US'].localeCompare(server_name, undefined, { sensitivity: 'accent' }) == 0) {
+                logger.debug(`Realm ${rlm} matches ${server_name}`);
+                found_realm = true;
                 break;
             }
         }
-
-        cached_data.connected_realm_data[connected_realm_key] = realm_id;
-        cached_data.connected_realm_dtm[connected_realm_key] = Date.now();
+        if (found_realm == true) {
+            realm_id = connected_realm_detail.id;
+            break;
+        }
     }
 
+    cacheSet('connected_realm_data', connected_realm_key, realm_id);
+
     // Return that connected realm ID
-    return cached_data.connected_realm_data[connected_realm_key];
+    return realm_id;
 }
 
 async function getItemDetails(item_id, region) {
     const key = item_id
-    if (!cached_data.fetched_items.includes(key)) {
-        cached_data.fetched_items.push(key);
 
-        const profession_item_detail_uri = `/data/wow/item/${item_id}`;
-        //categories[array].recipes[array].name categories[array].recipes[array].id
-        cached_data.fetched_item_data[key] = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
-            'namespace': 'static-us',
-            'locale': 'en_US'
-        },
-            profession_item_detail_uri);
-        cached_data.fetched_item_dtm[key] = Date.now();
+    if (cacheCheck('fetched_item_data', key)) {
+        return cacheGet('fetched_item_data', key);
     }
-    return cached_data.fetched_item_data[key];
+
+    const profession_item_detail_uri = `/data/wow/item/${item_id}`;
+    //categories[array].recipes[array].name categories[array].recipes[array].id
+    const result = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+        'namespace': 'static-us',
+        'locale': 'en_US'
+    },
+        profession_item_detail_uri);
+
+    cacheSet('fetched_item_data', key, result);
+
+    return result;
 }
 
 async function getBlizProfessionsList(region) {
@@ -284,44 +284,51 @@ async function getBlizProfessionDetail(profession_id, region) {
 }
 async function getBlizSkillTierDetail(profession_id, skillTier_id, region) {
     const key = `${region}::${profession_id}::${skillTier_id}`;
-    if (!cached_data.fetched_profession_skill_tier_details.includes(key)) {
-        cached_data.fetched_profession_skill_tier_details.push(key);
 
-        const profession_skill_tier_detail_uri = `/data/wow/profession/${profession_id}/skill-tier/${skillTier_id}`;
-        //categories[array].recipes[array].name categories[array].recipes[array].id
-        cached_data.fetched_profession_skill_tier_detail_data[key] = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
-            'namespace': 'static-us',
-            'locale': 'en_US'
-        },
-            profession_skill_tier_detail_uri);
-        cached_data.fetched_profession_skill_tier_dtm[key] = Date.now();
+    if (cacheCheck('fetched_profession_skill_tier_detail_data', key)) {
+        return cacheGet('fetched_profession_skill_tier_detail_data', key);
     }
-    return cached_data.fetched_profession_skill_tier_detail_data[key];
+
+    const profession_skill_tier_detail_uri = `/data/wow/profession/${profession_id}/skill-tier/${skillTier_id}`;
+    //categories[array].recipes[array].name categories[array].recipes[array].id
+    const result = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+        'namespace': 'static-us',
+        'locale': 'en_US'
+    },
+        profession_skill_tier_detail_uri);
+
+    cacheSet('fetched_profession_skill_tier_detail_data', key, result);
+
+    return result;
 }
 
 async function getBlizRecipeDetail(recipe_id, region) {
     const key = `${region}::${recipe_id}`;
-    if (!cached_data.fetched_profession_recipe_details.includes(key)) {
-        cached_data.fetched_profession_recipe_details.push(key);
 
-        const profession_recipe_uri = `/data/wow/recipe/${recipe_id}`;
-        //crafted_item.name crafted_item.id / reagents[array].name reagents[array].id reagents[array].quantity
-
-        cached_data.fetched_profession_recipe_detail_data[key] = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
-            'namespace': 'static-us',
-            'locale': 'en_US'
-        },
-            profession_recipe_uri);
-        cached_data.fetched_profession_recipe_detail_dtm[key] = Date.now();
+    if (cacheCheck('fetched_profession_recipe_detail_data', key)) {
+        return cacheGet('fetched_profession_recipe_detail_data', key);
     }
+
+    const profession_recipe_uri = `/data/wow/recipe/${recipe_id}`;
+    //crafted_item.name crafted_item.id / reagents[array].name reagents[array].id reagents[array].quantity
+
+    const result = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+        'namespace': 'static-us',
+        'locale': 'en_US'
+    },
+        profession_recipe_uri);
+
+    cacheSet('fetched_profession_recipe_detail_data', key, result);
+
     return cached_data.fetched_profession_recipe_detail_data[key];
 }
 
 async function checkIsCrafting(item_id, character_professions, region) {
     // Check if we've already run this check, and if so return the cached version, otherwise keep on
     const key = `${region}::${item_id}::${character_professions}`;
-    if (key in craftable_by_professions_cache.craftable) {
-        return craftable_by_professions_cache.craftable[key];
+
+    if (cacheCheck('craftable_by_professions_cache', key)) {
+        return cacheGet('craftable_by_professions_cache', key);
     }
 
     const profession_list = await getBlizProfessionsList(region);
@@ -337,8 +344,8 @@ async function checkIsCrafting(item_id, character_professions, region) {
     if ('description' in item_detail) {
         if (item_detail.description.includes('vendor')) {
             logger.debug('Skipping vendor recipe');
-            craftable_by_professions_cache.craftable[key] = recipe_options;
-            return craftable_by_professions_cache.craftable[key];
+            cacheSet('craftable_by_professions_cache', key, recipe_options);
+            return recipe_options;
         }
     }
 
@@ -367,8 +374,9 @@ async function checkIsCrafting(item_id, character_professions, region) {
         }
         await Promise.all(tier_checks);
     }
-    craftable_by_professions_cache.craftable[key] = recipe_options; //{craftable: found_craftable, recipe_id: found_recipe_id, crafting_profession: found_profession};
-    return craftable_by_professions_cache.craftable[key];
+    cacheSet('craftable_by_professions_cache', key, recipe_options);
+    //{craftable: found_craftable, recipe_id: found_recipe_id, crafting_profession: found_profession};
+    return recipe_options;
 
     async function checkCraftingTier(skill_tier, check_profession_id, prof) {
         logger.debug(`Checking: ${skill_tier.name} for: ${item_id}`);
@@ -429,33 +437,28 @@ async function getCraftingRecipe(recipe_id, region) {
 async function getAuctionHouse(server_id, server_region) {
     // Download the auction house for the server_id
     // If the auction house is older than an hour then remove it from the cached_data.fetched_auction_houses array
-    if (server_id in cached_data.auction_house_fetch_dtm) {
-        if ((cached_data.auction_house_fetch_dtm[server_id] + 3.6e+6) < Date.now()) {
-            logger.info('Auction house is out of date, fetching it fresh.')
-            const index = cached_data.fetched_auction_houses.indexOf(server_id);
-            if (index > -1) {
-                cached_data.fetched_auction_houses.splice(index, 1);
-            }
-        }
+    if (cacheCheck('fetched_auctions_data', server_id, 3.6e+6)) {
+        return cacheGet('fetched_auctions_data', server_id);
     }
 
-    if (!cached_data.fetched_auction_houses.includes(server_id)) {
-        cached_data.fetched_auction_houses.push(server_id);
+    logger.info('Auction house is out of date, fetching it fresh.')
 
-        const auction_house_fetch_uri = `/data/wow/connected-realm/${server_id}/auctions`;
-        const auth_token = await getAuthorizationToken();
-        cached_data.fetched_auctions_data[server_id] = await getBlizzardAPIResponse(
-            server_region,
-            await getAuthorizationToken(),
-            {
-                'namespace': 'dynamic-us',
-                'locale': 'en_US'
-            },
-            auction_house_fetch_uri);
-        cached_data.auction_house_fetch_dtm[server_id] = Date.now();
-    }
 
-    return cached_data.fetched_auctions_data[server_id];
+
+    const auction_house_fetch_uri = `/data/wow/connected-realm/${server_id}/auctions`;
+    const auth_token = await getAuthorizationToken();
+    const ah = await getBlizzardAPIResponse(
+        server_region,
+        await getAuthorizationToken(),
+        {
+            'namespace': 'dynamic-us',
+            'locale': 'en_US'
+        },
+        auction_house_fetch_uri);
+
+    cacheSet('fetched_auctions_data', server_id, ah);
+
+    return ah;
 }
 
 /**

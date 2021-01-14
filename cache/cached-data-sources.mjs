@@ -80,6 +80,7 @@ async function loadCache(logger) {
     } catch (e) {
         craftable_by_professions_cache = {
             craftable: {},
+            dtm:{},
         };
     }
 
@@ -160,6 +161,10 @@ async function loadCache(logger) {
         item_search_cache: item_search_results_cache.item_search_cache,
         item_search_terms: item_search_results_cache.item_search_terms,
         item_search_cache_dtm: item_search_results_cache.item_search_cache_dtm,
+        craftable_by_professions_cache: craftable_by_professions_cache.craftable,
+        craftable_by_professions_cache_dtm: craftable_by_professions_cache.dtm,
+
+        
     }
 }
 
@@ -170,9 +175,13 @@ function expirationLookup(namespace){
         'fetched_profession_recipe_detail_data':'fetched_profession_recipe_detail_dtm',
         'fetched_item_data':'fetched_item_dtm',
         'connected_realm_data':'connected_realm_dtm',
-        'item_search_terms':'item_search_cache_dtm',
+        'item_search_cache':'item_search_cache_dtm',
     };
-    return mapping[namespace];
+    if( namespace in mapping ){
+        return mapping[namespace];
+    }else{
+        return `${namespace}_dtm`;
+    }
 }
 
 function cacheCheck(namespace, key, expiration_period, logger) {
@@ -181,9 +190,10 @@ function cacheCheck(namespace, key, expiration_period, logger) {
         if (key in component_data[namespace]) {
             if (expiration_period !== undefined) {
                 let current_dtm = Date.now();
-                let expire_dtm = component_data.expiration[namespace][key] + expiration_period;
-                if (expire_dtm < current_dtm) {
-                    found = false;
+                let cached_dtm = component_data[expirationLookup(namespace)][key];
+                let expire_point = Number(cached_dtm) + Number(expiration_period);
+                if (expire_point > current_dtm) {
+                    found = true;
                 }
             } else {
                 found = true;
@@ -201,10 +211,10 @@ function cacheSet(namespace, key, data, logger) {
     const cached = Date.now();
     if( !(namespace in component_data)){
         component_data[namespace] = {};
-        component_data.expiration[namespace] = {};
+        component_data[expirationLookup(namespace)] = {};
     }
     component_data[namespace][key] = data;
-    component_data.expiration[namespace][key] = cached;
+    component_data[expirationLookup(namespace)][key] = cached;
 }
 
 await loadCache();
