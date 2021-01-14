@@ -1,5 +1,5 @@
 'use strict';
-const fs = require('fs/promises');
+import fs from 'fs/promises';
 
 const global_cache_name = './global-cache.json';
 
@@ -27,7 +27,7 @@ let item_data;
 let realm_data;
 
 try {
-    bonuses_cache = require(bonuses_cache_fn);
+    bonuses_cache = JSON.parse(await fs.readFile(new URL(bonuses_cache_fn, import.meta.url)));
 } catch (e) {
     // We should actually get the bonuses from the source if it's missing.
     // use data-sources.json as a source.
@@ -35,7 +35,7 @@ try {
 }
 
 try {
-    item_search_results_cache = require(item_search_results_fn);
+    item_search_results_cache = JSON.parse(await fs.readFile(new URL(item_search_results_fn, import.meta.url)));
 } catch (e) {
     item_search_results_cache = {
         item_search_terms: [],
@@ -45,7 +45,7 @@ try {
 }
 
 try {
-    rank_mappings_cache = require(rank_mappings_cache_fn);
+    rank_mappings_cache = JSON.parse(await fs.readFile(new URL(rank_mappings_cache_fn, import.meta.url)));
 } catch (e) {
     rank_mappings_cache = {
         available_levels: [190, 210, 225, 235],
@@ -54,7 +54,7 @@ try {
 }
 
 try {
-    craftable_by_professions_cache = require(craftable_by_professions_cache_fn);
+    craftable_by_professions_cache = JSON.parse(await fs.readFile(new URL(craftable_by_professions_cache_fn, import.meta.url)));
 } catch (e) {
     craftable_by_professions_cache = {
         craftable: {},
@@ -62,7 +62,7 @@ try {
 }
 
 try {
-    shopping_recipe_exclusion_list = require(shopping_recipe_exclusion_list_fn);
+    shopping_recipe_exclusion_list = JSON.parse(await fs.readFile(new URL(shopping_recipe_exclusion_list_fn, import.meta.url)));
 } catch (e) {
     shopping_recipe_exclusion_list = {
         exclusions: [],
@@ -70,7 +70,7 @@ try {
 }
 
 try {
-    auction_data = require(auction_cache_fn);
+    auction_data = JSON.parse(await fs.readFile(new URL(auction_cache_fn, import.meta.url)));
 } catch (e) {
     auction_data = {
         fetched_auction_houses: [],
@@ -80,7 +80,7 @@ try {
 }
 
 try {
-    profession_skills_data = require(profession_skills_cache_fn);
+    profession_skills_data = JSON.parse(await fs.readFile(new URL(profession_skills_cache_fn, import.meta.url)));
 } catch (e) {
     profession_skills_data = {
         fetched_profession_skill_tier_details: [],
@@ -90,7 +90,7 @@ try {
 }
 
 try {
-    profession_recipe_data = require(profession_recipe_cache_fn);
+    profession_recipe_data = JSON.parse(await fs.readFile(new URL(profession_recipe_cache_fn, import.meta.url)));
 } catch (e) {
     profession_recipe_data = {
         fetched_profession_recipe_details: [],
@@ -100,7 +100,7 @@ try {
 }
 
 try {
-    item_data = require(item_cache_fn);
+    item_data = JSON.parse(await fs.readFile(new URL(item_cache_fn, import.meta.url)));
 } catch (e) {
     item_data = {
         fetched_items: [],
@@ -110,7 +110,7 @@ try {
 }
 
 try {
-    realm_data = require(realm_cache_fn);
+    realm_data = JSON.parse(await fs.readFile(new URL(realm_cache_fn, import.meta.url)));
 } catch (e) {
     realm_data = {
         connected_realms: [],
@@ -160,9 +160,5 @@ async function saveCache(logger) {
     logger.info('Cache saved');
 }
 
-module.exports = component_data;
-module.exports.saveCache = saveCache;
-module.exports.bonuses = bonuses_cache;
-module.exports.rank_mappings = rank_mappings_cache;
-module.exports.shopping_recipe_exclusions = shopping_recipe_exclusion_list;
-module.exports.craftable_by_professions_cache = craftable_by_professions_cache;
+export default component_data;
+export {component_data, saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list, craftable_by_professions_cache}

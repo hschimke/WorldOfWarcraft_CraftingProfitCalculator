@@ -1,6 +1,7 @@
-const yargs = require('yargs');
-const app = require('./wow_crafting_profits.js');
-const { RunConfiguration } = require('./RunConfiguration');
+import yargs from 'yargs'
+import { hideBin } from 'yargs/helpers'
+import {cliRun} from './wow_crafting_profits.mjs';
+import { RunConfiguration } from './RunConfiguration.mjs';
 
 const test_region = 'us';
 const test_server = 'hyjal';
@@ -16,7 +17,7 @@ const test_character_professions = ['Jewelcrafting', 'Tailoring', 'Alchemy', 'In
 // Bracers
 //173249
 
-const argv = yargs
+const argv = yargs(hideBin(process.argv))
     .option('region', {
         description: 'Region',
         alias: 'r',
@@ -97,4 +98,4 @@ const config = new RunConfiguration({
     },
 },item,1);
 
-app.cliRun(config);
+cliRun(config);

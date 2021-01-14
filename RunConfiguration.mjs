@@ -56,4 +56,4 @@ class RunConfiguration {
         this.#inventory_overlay[item_id] += adjustment_delta;
     }
 }
-exports.RunConfiguration = RunConfiguration;
+export { RunConfiguration };

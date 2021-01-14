@@ -1,10 +1,16 @@
 'use strict';
-const got = require('got');
-const fs = require('fs/promises');
-const winston = require('winston');
+import got from 'got';
+import fs from 'fs/promises';
+import winston from 'winston';
 
-const cached_data = require('./cache/cached-data-sources');
-const { RunConfiguration } = require("./RunConfiguration");
+//import { RunConfiguration } from './RunConfiguration.mjs';
+
+import cached_data, {component_data, saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list, craftable_by_professions_cache} from './cache/cached-data-sources.mjs';
+//const cached_data = component_data;
+const raidbots_bonus_lists = bonuses_cache;
+const rankings = rank_mappings_cache;
+const shopping_recipe_exclusions = shopping_recipe_exclusion_list;
+//const craftable_by_professions_cache = cached_data.craftable_by_professions_cache;
 
 const logger = winston.createLogger({
     level: 'debug',
@@ -31,17 +37,12 @@ if (process.env.NODE_ENV !== 'production') {
     }));
 }
 
-const secrets = require('./secrets.json');
+const secrets = JSON.parse(await fs.readFile(new URL('./secrets.json', import.meta.url)));
 const clientID = '9d85a3dfca994efa969df07bd1e47695';
 const clientSecret = secrets.keys.client_secret;
 
 const base_uri = 'api.blizzard.com';
 const exclude_before_shadowlands = false;
-
-const raidbots_bonus_lists = cached_data.bonuses;
-const rankings = cached_data.rank_mappings;
-const shopping_recipe_exclusions = cached_data.shopping_recipe_exclusions;
-const craftable_by_professions_cache = cached_data.craftable_by_professions_cache;
 
 const authorization_uri = 'https://us.battle.net/oauth/token';
 const clientAccessToken = {
@@ -1065,7 +1066,7 @@ async function run(region, server, professions, item, json_config, count) {
 }
 
 async function shutdown() {
-    await cached_data.saveCache(logger);
+    await saveCache(logger);
 }
 
 async function saveOutput(price_data, intermediate_data, formatted_data) {
@@ -1097,6 +1098,4 @@ async function cliRun(json_config) {
     }
 }
 
-module.exports.runWithJSONConfig = runWithJSONConfig;
-module.exports.shutdown = shutdown;
-module.exports.cliRun = cliRun;
+export {runWithJSONConfig,shutdown,cliRun};
