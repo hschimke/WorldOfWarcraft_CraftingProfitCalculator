@@ -5,7 +5,7 @@ import winston from 'winston';
 
 //import { RunConfiguration } from './RunConfiguration.mjs';
 
-import cached_data, { component_data, saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list, craftable_by_professions_cache, cacheCheck, cacheGet, cacheSet } from './cache/cached-data-sources.mjs';
+import cached_data, { saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list, cacheCheck, cacheGet, cacheSet } from './cache/cached-data-sources.mjs';
 //const cached_data = component_data;
 const raidbots_bonus_lists = bonuses_cache;
 const rankings = rank_mappings_cache;

@@ -221,6 +221,6 @@ await loadCache();
 
 export default component_data;
 export { 
-    component_data, saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list, craftable_by_professions_cache,
+    saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list,
     cacheCheck, cacheGet, cacheSet
 }
