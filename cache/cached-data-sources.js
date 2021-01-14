@@ -15,16 +15,16 @@ const bonuses_cache_fn = './bonuses.json';
 const rank_mappings_cache_fn = './rank-mappings.json';
 const shopping_recipe_exclusion_list_fn = './shopping-recipe-exclusion-list.json'
 
-var bonuses_cache;
-var item_search_results_cache;
-var rank_mappings_cache;
-var craftable_by_professions_cache;
-var shopping_recipe_exclusion_list;
-var auction_data;
-var profession_skills_data;
-var profession_recipe_data;
-var item_data;
-var realm_data;
+let bonuses_cache;
+let item_search_results_cache;
+let rank_mappings_cache;
+let craftable_by_professions_cache;
+let shopping_recipe_exclusion_list;
+let auction_data;
+let profession_skills_data;
+let profession_recipe_data;
+let item_data;
+let realm_data;
 
 try {
     bonuses_cache = require(bonuses_cache_fn);
