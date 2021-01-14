@@ -163,7 +163,54 @@ async function loadCache(logger) {
     }
 }
 
+function expirationLookup(namespace){
+    const mapping = {
+        'fetched_auctions_data':'auction_house_fetch_dtm',
+        'fetched_profession_skill_tier_detail_data':'fetched_profession_skill_tier_dtm',
+        'fetched_profession_recipe_detail_data':'fetched_profession_recipe_detail_dtm',
+        'fetched_item_data':'fetched_item_dtm',
+        'connected_realm_data':'connected_realm_dtm',
+        'item_search_terms':'item_search_cache_dtm',
+    };
+    return mapping[namespace];
+}
+
+function cacheCheck(namespace, key, expiration_period, logger) {
+    let found = false;
+    if (namespace in component_data) {
+        if (key in component_data[namespace]) {
+            if (expiration_period !== undefined) {
+                let current_dtm = Date.now();
+                let expire_dtm = component_data.expiration[namespace][key] + expiration_period;
+                if (expire_dtm < current_dtm) {
+                    found = false;
+                }
+            } else {
+                found = true;
+            }
+        }
+    }
+    return found;
+}
+
+function cacheGet(namespace, key, logger) {
+    return component_data[namespace][key];
+}
+
+function cacheSet(namespace, key, data, logger) {
+    const cached = Date.now();
+    if( !(namespace in component_data)){
+        component_data[namespace] = {};
+        component_data.expiration[namespace] = {};
+    }
+    component_data[namespace][key] = data;
+    component_data.expiration[namespace][key] = cached;
+}
+
 await loadCache();
 
 export default component_data;
-export { component_data, saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list, craftable_by_professions_cache }
+export { 
+    component_data, saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list, craftable_by_professions_cache,
+    cacheCheck, cacheGet, cacheSet
+}
