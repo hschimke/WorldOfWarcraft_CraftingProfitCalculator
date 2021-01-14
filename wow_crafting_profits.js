@@ -35,12 +35,13 @@ const secrets = require('./secrets.json');
 const clientID = '9d85a3dfca994efa969df07bd1e47695';
 const clientSecret = secrets.keys.client_secret;
 
+const base_uri = 'api.blizzard.com';
+const exclude_before_shadowlands = false;
+
 const raidbots_bonus_lists = cached_data.bonuses;
 const rankings = cached_data.rank_mappings;
 const shopping_recipe_exclusions = cached_data.shopping_recipe_exclusions;
 const craftable_by_professions_cache = cached_data.craftable_by_professions_cache;
-
-const base_uri = 'api.blizzard.com';
 
 const authorization_uri = 'https://us.battle.net/oauth/token';
 const clientAccessToken = {
@@ -59,8 +60,6 @@ const clientAccessToken = {
         return expired;
     },
 };
-
-const exclude_before_shadowlands = false;
 
 async function getAuthorizationToken() {
     if (clientAccessToken.checkExpired()) {
@@ -107,12 +106,8 @@ async function getBlizzardAPIResponse(region_code, authorization_token, data, ur
     }
 }
 
-//To Do: No idea how to get id from name
 async function getItemId(region, item_name) {
     logger.info(`Searching for itemId for ${item_name}`);
-    // Possible solution:
-    // Loop through each page and check items until you get an exact match, then return the first match. This
-    // won't always work but it might work slightly more often than doing nothing.
 
     if (cached_data.item_search_terms.includes(item_name)) {
         return cached_data.item_search_cache[item_name];
@@ -175,19 +170,19 @@ async function getItemId(region, item_name) {
     }
 
     return item_id;
-}
 
-async function checkPageSearchResults(page, item_name) {
-    let found_item_id = -1;
-    for (let result of page.results) {
-        //console.log(result);
-        if (result.data.name['en_US'].localeCompare(item_name, undefined, { sensitivity: 'accent' }) == 0) {
-            logger.debug(`Found ${item_name} with id ${result.data.id}`);
-            found_item_id = result.data.id;
-            break;
+    async function checkPageSearchResults(page, item_name) {
+        let found_item_id = -1;
+        for (let result of page.results) {
+            //console.log(result);
+            if (result.data.name['en_US'].localeCompare(item_name, undefined, { sensitivity: 'accent' }) == 0) {
+                logger.debug(`Found ${item_name} with id ${result.data.id}`);
+                found_item_id = result.data.id;
+                break;
+            }
         }
-    }
-    return found_item_id;
+        return found_item_id;
+    };
 }
 
 async function getConnectedRealmId(server_name, server_region) {
