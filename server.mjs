@@ -1,8 +1,8 @@
 'use strict';
-const express = require('express');
-const path = require('path');
-const CraftingProfitCalculator = require('./wow_crafting_profits');
-const { RunConfiguration } = require('./RunConfiguration');
+import express from 'express';
+import path from 'path';
+import { runWithJSONConfig, shutdown } from './wow_crafting_profits.mjs';
+import { RunConfiguration } from './RunConfiguration.mjs';
 
 const app = express();
 const port = 3000;
@@ -35,7 +35,7 @@ app.post('/show_output', (req, res) => {
     } else if (req.body.type == 'json') {
         config = new RunConfiguration(json_data, req.body.item_id, 1);
     }
-    CraftingProfitCalculator.runWithJSONConfig(config).then((data) => {
+    runWithJSONConfig(config).then((data) => {
         const { price, intermediate, formatted } = data;
         res.send(`
         <html><head></head>
@@ -52,6 +52,6 @@ const server = app.listen(port, () => {
 
 process.on('SIGINT', () => {
     console.log('SIGTERM signal received: closing HTTP server')
-    CraftingProfitCalculator.shutdown();
+    shutdown();
     server.close();
 });
