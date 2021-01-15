@@ -2,15 +2,12 @@
 import got from 'got';
 import fs from 'fs/promises';
 import winston from 'winston';
-
-//import { RunConfiguration } from './RunConfiguration.mjs';
+import {getAuthorizationToken} from './blizz_oath.mjs';
 
 import cached_data, { saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list, cacheCheck, cacheGet, cacheSet } from './cache/cached-data-sources.mjs';
-//const cached_data = component_data;
 const raidbots_bonus_lists = bonuses_cache;
 const rankings = rank_mappings_cache;
 const shopping_recipe_exclusions = shopping_recipe_exclusion_list;
-//const craftable_by_professions_cache = cached_data.craftable_by_professions_cache;
 
 const logger = winston.createLogger({
     level: 'debug',
@@ -37,58 +34,8 @@ if (process.env.NODE_ENV !== 'production') {
     }));
 }
 
-const secrets = JSON.parse(await fs.readFile(new URL('./secrets.json', import.meta.url)));
-const clientID = '9d85a3dfca994efa969df07bd1e47695';
-const clientSecret = secrets.keys.client_secret;
-
 const base_uri = 'api.blizzard.com';
 const exclude_before_shadowlands = false;
-
-const authorization_uri = 'https://us.battle.net/oauth/token';
-const clientAccessToken = {
-    access_token: '',
-    token_type: '',
-    expires_in: 0,
-    scope: '',
-    fetched: Date.now(),
-    checkExpired: function () {
-        let expired = true;
-        const current_time = Date.now();
-        const expire_time = this.fetched + (this.expires_in * 1000);
-        if (current_time < expire_time) {
-            expired = false;
-        }
-        return expired;
-    },
-};
-
-async function getAuthorizationToken() {
-    if (clientAccessToken.checkExpired()) {
-        logger.debug('Access token expired, fetching fresh.');
-        try {
-            const auth_response = await got(authorization_uri, {
-                responseType: 'json',
-                method: 'POST',
-                username: clientID,
-                password: clientSecret,
-                headers: {
-                    'Connection': 'keep-alive'
-                },
-                form: {
-                    'grant_type': 'client_credentials',
-                }
-            });
-            clientAccessToken.access_token = auth_response.body.access_token;
-            clientAccessToken.token_type = auth_response.body.token_type;
-            clientAccessToken.expires_in = auth_response.body.expires_in;
-            clientAccessToken.scope = auth_response.body.scope;
-            clientAccessToken.fetched = Date.now();
-        } catch (error) {
-            logger.error("An error was encountered while retrieving an authorization token: " + error);
-        }
-    }
-    return clientAccessToken;
-}
 
 async function getBlizzardAPIResponse(region_code, authorization_token, data, uri) {
     try {
