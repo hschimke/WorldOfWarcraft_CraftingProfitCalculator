@@ -1,38 +1,13 @@
 'use strict';
 import got from 'got';
 import fs from 'fs/promises';
-import winston from 'winston';
+import {logger} from './logging.mjs';
 import {getAuthorizationToken} from './blizz_oath.mjs';
 
 import cached_data, { saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list, cacheCheck, cacheGet, cacheSet } from './cache/cached-data-sources.mjs';
 const raidbots_bonus_lists = bonuses_cache;
 const rankings = rank_mappings_cache;
 const shopping_recipe_exclusions = shopping_recipe_exclusion_list;
-
-const logger = winston.createLogger({
-    level: 'debug',
-    format: winston.format.json(),
-    //defaultMeta: { service: 'user-service' },
-    transports: [
-        //
-        // - Write all logs with level `error` and below to `error.log`
-        // - Write all logs with level `info` and below to `combined.log`
-        //
-        new winston.transports.File({ filename: 'error.log', level: 'error' }),
-        //new winston.transports.File({ filename: 'combined.log' }),
-    ],
-});
-
-//
-// If we're not in production then log to the `console` with the format:
-// `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
-//
-if (process.env.NODE_ENV !== 'production') {
-    logger.add(new winston.transports.Console({
-        format: winston.format.simple(),
-        level: 'debug',
-    }));
-}
 
 const base_uri = 'api.blizzard.com';
 const exclude_before_shadowlands = false;
@@ -1016,7 +991,7 @@ async function run(region, server, professions, item, json_config, count) {
 }
 
 async function shutdown() {
-    await saveCache(logger);
+    await saveCache();
 }
 
 async function saveOutput(price_data, intermediate_data, formatted_data) {

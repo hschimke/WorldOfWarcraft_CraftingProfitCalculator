@@ -1,5 +1,6 @@
 'use strict';
 import fs from 'fs/promises';
+import {logger} from '../logging.mjs';
 
 const global_cache_name = './global-cache.json';
 
@@ -27,7 +28,7 @@ let item_data;
 let realm_data;
 let component_data;
 
-async function saveCache(logger) {
+async function saveCache() {
     if (logger === undefined) {
         logger = console;
     }
@@ -47,7 +48,7 @@ async function saveCache(logger) {
     logger.info('Cache saved');
 }
 
-async function loadCache(logger) {
+async function loadCache() {
     try {
         bonuses_cache = JSON.parse(await fs.readFile(new URL(bonuses_cache_fn, import.meta.url)));
     } catch (e) {

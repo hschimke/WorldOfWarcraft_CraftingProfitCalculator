@@ -1,5 +1,6 @@
 import got from 'got';
 import {readFile} from 'fs/promises';
+import {logger} from './logging.mjs';
 const secrets = JSON.parse(await readFile(new URL('./secrets.json', import.meta.url)));
 const clientID = '9d85a3dfca994efa969df07bd1e47695';
 const clientSecret = secrets.keys.client_secret;
@@ -22,9 +23,9 @@ const clientAccessToken = {
     },
 };
 
-async function getAuthorizationToken(logger) {
+async function getAuthorizationToken() {
     if (clientAccessToken.checkExpired()) {
-        //logger.debug('Access token expired, fetching fresh.');
+        logger.debug('Access token expired, fetching fresh.');
         try {
             const auth_response = await got(authorization_uri, {
                 responseType: 'json',
@@ -44,7 +45,7 @@ async function getAuthorizationToken(logger) {
             clientAccessToken.scope = auth_response.body.scope;
             clientAccessToken.fetched = Date.now();
         } catch (error) {
-            //logger.error("An error was encountered while retrieving an authorization token: " + error);
+            logger.error("An error was encountered while retrieving an authorization token: " + error);
         }
     }
     return clientAccessToken;

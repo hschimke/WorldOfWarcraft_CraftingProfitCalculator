@@ -1,4 +1,6 @@
 'use strict';
+import {logger} from './logging.mjs';
+
 class RunConfiguration {
     #internal_inventory = {};
     #inventory_overlay = {};
