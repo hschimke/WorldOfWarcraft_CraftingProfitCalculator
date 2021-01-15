@@ -1,8 +1,10 @@
 'use strict';
 import got from 'got';
 import fs from 'fs/promises';
-import {logger} from './logging.mjs';
-import {getAuthorizationToken} from './blizz_oath.mjs';
+import { parentLogger } from './logging.mjs';
+import { getAuthorizationToken } from './blizz_oath.mjs';
+
+const logger = parentLogger.child();
 
 import cached_data, { saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list, cacheCheck, cacheGet, cacheSet } from './cache/cached-data-sources.mjs';
 const raidbots_bonus_lists = bonuses_cache;
@@ -33,7 +35,7 @@ async function getItemId(region, item_name) {
     logger.info(`Searching for itemId for ${item_name}`);
 
     if (cacheCheck('item_search_cache', item_name)) {
-        return cacheGet('item_search_cache',item_name);
+        return cacheGet('item_search_cache', item_name);
     }
 
     const search_api_uri = '/data/wow/search/item';

@@ -3,7 +3,9 @@ import express from 'express';
 import path from 'path';
 import { runWithJSONConfig, shutdown } from './wow_crafting_profits.mjs';
 import { RunConfiguration } from './RunConfiguration.mjs';
-import {logger} from './logging.mjs';
+import {parentLogger} from './logging.mjs';
+
+const logger = parentLogger.child();
 
 const app = express();
 const port = 3000;

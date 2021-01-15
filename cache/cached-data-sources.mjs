@@ -1,6 +1,8 @@
 'use strict';
 import fs from 'fs/promises';
-import {logger} from '../logging.mjs';
+import { parentLogger } from '../logging.mjs';
+
+const logger = parentLogger.child();
 
 const global_cache_name = './global-cache.json';
 
@@ -61,7 +63,6 @@ async function loadCache() {
         item_search_results_cache = JSON.parse(await fs.readFile(new URL(item_search_results_fn, import.meta.url)));
     } catch (e) {
         item_search_results_cache = {
-            item_search_terms: [],
             item_search_cache: {},
             item_search_cache_dtm: {},
         };
@@ -81,7 +82,7 @@ async function loadCache() {
     } catch (e) {
         craftable_by_professions_cache = {
             craftable: {},
-            dtm:{},
+            dtm: {},
         };
     }
 
@@ -97,7 +98,6 @@ async function loadCache() {
         auction_data = JSON.parse(await fs.readFile(new URL(auction_cache_fn, import.meta.url)));
     } catch (e) {
         auction_data = {
-            fetched_auction_houses: [],
             fetched_auctions_data: {},
             auction_house_fetch_dtm: {},
         }
@@ -107,7 +107,6 @@ async function loadCache() {
         profession_skills_data = JSON.parse(await fs.readFile(new URL(profession_skills_cache_fn, import.meta.url)));
     } catch (e) {
         profession_skills_data = {
-            fetched_profession_skill_tier_details: [],
             fetched_profession_skill_tier_detail_data: {},
             fetched_profession_skill_tier_dtm: {},
         }
@@ -117,7 +116,6 @@ async function loadCache() {
         profession_recipe_data = JSON.parse(await fs.readFile(new URL(profession_recipe_cache_fn, import.meta.url)));
     } catch (e) {
         profession_recipe_data = {
-            fetched_profession_recipe_details: [],
             fetched_profession_recipe_detail_data: {},
             fetched_profession_recipe_detail_dtm: {},
         }
@@ -127,7 +125,6 @@ async function loadCache() {
         item_data = JSON.parse(await fs.readFile(new URL(item_cache_fn, import.meta.url)));
     } catch (e) {
         item_data = {
-            fetched_items: [],
             fetched_item_data: {},
             fetched_item_dtm: {},
         }
@@ -137,50 +134,41 @@ async function loadCache() {
         realm_data = JSON.parse(await fs.readFile(new URL(realm_cache_fn, import.meta.url)));
     } catch (e) {
         realm_data = {
-            connected_realms: [],
             connected_realm_data: {},
             connected_realm_dtm: {},
         }
     }
 
     component_data = {
-        fetched_auction_houses: auction_data.fetched_auction_houses,
         fetched_auctions_data: auction_data.fetched_auctions_data,
         auction_house_fetch_dtm: auction_data.auction_house_fetch_dtm,
-        fetched_profession_skill_tier_details: profession_skills_data.fetched_profession_skill_tier_details,
         fetched_profession_skill_tier_detail_data: profession_skills_data.fetched_profession_skill_tier_detail_data,
         fetched_profession_skill_tier_dtm: profession_skills_data.fetched_profession_skill_tier_dtm,
-        fetched_profession_recipe_details: profession_recipe_data.fetched_profession_recipe_details,
         fetched_profession_recipe_detail_data: profession_recipe_data.fetched_profession_recipe_detail_data,
         fetched_profession_recipe_detail_dtm: profession_recipe_data.fetched_profession_recipe_detail_dtm,
-        fetched_items: item_data.fetched_items,
         fetched_item_data: item_data.fetched_item_data,
         fetched_item_dtm: item_data.fetched_item_dtm,
-        connected_realms: realm_data.connected_realms,
         connected_realm_data: realm_data.connected_realm_data,
         connected_realm_dtm: realm_data.connected_realm_dtm,
         item_search_cache: item_search_results_cache.item_search_cache,
-        item_search_terms: item_search_results_cache.item_search_terms,
         item_search_cache_dtm: item_search_results_cache.item_search_cache_dtm,
         craftable_by_professions_cache: craftable_by_professions_cache.craftable,
         craftable_by_professions_cache_dtm: craftable_by_professions_cache.dtm,
-
-        
     }
 }
 
-function expirationLookup(namespace){
+function expirationLookup(namespace) {
     const mapping = {
-        'fetched_auctions_data':'auction_house_fetch_dtm',
-        'fetched_profession_skill_tier_detail_data':'fetched_profession_skill_tier_dtm',
-        'fetched_profession_recipe_detail_data':'fetched_profession_recipe_detail_dtm',
-        'fetched_item_data':'fetched_item_dtm',
-        'connected_realm_data':'connected_realm_dtm',
-        'item_search_cache':'item_search_cache_dtm',
+        'fetched_auctions_data': 'auction_house_fetch_dtm',
+        'fetched_profession_skill_tier_detail_data': 'fetched_profession_skill_tier_dtm',
+        'fetched_profession_recipe_detail_data': 'fetched_profession_recipe_detail_dtm',
+        'fetched_item_data': 'fetched_item_dtm',
+        'connected_realm_data': 'connected_realm_dtm',
+        'item_search_cache': 'item_search_cache_dtm',
     };
-    if( namespace in mapping ){
+    if (namespace in mapping) {
         return mapping[namespace];
-    }else{
+    } else {
         return `${namespace}_dtm`;
     }
 }
@@ -209,8 +197,11 @@ function cacheGet(namespace, key, logger) {
 }
 
 function cacheSet(namespace, key, data, logger) {
+    if (data === undefined) {
+        throw new Error('Cannot cache undefined');
+    }
     const cached = Date.now();
-    if( !(namespace in component_data)){
+    if (!(namespace in component_data)) {
         component_data[namespace] = {};
         component_data[expirationLookup(namespace)] = {};
     }
@@ -221,7 +212,7 @@ function cacheSet(namespace, key, data, logger) {
 await loadCache();
 
 export default component_data;
-export { 
+export {
     saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list,
     cacheCheck, cacheGet, cacheSet
 }

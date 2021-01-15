@@ -1,6 +1,9 @@
 import got from 'got';
 import {readFile} from 'fs/promises';
-import {logger} from './logging.mjs';
+import {parentLogger} from './logging.mjs';
+
+const logger = parentLogger.child();
+
 const secrets = JSON.parse(await readFile(new URL('./secrets.json', import.meta.url)));
 const clientID = '9d85a3dfca994efa969df07bd1e47695';
 const clientSecret = secrets.keys.client_secret;

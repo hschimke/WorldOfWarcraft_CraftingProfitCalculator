@@ -1,5 +1,6 @@
 'use strict';
-import {logger} from './logging.mjs';
+import { parentLogger } from './logging.mjs';
+const logger = parentLogger.child();
 
 class RunConfiguration {
     #internal_inventory = {};
