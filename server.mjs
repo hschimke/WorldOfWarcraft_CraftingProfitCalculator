@@ -3,6 +3,7 @@ import express from 'express';
 import path from 'path';
 import { runWithJSONConfig, shutdown } from './wow_crafting_profits.mjs';
 import { RunConfiguration } from './RunConfiguration.mjs';
+import {logger} from './logging.mjs';
 
 const app = express();
 const port = 3000;
@@ -35,7 +36,7 @@ app.post('/show_output', (req, res) => {
     } else if (req.body.type == 'json') {
         config = new RunConfiguration(json_data, req.body.item_id, 1);
     }
-    
+
     runWithJSONConfig(config).then((data) => {
         const { price, intermediate, formatted } = data;
         res.send(`
@@ -49,11 +50,11 @@ app.post('/show_output', (req, res) => {
 });
 
 const server = app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`)
+    logger.info(`Example app listening at http://localhost:${port}`)
 });
 
 process.on('SIGINT', () => {
-    console.log('SIGTERM signal received: closing HTTP server')
+    logger.info('SIGTERM signal received: closing HTTP server')
     shutdown();
     server.close();
 });
