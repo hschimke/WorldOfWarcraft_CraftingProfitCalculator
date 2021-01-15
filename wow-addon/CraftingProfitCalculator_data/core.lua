@@ -200,7 +200,7 @@ CraftingProfitCalculator_data.event_frame:RegisterEvent("ADDONS_UNLOADING")
 			 str = str .. ',' 
 		 end
 		 --CraftingProfitCalculator_data:Debug(key .. ' - '.. value)
-		 str = str .. '{"id":' .. key .. ',"quantity:":'..value .. '}'
+		 str = str .. '{"id":' .. key .. ',"quantity":'..value .. '}'
 	 end
 	 str = str .. '],'
 	 -- Professions
