@@ -35,13 +35,15 @@ app.post('/show_output', (req, res) => {
     } else if (req.body.type == 'json') {
         config = new RunConfiguration(json_data, req.body.item_id, 1);
     }
+    
     runWithJSONConfig(config).then((data) => {
         const { price, intermediate, formatted } = data;
         res.send(`
-        <html><head></head>
-        <body>
-        <pre>${formatted}</pre>
-        </body>
+        <html>
+            <head></head>
+            <body>
+                <pre>${formatted}</pre>
+            </body>
         </html>`);
     });
 });
