@@ -13,10 +13,12 @@ const port = 3000;
 app.use(express.urlencoded({ extended: false }));
 
 app.get('/', (req, res) => {
+    logger.debug('json form requested');
     res.sendFile(path.resolve('html/json_form.html'));
 });
 
 app.get('/custom', (req, res) => {
+    logger.debug('custom form requested');
     res.sendFile(path.resolve('html/custom_run_form.html'));
 });
 
@@ -35,8 +37,12 @@ app.post('/show_output', (req, res) => {
                 region_name: req.body.region,
             },
         }, req.body.item_id, Number(req.body.count));
+        logger.debug(`Custom search for item: ${req.body.item_id}, server: ${req.body.server}, region: ${req.body.region}, professions: ${req.body.professions}. JSON DATA: ${json_data.inventory.length}`);
     } else if (req.body.type == 'json') {
+        logger.debug('json search');
         config = new RunConfiguration(json_data, req.body.item_id, 1);
+        config.region
+        logger.debug(`JSON search for item: ${config.item_id}, server: ${config.realm_name}, region: ${config.realm_region}, professions: ${config.professions}. JSON DATA: ${json_data.inventory.length}`);
     }
 
     runWithJSONConfig(config).then((data) => {
@@ -52,11 +58,17 @@ app.post('/show_output', (req, res) => {
 });
 
 const server = app.listen(port, () => {
-    logger.info(`Example app listening at http://localhost:${port}`)
+    logger.info(`Crafting Profit Calculator running at: http://localhost:${port}`)
+});
+
+process.on('SIGTERM', () => {
+    logger.info('SIGTERM signal received: closing HTTP server')
+    shutdown();
+    server.close();
 });
 
 process.on('SIGINT', () => {
-    logger.info('SIGTERM signal received: closing HTTP server')
+    logger.info('SIGINT signal received: closing HTTP server')
     shutdown();
     server.close();
 });
