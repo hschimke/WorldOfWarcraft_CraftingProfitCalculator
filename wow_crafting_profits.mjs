@@ -983,6 +983,7 @@ async function run(region, server, professions, item, json_config, count) {
         formatted_data = await textFriendlyOutputFormat(intermediate_data, 0);
     } catch (e) {
         logger.error(`Error building output for ${region}:${server} ${item}`, e);
+        console.log(e);
     }
 
     return {

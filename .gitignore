@@ -114,6 +114,8 @@ data-cache.json
 !cache/data-sources.json
 !cache/shopping-recipe-exclusion-list.json
 cache/*.db
+cache/*.db-shm
+cache/*.db-wal
 
 # Output data
 output.json

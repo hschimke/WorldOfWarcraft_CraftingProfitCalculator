@@ -35,7 +35,7 @@ let realm_data;
 let component_data;
 
 async function saveCache() {
-    
+
     await db.close();
 
     logger.info('Cache saved');
@@ -69,14 +69,15 @@ async function loadCache() {
     }
 
     // db replacement
-    const table_create_string = 'CREATE TABLE IF NOT EXISTS key_values (namespace text, key text, value BLOB, cached integer)';
+    const table_create_string = 'CREATE TABLE IF NOT EXISTS key_values (namespace TEXT, key TEXT, value BLOB, cached INTEGER, PRIMARY KEY (namespace,key))';
     await dbRun(db, table_create_string);
+    await dbRun(db, 'PRAGMA journal_mode=WAL');
 }
 
-function dbGet(db, query, values){
+function dbGet(db, query, values) {
     return new Promise((accept, reject) => {
-        db.get(query,values,(err, row) => {
-            if(err){
+        db.get(query, values, (err, row) => {
+            if (err) {
                 reject();
             }
             accept(row);
@@ -84,32 +85,32 @@ function dbGet(db, query, values){
     });
 }
 
-function dbRun(db, query, values){
-    return new Promise((accept,reject) => {
-        db.run(query,values,(err) => {
-            if(err){
+function dbRun(db, query, values) {
+    return new Promise((accept, reject) => {
+        db.run(query, values, (err) => {
+            if (err) {
                 reject();
-            }else{
+            } else {
                 accept();
             }
         })
     });
 }
 
-function dbSerialize(db, queries, values){
-    return new Promise((accept,reject) => {
+function dbSerialize(db, queries, values) {
+    return new Promise((accept, reject) => {
         db.serialize(() => {
-            try{
-                for(let i = 0; i<queries.length; i++){
+            try {
+                for (let i = 0; i < queries.length; i++) {
                     db.run(queries[i], values[i], (err) => {
-                        if(err){
+                        if (err) {
                             reject();
-                        }else{
+                        } else {
                             accept();
                         }
                     })
                 }
-            }catch(e){
+            } catch (e) {
                 reject(e);
             }
         })
@@ -118,30 +119,27 @@ function dbSerialize(db, queries, values){
 
 async function cacheCheck(namespace, key, expiration_period) {
     //const query = 'select namespace, key, value, cached from key_values where namespace = ? and key = ?';
-    const query = 'select count(*) as how_many from key_values where namespace = ? and key = ?';
-    let result = await dbGet(db, query, [namespace,key]);
-    
+    const query_no_expiration = 'SELECT COUNT(*) AS how_many FROM key_values WHERE namespace = ? AND key = ?';
+    const no_expiration_values = [namespace, key];
+    const query_with_expiration = 'SELECT COUNT(*) AS how_many FROM key_values WHERE namespace = ? AND key = ? AND (cached + ?) > ?';
+    const expiration_values = [namespace, key, expiration_period, Date.now()];
+
+    const query = (expiration_period !== undefined) ? query_with_expiration : query_no_expiration;
+    const values = (expiration_period !== undefined) ? expiration_values : no_expiration_values;
+
+    const result = await dbGet(db, query, values);
+
     let found = false;
-    if( result.how_many > 0){
-        const getQuery = 'select cached from key_values where namespace = ? and key = ?';
-        const getResult = await dbGet(db,getQuery,[namespace,key]);
-        if (expiration_period !== undefined) {
-            let current_dtm = Date.now();
-            let cached_dtm = getResult.cached;
-            let expire_point = Number(cached_dtm) + Number(expiration_period);
-            if (expire_point > current_dtm) {
-                found = true;
-            }
-        } else {
-            found = true;
-        }
+    if (result.how_many > 0) {
+        found = true;
     }
+
     return found;
 }
 
 async function cacheGet(namespace, key) {
-    const query = 'select value from key_values where namespace = ? and key = ?';
-    const result = await dbGet(db,query,[namespace,key]);
+    const query = 'SELECT value FROM key_values WHERE namespace = ? AND key = ?';
+    const result = await dbGet(db, query, [namespace, key]);
     return JSON.parse(result.value);
 }
 
@@ -151,11 +149,16 @@ async function cacheSet(namespace, key, data) {
     }
     const cached = Date.now();
 
-    const query_delete = 'delete from key_values where namespace = ? and key = ?';
-    await dbRun(db,query_delete,[namespace,key]);
+    try {
+        const query_delete = 'DELETE FROM key_values WHERE namespace = ? AND key = ?';
+        await dbRun(db, query_delete, [namespace, key]);
 
-    const query_insert = 'insert into key_values(namespace, key, value, cached) values(?,?,?,?)';
-    await dbRun(db,query_insert,[namespace,key,JSON.stringify(data),cached]);
+        const query_insert = 'INSERT INTO key_values(namespace, key, value, cached) VALUES(?,?,?,?)';
+        await dbRun(db, query_insert, [namespace, key, JSON.stringify(data), cached]);
+    } catch (e) {
+        logger.error('Failed up set cache value', e);
+        success = false;
+    }
 }
 
 await loadCache();
