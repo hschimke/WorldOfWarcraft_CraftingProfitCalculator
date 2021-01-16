@@ -113,6 +113,7 @@ data-cache.json
 !cache/rank-mappings.json
 !cache/data-sources.json
 !cache/shopping-recipe-exclusion-list.json
+cache/*.db
 
 # Output data
 output.json

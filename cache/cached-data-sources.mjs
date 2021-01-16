@@ -1,8 +1,12 @@
 'use strict';
 import fs from 'fs/promises';
 import { parentLogger } from '../logging.mjs';
+import sqlite3 from 'sqlite3';
 
 const logger = parentLogger.child();
+let db;
+
+const database_fn = './cache/cache.db';
 
 const global_cache_name = './global-cache.json';
 
@@ -31,26 +35,16 @@ let realm_data;
 let component_data;
 
 async function saveCache() {
-    if (logger === undefined) {
-        logger = console;
-    }
-
-    // write module caches
-    await Promise.all([
-        fs.writeFile(`cache/${global_cache_name}`, JSON.stringify(component_data), 'utf8'),
-        fs.writeFile(`cache/${auction_cache_fn}`, JSON.stringify(auction_data), 'utf8'),
-        fs.writeFile(`cache/${profession_skills_cache_fn}`, JSON.stringify(profession_skills_data), 'utf8'),
-        fs.writeFile(`cache/${profession_recipe_cache_fn}`, JSON.stringify(profession_recipe_data), 'utf8'),
-        fs.writeFile(`cache/${item_cache_fn}`, JSON.stringify(item_data), 'utf8'),
-        fs.writeFile(`cache/${realm_cache_fn}`, JSON.stringify(realm_data), 'utf8'),
-        fs.writeFile(`cache/${craftable_by_professions_cache_fn}`, JSON.stringify(craftable_by_professions_cache), 'utf8'),
-        fs.writeFile(`cache/${item_search_results_fn}`, JSON.stringify(item_search_results_cache), 'utf8'),
-    ]);
+    
+    await db.close();
 
     logger.info('Cache saved');
 }
 
 async function loadCache() {
+    db = new sqlite3.Database(database_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE);
+
+    // static files
     try {
         bonuses_cache = JSON.parse(await fs.readFile(new URL(bonuses_cache_fn, import.meta.url)));
     } catch (e) {
@@ -58,16 +52,6 @@ async function loadCache() {
         // use data-sources.json as a source.
         bonuses_cache = {};
     }
-
-    try {
-        item_search_results_cache = JSON.parse(await fs.readFile(new URL(item_search_results_fn, import.meta.url)));
-    } catch (e) {
-        item_search_results_cache = {
-            item_search_cache: {},
-            item_search_cache_dtm: {},
-        };
-    }
-
     try {
         rank_mappings_cache = JSON.parse(await fs.readFile(new URL(rank_mappings_cache_fn, import.meta.url)));
     } catch (e) {
@@ -76,16 +60,6 @@ async function loadCache() {
             rank_mapping: [0, 1, 2, 3],
         };
     }
-
-    try {
-        craftable_by_professions_cache = JSON.parse(await fs.readFile(new URL(craftable_by_professions_cache_fn, import.meta.url)));
-    } catch (e) {
-        craftable_by_professions_cache = {
-            craftable: {},
-            dtm: {},
-        };
-    }
-
     try {
         shopping_recipe_exclusion_list = JSON.parse(await fs.readFile(new URL(shopping_recipe_exclusion_list_fn, import.meta.url)));
     } catch (e) {
@@ -94,124 +68,98 @@ async function loadCache() {
         };
     }
 
-    try {
-        auction_data = JSON.parse(await fs.readFile(new URL(auction_cache_fn, import.meta.url)));
-    } catch (e) {
-        auction_data = {
-            fetched_auctions_data: {},
-            auction_house_fetch_dtm: {},
-        }
-    }
-
-    try {
-        profession_skills_data = JSON.parse(await fs.readFile(new URL(profession_skills_cache_fn, import.meta.url)));
-    } catch (e) {
-        profession_skills_data = {
-            fetched_profession_skill_tier_detail_data: {},
-            fetched_profession_skill_tier_dtm: {},
-        }
-    }
-
-    try {
-        profession_recipe_data = JSON.parse(await fs.readFile(new URL(profession_recipe_cache_fn, import.meta.url)));
-    } catch (e) {
-        profession_recipe_data = {
-            fetched_profession_recipe_detail_data: {},
-            fetched_profession_recipe_detail_dtm: {},
-        }
-    }
-
-    try {
-        item_data = JSON.parse(await fs.readFile(new URL(item_cache_fn, import.meta.url)));
-    } catch (e) {
-        item_data = {
-            fetched_item_data: {},
-            fetched_item_dtm: {},
-        }
-    }
-
-    try {
-        realm_data = JSON.parse(await fs.readFile(new URL(realm_cache_fn, import.meta.url)));
-    } catch (e) {
-        realm_data = {
-            connected_realm_data: {},
-            connected_realm_dtm: {},
-        }
-    }
-
-    component_data = {
-        fetched_auctions_data: auction_data.fetched_auctions_data,
-        auction_house_fetch_dtm: auction_data.auction_house_fetch_dtm,
-        fetched_profession_skill_tier_detail_data: profession_skills_data.fetched_profession_skill_tier_detail_data,
-        fetched_profession_skill_tier_dtm: profession_skills_data.fetched_profession_skill_tier_dtm,
-        fetched_profession_recipe_detail_data: profession_recipe_data.fetched_profession_recipe_detail_data,
-        fetched_profession_recipe_detail_dtm: profession_recipe_data.fetched_profession_recipe_detail_dtm,
-        fetched_item_data: item_data.fetched_item_data,
-        fetched_item_dtm: item_data.fetched_item_dtm,
-        connected_realm_data: realm_data.connected_realm_data,
-        connected_realm_dtm: realm_data.connected_realm_dtm,
-        item_search_cache: item_search_results_cache.item_search_cache,
-        item_search_cache_dtm: item_search_results_cache.item_search_cache_dtm,
-        craftable_by_professions_cache: craftable_by_professions_cache.craftable,
-        craftable_by_professions_cache_dtm: craftable_by_professions_cache.dtm,
-    }
+    // db replacement
+    const table_create_string = 'CREATE TABLE IF NOT EXISTS key_values (namespace text, key text, value BLOB, cached integer)';
+    await dbRun(db, table_create_string);
 }
 
-function expirationLookup(namespace) {
-    const mapping = {
-        'fetched_auctions_data': 'auction_house_fetch_dtm',
-        'fetched_profession_skill_tier_detail_data': 'fetched_profession_skill_tier_dtm',
-        'fetched_profession_recipe_detail_data': 'fetched_profession_recipe_detail_dtm',
-        'fetched_item_data': 'fetched_item_dtm',
-        'connected_realm_data': 'connected_realm_dtm',
-        'item_search_cache': 'item_search_cache_dtm',
-    };
-    if (namespace in mapping) {
-        return mapping[namespace];
-    } else {
-        return `${namespace}_dtm`;
-    }
+function dbGet(db, query, values){
+    return new Promise((accept, reject) => {
+        db.get(query,values,(err, row) => {
+            if(err){
+                reject();
+            }
+            accept(row);
+        })
+    });
 }
 
-function cacheCheck(namespace, key, expiration_period, logger) {
-    let found = false;
-    if (namespace in component_data) {
-        if (key in component_data[namespace]) {
-            if (expiration_period !== undefined) {
-                let current_dtm = Date.now();
-                let cached_dtm = component_data[expirationLookup(namespace)][key];
-                let expire_point = Number(cached_dtm) + Number(expiration_period);
-                if (expire_point > current_dtm) {
-                    found = true;
+function dbRun(db, query, values){
+    return new Promise((accept,reject) => {
+        db.run(query,values,(err) => {
+            if(err){
+                reject();
+            }else{
+                accept();
+            }
+        })
+    });
+}
+
+function dbSerialize(db, queries, values){
+    return new Promise((accept,reject) => {
+        db.serialize(() => {
+            try{
+                for(let i = 0; i<queries.length; i++){
+                    db.run(queries[i], values[i], (err) => {
+                        if(err){
+                            reject();
+                        }else{
+                            accept();
+                        }
+                    })
                 }
-            } else {
+            }catch(e){
+                reject(e);
+            }
+        })
+    });
+}
+
+async function cacheCheck(namespace, key, expiration_period) {
+    //const query = 'select namespace, key, value, cached from key_values where namespace = ? and key = ?';
+    const query = 'select count(*) as how_many from key_values where namespace = ? and key = ?';
+    let result = await dbGet(db, query, [namespace,key]);
+    
+    let found = false;
+    if( result.how_many > 0){
+        const getQuery = 'select cached from key_values where namespace = ? and key = ?';
+        const getResult = await dbGet(db,getQuery,[namespace,key]);
+        if (expiration_period !== undefined) {
+            let current_dtm = Date.now();
+            let cached_dtm = getResult.cached;
+            let expire_point = Number(cached_dtm) + Number(expiration_period);
+            if (expire_point > current_dtm) {
                 found = true;
             }
+        } else {
+            found = true;
         }
     }
     return found;
 }
 
-function cacheGet(namespace, key, logger) {
-    return component_data[namespace][key];
+async function cacheGet(namespace, key) {
+    const query = 'select value from key_values where namespace = ? and key = ?';
+    const result = await dbGet(db,query,[namespace,key]);
+    return JSON.parse(result.value);
 }
 
-function cacheSet(namespace, key, data, logger) {
+async function cacheSet(namespace, key, data) {
     if (data === undefined) {
         throw new Error('Cannot cache undefined');
     }
     const cached = Date.now();
-    if (!(namespace in component_data)) {
-        component_data[namespace] = {};
-        component_data[expirationLookup(namespace)] = {};
-    }
-    component_data[namespace][key] = data;
-    component_data[expirationLookup(namespace)][key] = cached;
+
+    const query_delete = 'delete from key_values where namespace = ? and key = ?';
+    await dbRun(db,query_delete,[namespace,key]);
+
+    const query_insert = 'insert into key_values(namespace, key, value, cached) values(?,?,?,?)';
+    await dbRun(db,query_insert,[namespace,key,JSON.stringify(data),cached]);
 }
 
 await loadCache();
 
-export default component_data;
 export {
     saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list,
     cacheCheck, cacheGet, cacheSet
