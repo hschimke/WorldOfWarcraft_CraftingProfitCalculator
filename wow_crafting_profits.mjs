@@ -89,7 +89,7 @@ async function getItemId(region, item_name) {
     }
 
     if (item_id > 0) {
-        await cacheSet('item_search_cache', item_name, item_id);
+        cacheSet('item_search_cache', item_name, item_id);
     }
 
     return item_id;
@@ -165,7 +165,7 @@ async function getConnectedRealmId(server_name, server_region) {
         }
     }
 
-    await cacheSet('connected_realm_data', connected_realm_key, realm_id);
+    cacheSet('connected_realm_data', connected_realm_key, realm_id);
 
     // Return that connected realm ID
     return realm_id;
@@ -186,7 +186,7 @@ async function getItemDetails(item_id, region) {
     },
         profession_item_detail_uri);
 
-    await cacheSet('fetched_item_data', key, result);
+    cacheSet('fetched_item_data', key, result);
 
     return result;
 }
@@ -221,7 +221,7 @@ async function getBlizSkillTierDetail(profession_id, skillTier_id, region) {
     },
         profession_skill_tier_detail_uri);
 
-    await cacheSet('fetched_profession_skill_tier_detail_data', key, result);
+    cacheSet('fetched_profession_skill_tier_detail_data', key, result);
 
     return result;
 }
@@ -242,7 +242,7 @@ async function getBlizRecipeDetail(recipe_id, region) {
     },
         profession_recipe_uri);
 
-    await cacheSet('fetched_profession_recipe_detail_data', key, result);
+    cacheSet('fetched_profession_recipe_detail_data', key, result);
 
     return result;
 }
@@ -268,7 +268,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
     if ('description' in item_detail) {
         if (item_detail.description.includes('vendor')) {
             logger.debug('Skipping vendor recipe');
-            await cacheSet('craftable_by_professions_cache', key, recipe_options);
+            cacheSet('craftable_by_professions_cache', key, recipe_options);
             return recipe_options;
         }
     }
@@ -298,7 +298,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
         }
         await Promise.all(tier_checks);
     }
-    await cacheSet('craftable_by_professions_cache', key, recipe_options);
+    cacheSet('craftable_by_professions_cache', key, recipe_options);
     //{craftable: found_craftable, recipe_id: found_recipe_id, crafting_profession: found_profession};
     return recipe_options;
 
@@ -378,7 +378,7 @@ async function getAuctionHouse(server_id, server_region) {
         },
         auction_house_fetch_uri);
 
-    await cacheSet('fetched_auctions_data', server_id, ah);
+    cacheSet('fetched_auctions_data', server_id, ah);
 
     return ah;
 }
