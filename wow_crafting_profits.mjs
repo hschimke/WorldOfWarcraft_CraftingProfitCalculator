@@ -166,7 +166,7 @@ async function getConnectedRealmId(server_name, server_region) {
     }
 
     cacheSet('connected_realm_data', connected_realm_key, realm_id);
-    logger.info(`Found Connected Realm ID: ${server_id} for ${server_region} ${server_name}`);
+    logger.info(`Found Connected Realm ID: ${realm_id} for ${server_region} ${server_name}`);
 
     // Return that connected realm ID
     return realm_id;
