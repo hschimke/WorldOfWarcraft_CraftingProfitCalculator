@@ -2,6 +2,7 @@
 import fs from 'fs/promises';
 import { parentLogger } from '../logging.mjs';
 import sqlite3 from 'sqlite3';
+import got from 'got';
 
 const logger = parentLogger.child();
 let db;
@@ -11,6 +12,7 @@ const database_fn = './cache/cache.db';
 const bonuses_cache_fn = './bonuses.json';
 const rank_mappings_cache_fn = './rank-mappings.json';
 const shopping_recipe_exclusion_list_fn = './shopping-recipe-exclusion-list.json'
+const data_sources_fn = './data-sources.json';
 
 let bonuses_cache;
 let rank_mappings_cache;
@@ -26,13 +28,18 @@ async function saveCache() {
 async function loadCache() {
     db = new sqlite3.Database(database_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE);
 
+    const data_sources = JSON.parse(await fs.readFile(new URL(data_sources_fn, import.meta.url)));
+
     // static files
     try {
         bonuses_cache = JSON.parse(await fs.readFile(new URL(bonuses_cache_fn, import.meta.url)));
     } catch (e) {
         // We should actually get the bonuses from the source if it's missing.
         // use data-sources.json as a source.
-        bonuses_cache = {};
+        logger.info(`Couldn't find bonuses data, fetching fresh.`);
+        const fetched_bonus_data = await (await got(data_sources.sources[bonuses_cache_fn].href)).body;
+        fs.writeFile(new URL(bonuses_cache_fn, import.meta.url), fetched_bonus_data, 'utf8');
+        bonuses_cache = JSON.parse(fetched_bonus_data);
     }
     try {
         rank_mappings_cache = JSON.parse(await fs.readFile(new URL(rank_mappings_cache_fn, import.meta.url)));
