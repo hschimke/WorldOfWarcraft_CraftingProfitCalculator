@@ -8,31 +8,13 @@ let db;
 
 const database_fn = './cache/cache.db';
 
-const global_cache_name = './global-cache.json';
-
-const auction_cache_fn = './auction-data.json';
-const profession_skills_cache_fn = './profession-skills-data.json';
-const profession_recipe_cache_fn = './profession-recipe-data.json'
-const item_cache_fn = './item-data.json';
-const realm_cache_fn = './realm-data.json';
-const craftable_by_professions_cache_fn = './craftable-by-professions-data.json';
-const item_search_results_fn = './item-search-results.json';
-
 const bonuses_cache_fn = './bonuses.json';
 const rank_mappings_cache_fn = './rank-mappings.json';
 const shopping_recipe_exclusion_list_fn = './shopping-recipe-exclusion-list.json'
 
 let bonuses_cache;
-let item_search_results_cache;
 let rank_mappings_cache;
-let craftable_by_professions_cache;
 let shopping_recipe_exclusion_list;
-let auction_data;
-let profession_skills_data;
-let profession_recipe_data;
-let item_data;
-let realm_data;
-let component_data;
 
 async function saveCache() {
 
@@ -156,7 +138,7 @@ async function cacheSet(namespace, key, data) {
         const query_insert = 'INSERT INTO key_values(namespace, key, value, cached) VALUES(?,?,?,?)';
         //await dbRun(db, query_insert, [namespace, key, JSON.stringify(data), cached]);
 
-        await dbSerialize(db, [query_delete,query_insert], [[namespace, key],[namespace, key, JSON.stringify(data), cached]] );
+        await dbSerialize(db, [query_delete, query_insert], [[namespace, key], [namespace, key, JSON.stringify(data), cached]]);
     } catch (e) {
         logger.error('Failed up set cache value', e);
         success = false;
