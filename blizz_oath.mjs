@@ -1,6 +1,6 @@
 import got from 'got';
-import {readFile} from 'fs/promises';
-import {parentLogger} from './logging.mjs';
+import { readFile } from 'fs/promises';
+import { parentLogger } from './logging.mjs';
 
 const logger = parentLogger.child();
 
