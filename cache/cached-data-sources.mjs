@@ -142,10 +142,7 @@ async function cacheSet(namespace, key, data) {
     //logger.profile('cacheSet');
     try {
         const query_delete = 'DELETE FROM key_values WHERE namespace = ? AND key = ?';
-        //await dbRun(db, query_delete, [namespace, key]);
-
         const query_insert = 'INSERT INTO key_values(namespace, key, value, cached) VALUES(?,?,?,?)';
-        //await dbRun(db, query_insert, [namespace, key, JSON.stringify(data), cached]);
 
         await dbSerialize(db, [query_delete, query_insert], [[namespace, key], [namespace, key, JSON.stringify(data), cached]]);
     } catch (e) {
