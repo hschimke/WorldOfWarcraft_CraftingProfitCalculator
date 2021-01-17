@@ -34,7 +34,7 @@ const argv = yargs(hideBin(process.argv))
         description: 'Profession',
         alias: 'p',
         type: 'string',
-        default: ['Jewelcrafting', 'Tailoring', 'Alchemy', 'Inscription', 'Enchanting', 'Blacksmithing', 'Mining'],
+        default: ['Jewelcrafting', 'Tailoring', 'Alchemy', 'Herbalism', 'Inscription', 'Enchanting', 'Blacksmithing', 'Mining', 'Engineering', 'Leatherworking', 'Skinning', 'Cooking'],
     })
     .option('item', {
         description: 'Item',
