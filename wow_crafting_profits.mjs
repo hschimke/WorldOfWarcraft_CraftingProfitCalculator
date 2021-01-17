@@ -166,6 +166,7 @@ async function getConnectedRealmId(server_name, server_region) {
     }
 
     cacheSet('connected_realm_data', connected_realm_key, realm_id);
+    logger.info(`Found Connected Realm ID: ${server_id} for ${server_region} ${server_name}`);
 
     // Return that connected realm ID
     return realm_id;
@@ -504,7 +505,7 @@ async function getItemBonusLists(item_id, auction_house) {
             bonus_lists_set.push(list);
         }
     });
-    logger.debug(`${item_id} has ${bonus_lists_set.length} bonus lists.`);
+    logger.debug(`Item ${item_id} has ${bonus_lists_set.length} bonus lists.`);
     return bonus_lists_set;
 }
 
@@ -539,11 +540,10 @@ async function performProfitAnalysis(region, server, character_professions, item
         item_name: item_detail.name
     };
 
-    logger.info("Checking: " + item_detail.name);
+    logger.info(`Analyzing profits potential for ${item_detail.name} (${item_id})`);
 
     // Get the realm id
     const server_id = await getConnectedRealmId(server, region);
-    logger.debug(`Connected Realm ID: ${server_id}`);
 
     //Get the auction house
     const auction_house = (passed_ah !== undefined) ? passed_ah : await getAuctionHouse(server_id, region);
@@ -561,7 +561,6 @@ async function performProfitAnalysis(region, server, character_professions, item
     } else {
         price_obj.vendor_price = -1;
     }
-
 
     price_obj.crafting_status = item_craftable;
 
@@ -585,6 +584,7 @@ async function performProfitAnalysis(region, server, character_professions, item
     price_obj.recipe_options = [];
 
     if (item_craftable.craftable) {
+        logger.debug(`Item ${item_detail.name} (${item_id}) has ${item_craftable.recipes.length} recipes.`);
         for (let recipe of item_craftable.recipes) {
             // Get Reagents
             const item_bom = await getCraftingRecipe(recipe.recipe_id, region);
@@ -594,6 +594,7 @@ async function performProfitAnalysis(region, server, character_professions, item
 
             let bom_promises = [];
 
+            logger.debug(`Recipe ${item_bom.name} (${recipe.recipe_id}) has ${item_bom.reagents.length} reagents`);
             for (let reagent of item_bom.reagents) {
                 bom_promises.push(performProfitAnalysis(region, server, character_professions, reagent.reagent.id, reagent.quantity, auction_house));
             }
@@ -622,7 +623,7 @@ async function performProfitAnalysis(region, server, character_professions, item
             });
         }
     } else {
-        logger.debug(`Item not craftable with professions: ${character_professions}`);
+        logger.debug(`Item ${item_detail.name} (${item_id}) not craftable with professions: ${character_professions}`);
     }
 
     return price_obj;
