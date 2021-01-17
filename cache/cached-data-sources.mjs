@@ -104,6 +104,7 @@ function dbSerialize(db, queries, values) {
 }
 
 async function cacheCheck(namespace, key, expiration_period) {
+    //logger.profile('cacheGet');
     //const query = 'select namespace, key, value, cached from key_values where namespace = ? and key = ?';
     const query_no_expiration = 'SELECT COUNT(*) AS how_many FROM key_values WHERE namespace = ? AND key = ?';
     const no_expiration_values = [namespace, key];
@@ -119,14 +120,17 @@ async function cacheCheck(namespace, key, expiration_period) {
     if (result.how_many > 0) {
         found = true;
     }
-
+    //logger.profile('cacheGet');
     return found;
 }
 
 async function cacheGet(namespace, key) {
+    //logger.profile(`cacheGet: ${namespace} -> ${key}`);
     const query = 'SELECT value FROM key_values WHERE namespace = ? AND key = ?';
     const result = await dbGet(db, query, [namespace, key]);
-    return JSON.parse(result.value);
+    const json_data = JSON.parse(result.value);
+    //logger.profile(`cacheGet: ${namespace} -> ${key}`);
+    return json_data;
 }
 
 async function cacheSet(namespace, key, data) {
@@ -135,6 +139,7 @@ async function cacheSet(namespace, key, data) {
     }
     const cached = Date.now();
 
+    //logger.profile('cacheSet');
     try {
         const query_delete = 'DELETE FROM key_values WHERE namespace = ? AND key = ?';
         //await dbRun(db, query_delete, [namespace, key]);
@@ -147,6 +152,7 @@ async function cacheSet(namespace, key, data) {
         logger.error('Failed up set cache value', e);
         success = false;
     }
+    //logger.profile('cacheSet');
 }
 
 await loadCache();
