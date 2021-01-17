@@ -135,6 +135,7 @@ async function cacheGet(namespace, key) {
 
 async function cacheSet(namespace, key, data) {
     if (data === undefined) {
+        logger.error(`cannot cache undefined to ${namespace} -> ${key}`);
         throw new Error('Cannot cache undefined');
     }
     const cached = Date.now();
@@ -144,9 +145,11 @@ async function cacheSet(namespace, key, data) {
         const query_delete = 'DELETE FROM key_values WHERE namespace = ? AND key = ?';
         const query_insert = 'INSERT INTO key_values(namespace, key, value, cached) VALUES(?,?,?,?)';
 
-        await dbSerialize(db, [query_delete, query_insert], [[namespace, key], [namespace, key, JSON.stringify(data), cached]]);
+        await dbSerialize(db,
+            ['BEGIN TRANSACTION', query_delete, query_insert, 'COMMIT TRANSACTION'],
+            [[], [namespace, key], [namespace, key, JSON.stringify(data), cached], []]);
     } catch (e) {
-        logger.error('Failed up set cache value', e);
+        logger.error('Failed to set up cache value', e);
         success = false;
     }
     //logger.profile('cacheSet');
