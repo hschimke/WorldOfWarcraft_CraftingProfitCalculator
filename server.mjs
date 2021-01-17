@@ -3,7 +3,7 @@ import express from 'express';
 import path from 'path';
 import { runWithJSONConfig, shutdown } from './wow_crafting_profits.mjs';
 import { RunConfiguration } from './RunConfiguration.mjs';
-import {parentLogger} from './logging.mjs';
+import { parentLogger } from './logging.mjs';
 
 const logger = parentLogger.child();
 
@@ -63,12 +63,12 @@ const server = app.listen(port, () => {
 
 process.on('SIGTERM', () => {
     logger.info('SIGTERM signal received: closing HTTP server')
-    shutdown();
-    server.close();
+    shutdown()
+        .then(server.close());
 });
 
 process.on('SIGINT', () => {
     logger.info('SIGINT signal received: closing HTTP server')
-    shutdown();
-    server.close();
+    shutdown()
+        .then(server.close());
 });
