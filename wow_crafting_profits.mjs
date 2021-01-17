@@ -367,8 +367,6 @@ async function getAuctionHouse(server_id, server_region) {
 
     logger.info('Auction house is out of date, fetching it fresh.')
 
-
-
     const auction_house_fetch_uri = `/data/wow/connected-realm/${server_id}/auctions`;
     const auth_token = await getAuthorizationToken();
     const ah = await getBlizzardAPIResponse(
@@ -518,7 +516,7 @@ function getLvlModifierForBonus(bonus_id) {
     }
 }
 
-async function performProfitAnalysis(region, server, character_professions, item, qauntity, desired_ilvl) {
+async function performProfitAnalysis(region, server, character_professions, item, qauntity, passed_ah) {
     // Check if we have to figure out the item id ourselves
     let item_id = 0;
     if (Number.isFinite(Number(item))) {
@@ -548,7 +546,7 @@ async function performProfitAnalysis(region, server, character_professions, item
     logger.debug(`Connected Realm ID: ${server_id}`);
 
     //Get the auction house
-    const auction_house = await getAuctionHouse(server_id, region);
+    const auction_house = (passed_ah !== undefined) ? passed_ah : await getAuctionHouse(server_id, region);
 
     // Get Item AH price
     price_obj.ah_price = await getAHItemPrice(item_id, auction_house);
@@ -597,7 +595,7 @@ async function performProfitAnalysis(region, server, character_professions, item
             let bom_promises = [];
 
             for (let reagent of item_bom.reagents) {
-                bom_promises.push(performProfitAnalysis(region, server, character_professions, reagent.reagent.id, reagent.quantity));
+                bom_promises.push(performProfitAnalysis(region, server, character_professions, reagent.reagent.id, reagent.quantity, auction_house));
             }
 
             (await Promise.all(bom_promises)).forEach((price) => {
