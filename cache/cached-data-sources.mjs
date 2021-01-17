@@ -60,6 +60,7 @@ function dbGet(db, query, values) {
     return new Promise((accept, reject) => {
         db.get(query, values, (err, row) => {
             if (err) {
+                logger.error(`Issue running query '${query}' and values ${values}`, err);
                 reject();
             }
             accept(row);
@@ -71,6 +72,7 @@ function dbRun(db, query, values) {
     return new Promise((accept, reject) => {
         db.run(query, values, (err) => {
             if (err) {
+                logger.error(`Issue running query '${query}' and values ${values}`, err);
                 reject();
             } else {
                 accept();
@@ -86,6 +88,7 @@ function dbSerialize(db, queries, values) {
                 for (let i = 0; i < queries.length; i++) {
                     db.run(queries[i], values[i], (err) => {
                         if (err) {
+                            logger.error(`Issue running query '${queries[i]}' and values ${values[i]}`, err);
                             reject();
                         } else {
                             accept();
@@ -93,6 +96,7 @@ function dbSerialize(db, queries, values) {
                     })
                 }
             } catch (e) {
+                logger.error('serialize failed', { q: queries, v: values });
                 reject(e);
             }
         })
