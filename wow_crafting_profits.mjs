@@ -14,6 +14,13 @@ const shopping_recipe_exclusions = shopping_recipe_exclusion_list;
 const base_uri = 'api.blizzard.com';
 const exclude_before_shadowlands = false;
 
+/**
+ * Run a query against the blizzard api provider.
+ * @param {!string} region_code The region code for the server.
+ * @param {!Object} authorization_token An oath access token to use for the request.
+ * @param {Object} data The request data to send.
+ * @param {!string} uri The url to query against.
+ */
 async function getBlizzardAPIResponse(region_code, authorization_token, data, uri) {
     try {
         const api_response = await got(`https://${region_code}.${base_uri}${uri}`, {
@@ -31,6 +38,11 @@ async function getBlizzardAPIResponse(region_code, authorization_token, data, ur
     }
 }
 
+/**
+ * Search through the item database for a string, returning the item id of the item.
+ * @param {!string} region The region in which to search.
+ * @param {!string} item_name The name of the item to search for
+ */
 async function getItemId(region, item_name) {
     logger.info(`Searching for itemId for ${item_name}`);
 
@@ -85,7 +97,7 @@ async function getItemId(region, item_name) {
     } else {
         // We didn't get any results, that's an error
         logger.error(`No items match search ${item_name}`);
-        throw ('No Results');
+        throw (new Error('No Results'));
     }
 
     if (item_id > 0) {
@@ -94,6 +106,12 @@ async function getItemId(region, item_name) {
 
     return item_id;
 
+    /**
+     * Search a specific page for the item.
+     * @param {!number} page The page to retrieve and search.
+     * @param {!string} item_name The name of the item we are searching for.
+     * @return The item id of the item, or -1 if it doesn't.
+     */
     async function checkPageSearchResults(page, item_name) {
         let found_item_id = -1;
         for (let result of page.results) {
@@ -108,6 +126,13 @@ async function getItemId(region, item_name) {
     };
 }
 
+/**
+ * Find the connected realm id for a server, some connected realms have only one server
+ * while others have multiples.
+ * @param {!string} server_name The name of the server to look for.
+ * @param {!string} server_region The region in which the server is hosted.
+ * @return {Promise.<number>} The number associated with the connected realm for the server.
+ */
 async function getConnectedRealmId(server_name, server_region) {
     const connected_realm_key = `${server_region}::${server_name}`;
 
@@ -172,6 +197,11 @@ async function getConnectedRealmId(server_name, server_region) {
     return realm_id;
 }
 
+/**
+ * Get the full details for an item.
+ * @param {!number} item_id The item id for the item to retrieve.
+ * @param {!string} region The region in which we are searching.
+ */
 async function getItemDetails(item_id, region) {
     const key = item_id
 
@@ -192,6 +222,10 @@ async function getItemDetails(item_id, region) {
     return result;
 }
 
+/**
+ * Get a list of all professions available.
+ * @param {!string} region The region to search
+ */
 async function getBlizProfessionsList(region) {
     const profession_list_uri = '/data/wow/profession/index'; // professions.name / professions.id
     return await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
@@ -199,6 +233,12 @@ async function getBlizProfessionsList(region) {
         'locale': 'en_US'
     }, profession_list_uri);
 }
+
+/**
+ * Get the details for the specified profession.
+ * @param profession_id The id of the profession to fetch.
+ * @param region The region in which to search.
+ */
 async function getBlizProfessionDetail(profession_id, region) {
     const profession_detail_uri = `/data/wow/profession/${profession_id}`; // skill_tiers.name skill_tiers.id
     return await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
@@ -207,6 +247,14 @@ async function getBlizProfessionDetail(profession_id, region) {
     },
         profession_detail_uri);
 }
+
+/**
+ * Fetch the skill tier detail for a profession, the skill tier is
+ * what contains things like recipe lists.
+ * @param {!number} profession_id The id of the profession.
+ * @param {!number} skillTier_id The skill tier id we are interested in.
+ * @param {!string} region The region in which to search.
+ */
 async function getBlizSkillTierDetail(profession_id, skillTier_id, region) {
     const key = `${region}::${profession_id}::${skillTier_id}`;
 
@@ -227,6 +275,12 @@ async function getBlizSkillTierDetail(profession_id, skillTier_id, region) {
     return result;
 }
 
+/**
+ * Fetch the details for a recipe, recipe details will include information about
+ * required reagents.
+ * @param recipe_id The id of the recipe to fetch.
+ * @param region The region in which to search.
+ */
 async function getBlizRecipeDetail(recipe_id, region) {
     const key = `${region}::${recipe_id}`;
 
@@ -248,6 +302,12 @@ async function getBlizRecipeDetail(recipe_id, region) {
     return result;
 }
 
+/**
+ * Check if an item can be crafted using a given set of professions.
+ * @param {!number} item_id The id of the item to check.
+ * @param {!Array.<string>}character_professions The list of professions available to the user.
+ * @param {!string} region The region in which to search.
+ */
 async function checkIsCrafting(item_id, character_professions, region) {
     // Check if we've already run this check, and if so return the cached version, otherwise keep on
     const key = `${region}::${item_id}::${character_professions}`;
@@ -303,6 +363,12 @@ async function checkIsCrafting(item_id, character_professions, region) {
     //{craftable: found_craftable, recipe_id: found_recipe_id, crafting_profession: found_profession};
     return recipe_options;
 
+    /**
+     * Check if an item can be crafted by a specific tier of a profession.
+     * @param skill_tier The skill tier we are checking.
+     * @param {!number} check_profession_id The id of the profession in which the skill tier exists.
+     * @param {!string} prof The name of the profession being checked.
+     */
     async function checkCraftingTier(skill_tier, check_profession_id, prof) {
         logger.debug(`Checking: ${skill_tier.name} for: ${item_id}`);
         // Get a list of all recipes each level can do
@@ -355,10 +421,21 @@ async function checkIsCrafting(item_id, character_professions, region) {
     }
 }
 
+/**
+ * 
+ * @param recipe_id The id of the recipe to check.
+ * @param region The region in which to search.
+ */
 async function getCraftingRecipe(recipe_id, region) {
     const recipe = await getBlizRecipeDetail(recipe_id, region);
     return recipe;
 }
+
+/**
+ * Fetch a snapshot of the auction house for a given connected realm.
+ * @param {!number} server_id The connected realm id to fetch.
+ * @param {!string} server_region The region in which the realm exists.
+ */
 async function getAuctionHouse(server_id, server_region) {
     // Download the auction house for the server_id
     // If the auction house is older than an hour then remove it from the cached_data.fetched_auction_houses array
@@ -388,8 +465,9 @@ async function getAuctionHouse(server_id, server_region) {
  * Find the value of an item on the auction house.
  * Items might be for sale on the auction house and be available from vendors.
  * The auction house items have complicated bonus types.
- * @param {number} item_id 
- * @param {object} auction_house 
+ * @param {number} item_id The id of the item to search for.
+ * @param {object} auction_house An auction house to search through.
+ * @param {?number} bonus_level_required An optional bonus level for crafted legendary base items.
  */
 async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
     // Find the item and return best, worst, average prices
@@ -509,6 +587,11 @@ async function getItemBonusLists(item_id, auction_house) {
     return bonus_lists_set;
 }
 
+/**
+ * Bonus levels correspond to a specific increase in item level over base,
+ * get the item level delta for that bonus id.
+ * @param bonus_id The bonus ID to check.
+ */
 function getLvlModifierForBonus(bonus_id) {
     if (bonus_id in raidbots_bonus_lists) {
         return raidbots_bonus_lists[bonus_id].level;
@@ -629,6 +712,10 @@ async function performProfitAnalysis(region, server, character_professions, item
     return price_obj;
 }
 
+/**
+ * Figure out the best/worst/average cost to construct a recipe given all items required.
+ * @param recipe_option The recipe to price.
+ */
 async function recipeCostCalculator(recipe_option) {
     /**
      * For each recipe
