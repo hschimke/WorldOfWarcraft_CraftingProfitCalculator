@@ -5,7 +5,7 @@ import { RunConfiguration } from './RunConfiguration.mjs';
 
 const test_region = 'us';
 const test_server = 'hyjal';
-const test_character_professions = ['Jewelcrafting', 'Tailoring', 'Alchemy', 'Inscription', 'Enchanting', 'Blacksmithing'];
+const test_character_professions = ['Jewelcrafting', 'Tailoring', 'Alchemy', 'Inscription', 'Enchanting', 'Blacksmithing', 'Engineering', 'Leatherworking', 'Mining', 'Skinning','Herbalism'];
 //blacksmithing
 //const test_item = 171414;
 //tailoring
