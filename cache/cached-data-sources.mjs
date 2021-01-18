@@ -20,13 +20,13 @@ let shopping_recipe_exclusion_list;
 
 async function saveCache() {
 
-    await db.close();
+    await dbClose(db);
 
     logger.info('Cache saved');
 }
 
 async function loadCache() {
-    db = new sqlite3.Database(database_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE);
+    db = await dbOpen(sqlite3, database_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE);
 
     const data_sources = JSON.parse(await fs.readFile(new URL(data_sources_fn, import.meta.url)));
 
@@ -63,6 +63,36 @@ async function loadCache() {
     await dbRun(db, 'PRAGMA journal_mode=WAL');
 }
 
+function dbClose(db) {
+    return new Promise((accept, reject) => {
+        db.close((err) => {
+            if (err) {
+                logger.err('Issue closing database', err);
+                reject();
+            }
+            logger.debug('Database closed');
+            accept();
+        });
+    });
+}
+
+function dbOpen(database_factory, file_name, params) {
+    return new Promise((accept, reject) => {
+        try {
+            let ldb = new database_factory.Database(file_name, params, (err) => {
+                if (err) {
+                    logger.error('Failed to open database');
+                    reject(err);
+                }
+                logger.debug('Database opened');
+                accept(ldb);
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
+}
+
 function dbGet(db, query, values) {
     return new Promise((accept, reject) => {
         db.get(query, values, (err, row) => {
@@ -97,11 +127,10 @@ function dbSerialize(db, queries, values) {
                         if (err) {
                             logger.error(`Issue running query '${queries[i]}' and values ${values[i]}`, err);
                             reject();
-                        } else {
-                            accept();
                         }
-                    })
+                    });
                 }
+                accept();
             } catch (e) {
                 logger.error('serialize failed', { q: queries, v: values });
                 reject(e);
