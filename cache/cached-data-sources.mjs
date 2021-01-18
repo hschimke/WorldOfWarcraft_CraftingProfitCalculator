@@ -18,6 +18,9 @@ let bonuses_cache;
 let rank_mappings_cache;
 let shopping_recipe_exclusion_list;
 
+/**
+ * Cleanly shutdown the cache provider.
+ */
 async function saveCache() {
 
     await dbClose(db);
@@ -25,6 +28,9 @@ async function saveCache() {
     logger.info('Cache saved');
 }
 
+/**
+ * Initialize the cache provider.
+ */
 async function loadCache() {
     db = await dbOpen(sqlite3, database_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE);
 
@@ -34,8 +40,6 @@ async function loadCache() {
     try {
         bonuses_cache = JSON.parse(await fs.readFile(new URL(bonuses_cache_fn, import.meta.url)));
     } catch (e) {
-        // We should actually get the bonuses from the source if it's missing.
-        // use data-sources.json as a source.
         logger.info(`Couldn't find bonuses data, fetching fresh.`);
         const fetched_bonus_data = await (await got(data_sources.sources[bonuses_cache_fn].href)).body;
         fs.writeFile(new URL(bonuses_cache_fn, import.meta.url), fetched_bonus_data, 'utf8');
@@ -63,6 +67,10 @@ async function loadCache() {
     await dbRun(db, 'PRAGMA journal_mode=WAL');
 }
 
+/**
+ * Close the database within a promise.
+ * @param db The database object to close.
+ */
 function dbClose(db) {
     return new Promise((accept, reject) => {
         db.close((err) => {
@@ -76,6 +84,12 @@ function dbClose(db) {
     });
 }
 
+/**
+ * Open a database with a promise.
+ * @param database_factory The sqlite3 library used to create the database.
+ * @param file_name The filename of the database to open.
+ * @param params The open paramaters for the database as defined by sqlite3.
+ */
 function dbOpen(database_factory, file_name, params) {
     return new Promise((accept, reject) => {
         try {
@@ -93,6 +107,12 @@ function dbOpen(database_factory, file_name, params) {
     });
 }
 
+/**
+ * Run a query with exactly one return result.
+ * @param {Object} db THe database to query against.
+ * @param {string} query The query to run.
+ * @param {Array.<string>} values The paramaters for the query.
+ */
 function dbGet(db, query, values) {
     return new Promise((accept, reject) => {
         db.get(query, values, (err, row) => {
@@ -105,6 +125,12 @@ function dbGet(db, query, values) {
     });
 }
 
+/**
+ * Run a query against a database, ignoring the result.
+ * @param {Object} db The database to query against.
+ * @param {string} query The query to run.
+ * @param {Array.<string>} The paramaters for the query.
+ */
 function dbRun(db, query, values) {
     return new Promise((accept, reject) => {
         db.run(query, values, (err) => {
@@ -118,6 +144,12 @@ function dbRun(db, query, values) {
     });
 }
 
+/**
+ * 
+ * @param {Object} db The database to run queries against.
+ * @param {{Array.<string>}} queries An array of queries to run against the database.
+ * @param {Array.<Array.<string>>} values An array of paramaters for the queries.
+ */
 function dbSerialize(db, queries, values) {
     return new Promise((accept, reject) => {
         db.serialize(() => {
@@ -139,6 +171,12 @@ function dbSerialize(db, queries, values) {
     });
 }
 
+/**
+ * Check if a key is present in the namespace, optionally checking expiration.
+ * @param {!string} namespace The namespace for the key.
+ * @param {!string} key The key to check.
+ * @param {?number} expiration_period Optionally check if the key has expired.
+ */
 async function cacheCheck(namespace, key, expiration_period) {
     //logger.profile('cacheGet');
     //const query = 'select namespace, key, value, cached from key_values where namespace = ? and key = ?';
@@ -160,6 +198,11 @@ async function cacheCheck(namespace, key, expiration_period) {
     return found;
 }
 
+/**
+ * Retrieve a key from the cache.
+ * @param {string} namespace The namespace for the key.
+ * @param {string} key The key to retrieve.
+ */
 async function cacheGet(namespace, key) {
     //logger.profile(`cacheGet: ${namespace} -> ${key}`);
     const query = 'SELECT value FROM key_values WHERE namespace = ? AND key = ?';
@@ -169,6 +212,12 @@ async function cacheGet(namespace, key) {
     return json_data;
 }
 
+/**
+ * Set a key within a namespace to the given value, all other values will be deleted.
+ * @param {string} namespace The namespace for the key.
+ * @param {string} key The cache key to set.
+ * @param {!any} data The value to set the key to.
+ */
 async function cacheSet(namespace, key, data) {
     if (data === undefined) {
         logger.error(`cannot cache undefined to ${namespace} -> ${key}`);
