@@ -333,89 +333,113 @@ async function checkIsCrafting(item_id, character_professions, region) {
         }
     }
 
+    const profession_result_array = [];
+
+    const checkProfessionCraftingPromises = [];
+
     for (let prof of character_professions) {
-        const check_profession_id = profession_list.professions.find((item) => {
-            return (item.name.localeCompare(prof, undefined, { sensitivity: 'accent' }) == 0);
-        }).id;
-
-        // Get a list of the crafting levels for the professions
-        const profession_detail = await getBlizProfessionDetail(check_profession_id, region);
-        const crafting_levels = profession_detail.skill_tiers;
-
-        let tier_checks = [];
-
-        for (let skill_tier of crafting_levels) {
-            //only run on shadowlands tiers, unless exclude_before_shadowlands is set to false
-            //skill_tier.name.includes('Shadowlands') (is in shadowlands)
-            let check_scan_tier = skill_tier.name.includes('Shadowlands');
-            if (!exclude_before_shadowlands) {
-                check_scan_tier = true;
-            }
-            if (check_scan_tier) {
-                tier_checks.push(checkCraftingTier(skill_tier, check_profession_id, prof));
-            }
-        }
-        await Promise.all(tier_checks);
+        checkProfessionCraftingPromises.push(checkProfessionCrafting(profession_list, prof, region, item_id, item_detail));
     }
+
+    (await Promise.all(checkProfessionCraftingPromises)).forEach((check)=>{
+        profession_result_array.push(check);
+    });
+
+    // collate professions
+    for(let profession_crafting_check of profession_result_array){
+        recipe_options.recipes = recipe_options.recipes.concat(profession_crafting_check.recipes);
+        recipe_options.recipe_ids = recipe_options.recipe_ids.concat(profession_crafting_check.recipe_ids);
+        recipe_options.craftable = recipe_options.craftable | profession_crafting_check.craftable;
+    }
+
     cacheSet('craftable_by_professions_cache', key, recipe_options);
     //{craftable: found_craftable, recipe_id: found_recipe_id, crafting_profession: found_profession};
     return recipe_options;
+}
 
-    /**
-     * Check if an item can be crafted by a specific tier of a profession.
-     * @param skill_tier The skill tier we are checking.
-     * @param {!number} check_profession_id The id of the profession in which the skill tier exists.
-     * @param {!string} prof The name of the profession being checked.
-     */
-    async function checkCraftingTier(skill_tier, check_profession_id, prof) {
-        logger.debug(`Checking: ${skill_tier.name} for: ${item_id}`);
-        // Get a list of all recipes each level can do
-        const skill_tier_detail = await getBlizSkillTierDetail(check_profession_id, skill_tier.id, region);
+/**
+ * Check a single profession to see if an item is craftable by it.
+ * @param {Array<object>} profession_list List of all available professions from Blizzard.
+ * @param {string} prof The current profession to check.
+ * @param {string} region The region in which to search.
+ * @param {number} item_id The item id of the item we are checking.
+ * @param {object} item_detail Details about the item we are checking.
+ */
+async function checkProfessionCrafting(profession_list, prof, region, item_id, item_detail) {
+    const profession_recipe_options = {
+        craftable: false,
+        recipes: [],
+        recipe_ids: []
+    };
 
-        if (skill_tier_detail.categories != undefined) {
-            const categories = skill_tier_detail.categories;
+    const check_profession_id = profession_list.professions.find((item) => {
+        return (item.name.localeCompare(prof, undefined, { sensitivity: 'accent' }) == 0);
+    }).id;
 
-            for (let cat of categories) {
-                for (let rec of cat.recipes) {
-                    const recipe = await getBlizRecipeDetail(rec.id, region);
-                    if (!(recipe.name.includes('Prospect') || recipe.name.includes('Mill'))) {
-                        let crafty = false;
-                        if ('alliance_crafted_item' in recipe) {
-                            if (recipe.alliance_crafted_item.id == item_id) {
-                                crafty = true;
-                            }
-                        }
-                        if ('horde_crafted_item' in recipe) {
-                            if (recipe.horde_crafted_item.id == item_id) {
-                                crafty = true;
-                            }
-                        }
-                        if ('crafted_item' in recipe) {
-                            if (recipe.crafted_item.id == item_id) {
-                                crafty = true;
-                            }
-                        }
-                        if (crafty) {
-                            logger.info(`Found recipe (${recipe.id}): ${recipe.name} for (${item_detail.id}) ${item_detail.name}`);
+    // Get a list of the crafting levels for the professions
+    const profession_detail = await getBlizProfessionDetail(check_profession_id, region);
+    const crafting_levels = profession_detail.skill_tiers;
 
-                            recipe_options.recipes.push(
-                                {
-                                    recipe_id: recipe.id,
-                                    crafting_profession: prof
+    logger.debug(`Scanning profession: ${profession_detail.name}`);
+
+    for (let skill_tier of crafting_levels) {
+        //only run on shadowlands tiers, unless exclude_before_shadowlands is set to false
+        //skill_tier.name.includes('Shadowlands') (is in shadowlands)
+        let check_scan_tier = skill_tier.name.includes('Shadowlands');
+        if (!exclude_before_shadowlands) {
+            check_scan_tier = true;
+        }
+        if (check_scan_tier) {
+            logger.debug(`Checking: ${skill_tier.name} for: ${item_id}`);
+            // Get a list of all recipes each level can do
+            const skill_tier_detail = await getBlizSkillTierDetail(check_profession_id, skill_tier.id, region);
+
+            if (skill_tier_detail.categories != undefined) {
+                const categories = skill_tier_detail.categories;
+
+                for (let cat of categories) {
+                    for (let rec of cat.recipes) {
+                        const recipe = await getBlizRecipeDetail(rec.id, region);
+                        if (!(recipe.name.includes('Prospect') || recipe.name.includes('Mill'))) {
+                            let crafty = false;
+                            if ('alliance_crafted_item' in recipe) {
+                                if (recipe.alliance_crafted_item.id == item_id) {
+                                    crafty = true;
                                 }
-                            );
-                            recipe_options.recipe_ids.push(recipe.id);
-                            recipe_options.craftable = true;
+                            }
+                            if ('horde_crafted_item' in recipe) {
+                                if (recipe.horde_crafted_item.id == item_id) {
+                                    crafty = true;
+                                }
+                            }
+                            if ('crafted_item' in recipe) {
+                                if (recipe.crafted_item.id == item_id) {
+                                    crafty = true;
+                                }
+                            }
+                            if (crafty) {
+                                logger.info(`Found recipe (${recipe.id}): ${recipe.name} for (${item_detail.id}) ${item_detail.name}`);
+
+                                profession_recipe_options.recipes.push(
+                                    {
+                                        recipe_id: recipe.id,
+                                        crafting_profession: prof
+                                    }
+                                );
+                                profession_recipe_options.recipe_ids.push(recipe.id);
+                                profession_recipe_options.craftable = true;
+                            }
+                        } else {
+                            logger.debug(`Skipping Recipe: (${recipe.id}) "${recipe.name}"`);
                         }
-                    } else {
-                        logger.debug(`Skipping Recipe: (${recipe.id}) "${recipe.name}"`);
                     }
                 }
+            } else {
+                logger.debug(`Skill tier ${skill_tier.name} has no categories.`);
             }
-        } else {
-            logger.debug(`Skill tier ${skill_tier.name} has no categories.`);
         }
     }
+    return profession_recipe_options;
 }
 
 /**
