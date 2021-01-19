@@ -218,7 +218,6 @@ async function getItemDetails(item_id, region) {
         profession_item_detail_uri);
 
     cacheSet('fetched_item_data', key, result);
-
     return result;
 }
 
@@ -310,7 +309,7 @@ async function getBlizRecipeDetail(recipe_id, region) {
  */
 async function checkIsCrafting(item_id, character_professions, region) {
     // Check if we've already run this check, and if so return the cached version, otherwise keep on
-    const key = `${region}::${item_id}::${character_professions}`;
+    const key = `${region}::${item_id}::${JSON.stringify(character_professions)}`;
 
     if (await cacheCheck('craftable_by_professions_cache', key)) {
         return await cacheGet('craftable_by_professions_cache', key);
@@ -335,7 +334,6 @@ async function checkIsCrafting(item_id, character_professions, region) {
     }
 
     for (let prof of character_professions) {
-        //if( !found_craftable ){
         const check_profession_id = profession_list.professions.find((item) => {
             return (item.name.localeCompare(prof, undefined, { sensitivity: 'accent' }) == 0);
         }).id;
@@ -408,11 +406,10 @@ async function checkIsCrafting(item_id, character_professions, region) {
                             );
                             recipe_options.recipe_ids.push(recipe.id);
                             recipe_options.craftable = true;
-
                         }
-                    } /*else {
-                    logger.debug(`Skipping Recipe: (${recipe.id}) "${recipe.name}"`);
-                }*/
+                    } else {
+                        logger.debug(`Skipping Recipe: (${recipe.id}) "${recipe.name}"`);
+                    }
                 }
             }
         } else {
