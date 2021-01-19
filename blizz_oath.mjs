@@ -26,6 +26,9 @@ const clientAccessToken = {
     },
 };
 
+/**
+ * Get an oath token from blizzard, or use one we already have.
+ */
 async function getAuthorizationToken() {
     if (clientAccessToken.checkExpired()) {
         logger.debug('Access token expired, fetching fresh.');

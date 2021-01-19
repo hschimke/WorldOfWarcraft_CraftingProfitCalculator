@@ -600,6 +600,15 @@ function getLvlModifierForBonus(bonus_id) {
     }
 }
 
+/**
+ * Analyze the profit potential for constructing or buying an item based on available recipes.
+ * @param {!string} region The region in which to search.
+ * @param {!string} server The server on which to search, server is used for auction house data and prices.
+ * @param {Array<string>} character_professions An array of all the available professions.
+ * @param {string|number} item The item id or the item name to analyze.
+ * @param {number} qauntity The number of items required.
+ * @param {?object} passed_ah If an auction house is already available, pass it in and it will be used.
+ */
 async function performProfitAnalysis(region, server, character_professions, item, qauntity, passed_ah) {
     // Check if we have to figure out the item id ourselves
     let item_id = 0;
@@ -790,6 +799,10 @@ async function recipeCostCalculator(recipe_option) {
     return cost;
 }
 
+/**
+ * Provide a string to indent a preformatted text.
+ * @param level The number of indents to include.
+ */
 function indentAdder(level) {
     let str = '';
     for (let i = 0; i < level; i++) {
@@ -798,6 +811,11 @@ function indentAdder(level) {
     return str;
 }
 
+/**
+ * Format a raw value into a string for Gold, Silver, and Copper
+ * @param {!number} price_in The blizzard provided cost number.
+ * @returns {string} The formatted Gold,Silver,Copper value as seen in game.
+ */
 function goldFormatter(price_in) {
     const price = Math.trunc(price_in);
     const copper = price % 100;
@@ -806,6 +824,11 @@ function goldFormatter(price_in) {
     return `${gold}g ${silver}s ${copper}c`;
 }
 
+/**
+ * Create an object used for constructing shopping lists and formatted output data.
+ * @param {!object} price_data The object created by the analyze function.
+ * @param {!string} region The region in which to work.
+ */
 async function generateOutputFormat(price_data, region) {
     const object_output = {
         name: price_data.item_name,
@@ -863,6 +886,11 @@ async function generateOutputFormat(price_data, region) {
     return object_output;
 }
 
+/**
+ * Generate a preformatted text item price analysis and shopping list.
+ * @param {!object} output_data The object created by generateOutputFormat.
+ * @param {!number} indent The number of spaces the current level should be indented.
+ */
 function textFriendlyOutputFormat(output_data, indent) {
     /*
      * Output format:
@@ -926,6 +954,10 @@ function textFriendlyOutputFormat(output_data, indent) {
     return return_string;
 }
 
+/**
+ * Return the ranks available for the top level item generated from generateOutputFormat.
+ * @param {!object} intermediate_data Data from generateOutputFormat.
+ */
 function getShoppingListRanks(intermediate_data) {
     const ranks = [];
     for (let recipe of intermediate_data.recipes) {
@@ -934,6 +966,11 @@ function getShoppingListRanks(intermediate_data) {
     return ranks;
 }
 
+/**
+ * Construct a shopping list given a provided inventory object.
+ * @param {!object} intermediate_data Data from generateOutputFormat.
+ * @param {!RunConfiguration} on_hand A provided inventory to get existing items from.
+ */
 function constructShoppingList(intermediate_data, on_hand) {
     const shopping_lists = {};
     for (let rank of getShoppingListRanks(intermediate_data)) {
@@ -970,6 +1007,11 @@ function constructShoppingList(intermediate_data, on_hand) {
     return shopping_lists;
 }
 
+/**
+ * Build a raw shopping list using generateOutputFormat data, ignores inventory information.
+ * @param {!object} intermediate_data The generateOutputFormat data used for construction.
+ * @param {number} rank_requested The specific rank to generate a list for, only matters for legendary base items in Shadowlands.
+ */
 function build_shopping_list(intermediate_data, rank_requested) {
     let shopping_list = [];
 
@@ -1053,6 +1095,16 @@ function build_shopping_list(intermediate_data, rank_requested) {
 // [X] Check if there is a non-crafting/non-auction price for the components
 // [ ] Print the summary of the item price from auction house and the component prices
 
+/**
+ * Perform a full run of the profit analyzer, beginning with profit analyze and finishing with various output formats.
+ * 
+ * @param {!string} region The region in which to search.
+ * @param {!server} server The server on which the profits should be calculated.
+ * @param {!Array<string>} professions An array of available professions.
+ * @param {!string|number} item The item id or name to analyze.
+ * @param {!RunConfiguration} json_config A RunConfiguration object containing the available inventory.
+ * @param {!number} count The number of items required.
+ */
 async function run(region, server, professions, item, json_config, count) {
     logger.info("World of Warcraft Crafting Profit Calculator");
 
@@ -1079,10 +1131,19 @@ async function run(region, server, professions, item, json_config, count) {
     }
 }
 
+/**
+ * Shutdown the analyzer, primarily closes cache.
+ */
 async function shutdown() {
     await saveCache();
 }
 
+/**
+ * Save the generated output to the filesystem.
+ * @param price_data The price data.
+ * @param intermediate_data The output cost object with shopping list.
+ * @param formatted_data The preformatted text output with shopping list.
+ */
 async function saveOutput(price_data, intermediate_data, formatted_data) {
     logger.info('Saving output');
     await fs.writeFile('intermediate_output.json', JSON.stringify(intermediate_data, null, 2), 'utf8');
@@ -1093,6 +1154,10 @@ async function saveOutput(price_data, intermediate_data, formatted_data) {
     logger.info('Raw output saved');
 }
 
+/**
+ * Perform a run with pure json configuration from the addon.
+ * @param {RunConfiguration} json_config The configuration object.
+ */
 async function runWithJSONConfig(json_config) {
     return await run(json_config.realm_region,
         json_config.realm_name,
@@ -1103,6 +1168,10 @@ async function runWithJSONConfig(json_config) {
     );
 }
 
+/**
+ * Run from the command prompt.
+ * @param {RunConfiguration} json_config The configuration object to execute.
+ */
 async function cliRun(json_config) {
     try {
         const { price, intermediate, formatted } = await runWithJSONConfig(json_config);
