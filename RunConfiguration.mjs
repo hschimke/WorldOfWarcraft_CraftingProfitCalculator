@@ -14,7 +14,7 @@ class RunConfiguration {
     constructor(raw_configuration_data, item, count) {
         if (raw_configuration_data != undefined) {
             for (let item of raw_configuration_data.inventory) {
-                this.#inventory_overlay[item.id] = item.quantity;
+                this.#internal_inventory[item.id] = item.quantity;
             }
             for (let prof of raw_configuration_data.professions) {
                 this.#professions.push(prof);
@@ -57,6 +57,9 @@ class RunConfiguration {
             this.#inventory_overlay[item_id] = 0;
         }
         this.#inventory_overlay[item_id] += adjustment_delta;
+    }
+    resetInventoryAdjustments(){
+        this.#inventory_overlay = {};
     }
 }
 export { RunConfiguration };

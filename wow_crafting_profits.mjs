@@ -1011,6 +1011,8 @@ function getShoppingListRanks(intermediate_data) {
 function constructShoppingList(intermediate_data, on_hand) {
     const shopping_lists = {};
     for (let rank of getShoppingListRanks(intermediate_data)) {
+        logger.debug(`Resetting inventory for rank shopping list.`);
+        on_hand.resetInventoryAdjustments();
         const shopping_list = build_shopping_list(intermediate_data, rank);
         for (let li of shopping_list) {
             let needed = li.quantity;
