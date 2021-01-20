@@ -3,6 +3,7 @@ import got from 'got';
 import fs from 'fs/promises';
 import { parentLogger } from './logging.mjs';
 import { getAuthorizationToken } from './blizz_oath.mjs';
+import { getBlizzardAPIResponse, shutdownApiManager } from './blizzard-api-call.mjs';
 
 const logger = parentLogger.child();
 
@@ -11,32 +12,7 @@ const raidbots_bonus_lists = bonuses_cache;
 const rankings = rank_mappings_cache;
 const shopping_recipe_exclusions = shopping_recipe_exclusion_list;
 
-const base_uri = 'api.blizzard.com';
 const exclude_before_shadowlands = false;
-
-/**
- * Run a query against the blizzard api provider.
- * @param {!string} region_code The region code for the server.
- * @param {!Object} authorization_token An oath access token to use for the request.
- * @param {Object} data The request data to send.
- * @param {!string} uri The url to query against.
- */
-async function getBlizzardAPIResponse(region_code, authorization_token, data, uri) {
-    try {
-        const api_response = await got(`https://${region_code}.${base_uri}${uri}`, {
-            reponseType: 'json',
-            method: 'GET',
-            headers: {
-                'Connection': 'keep-alive',
-                'Authorization': `Bearer ${authorization_token.access_token}`
-            },
-            searchParams: data
-        }).json();
-        return api_response;
-    } catch (error) {
-        logger.error('Issue fetching blizzard data: (' + `https://${region_code}.${base_uri}${uri}` + ') ' + error);
-    }
-}
 
 /**
  * Search through the item database for a string, returning the item id of the item.
@@ -1177,6 +1153,7 @@ async function run(region, server, professions, item, json_config, count) {
  */
 async function shutdown() {
     await saveCache();
+    shutdownApiManager();
 }
 
 /**
