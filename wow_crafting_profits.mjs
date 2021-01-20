@@ -335,14 +335,22 @@ async function checkIsCrafting(item_id, character_professions, region) {
 
     const profession_result_array = [];
 
-    const character_profession_check_promises = [];
-    for (let prof of character_professions) {
-        character_profession_check_promises.push(checkProfessionCrafting(profession_list, prof, region, item_id, item_detail));
-    }
+    // This may be too many concurrent promises
+    /*
+        const character_profession_check_promises = [];
+        for (let prof of character_professions) {
+            character_profession_check_promises.push(checkProfessionCrafting(profession_list, prof, region, item_id, item_detail));
+        }
+    
+        (await Promise.all(character_profession_check_promises)).forEach((check) => {
+            profession_result_array.push(check);
+        });
+    */
 
-    (await Promise.all(character_profession_check_promises)).forEach((check) => {
-        profession_result_array.push(check);
-    });
+    // This doesn't spawn nearly as many threads.
+    for (let prof of character_professions) {
+        profession_result_array.push(await checkProfessionCrafting(profession_list, prof, region, item_id, item_detail));
+    }
 
     // collate professions
     for (let profession_crafting_check of profession_result_array) {
@@ -386,12 +394,8 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
 
     logger.debug(`Scanning profession: ${profession_detail.name}`);
 
-    const crafting_promises = [];
-    for(let skill_tier of crafting_levels){
-        crafting_promises.push(checkProfessionTierCrafting(skill_tier));
-    }
-
-    await Promise.all(crafting_promises);
+    // checkProfessionTierCrafting on each crafting level, concurrently.
+    await Promise.all(crafting_levels.map(checkProfessionTierCrafting));
 
     cacheSet('craftable_by_profession', cache_key, profession_recipe_options);
 
@@ -464,7 +468,7 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
  * @param region The region in which to search.
  */
 async function getCraftingRecipe(recipe_id, region) {
-    const recipe = await getBlizRecipeDetail(recipe_id, region);
+    const recipe = getBlizRecipeDetail(recipe_id, region);
     return recipe;
 }
 
@@ -522,7 +526,6 @@ async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
      */
     auction_house.auctions.forEach((auction) => {
         if (auction.item.id == item_id) {
-            //logger.debug(auction);
             if (((bonus_level_required != undefined) && (('bonus_lists' in auction.item) && auction.item.bonus_lists.includes(bonus_level_required))) || (bonus_level_required == undefined)) {
                 if ('buyout' in auction) {
                     if (auction.buyout > auction_high) {
@@ -719,14 +722,13 @@ async function performProfitAnalysis(region, server, character_professions, item
             const item_bom = await getCraftingRecipe(recipe.recipe_id, region);
 
             // Get prices for BOM
-            let bom_prices = [];
-
-            let bom_promises = [];
+            const bom_prices = [];
 
             logger.debug(`Recipe ${item_bom.name} (${recipe.recipe_id}) has ${item_bom.reagents.length} reagents`);
-            for (let reagent of item_bom.reagents) {
-                bom_promises.push(performProfitAnalysis(region, server, character_professions, reagent.reagent.id, reagent.quantity, auction_house));
-            }
+
+            const bom_promises = item_bom.reagents.map((reagent) => {
+                return performProfitAnalysis(region, server, character_professions, reagent.reagent.id, reagent.quantity, auction_house)
+            });
 
             (await Promise.all(bom_promises)).forEach((price) => {
                 bom_prices.push(price);
