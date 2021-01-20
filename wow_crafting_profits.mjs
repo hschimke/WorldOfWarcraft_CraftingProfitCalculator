@@ -47,7 +47,7 @@ async function getItemId(region, item_name) {
     logger.info(`Searching for itemId for ${item_name}`);
 
     if (await cacheCheck('item_search_cache', item_name)) {
-        return await cacheGet('item_search_cache', item_name);
+        return cacheGet('item_search_cache', item_name);
     }
 
     const search_api_uri = '/data/wow/search/item';
@@ -137,7 +137,7 @@ async function getConnectedRealmId(server_name, server_region) {
     const connected_realm_key = `${server_region}::${server_name}`;
 
     if (await cacheCheck('connected_realm_data', connected_realm_key)) {
-        return await cacheGet('connected_realm_data', connected_realm_key);
+        return cacheGet('connected_realm_data', connected_realm_key);
     }
 
     const list_connected_realms_api = '/data/wow/connected-realm/index';
@@ -206,7 +206,7 @@ async function getItemDetails(item_id, region) {
     const key = item_id
 
     if (await cacheCheck('fetched_item_data', key)) {
-        return await cacheGet('fetched_item_data', key);
+        return cacheGet('fetched_item_data', key);
     }
 
     const profession_item_detail_uri = `/data/wow/item/${item_id}`;
@@ -258,7 +258,7 @@ async function getBlizSkillTierDetail(profession_id, skillTier_id, region) {
     const key = `${region}::${profession_id}::${skillTier_id}`;
 
     if (await cacheCheck('fetched_profession_skill_tier_detail_data', key)) {
-        return await cacheGet('fetched_profession_skill_tier_detail_data', key);
+        return cacheGet('fetched_profession_skill_tier_detail_data', key);
     }
 
     const profession_skill_tier_detail_uri = `/data/wow/profession/${profession_id}/skill-tier/${skillTier_id}`;
@@ -284,7 +284,7 @@ async function getBlizRecipeDetail(recipe_id, region) {
     const key = `${region}::${recipe_id}`;
 
     if (await cacheCheck('fetched_profession_recipe_detail_data', key)) {
-        return await cacheGet('fetched_profession_recipe_detail_data', key);
+        return cacheGet('fetched_profession_recipe_detail_data', key);
     }
 
     const profession_recipe_uri = `/data/wow/recipe/${recipe_id}`;
@@ -312,7 +312,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
     const key = `${region}::${item_id}::${JSON.stringify(character_professions)}`;
 
     if (await cacheCheck('craftable_by_professions_cache', key)) {
-        return await cacheGet('craftable_by_professions_cache', key);
+        return cacheGet('craftable_by_professions_cache', key);
     }
 
     const profession_list = await getBlizProfessionsList(region);
@@ -335,21 +335,20 @@ async function checkIsCrafting(item_id, character_professions, region) {
 
     const profession_result_array = [];
 
-    const checkProfessionCraftingPromises = [];
-
+    const character_profession_check_promises = [];
     for (let prof of character_professions) {
-        checkProfessionCraftingPromises.push(checkProfessionCrafting(profession_list, prof, region, item_id, item_detail));
+        character_profession_check_promises.push(checkProfessionCrafting(profession_list, prof, region, item_id, item_detail));
     }
 
-    (await Promise.all(checkProfessionCraftingPromises)).forEach((check)=>{
+    (await Promise.all(character_profession_check_promises)).forEach((check) => {
         profession_result_array.push(check);
     });
 
     // collate professions
-    for(let profession_crafting_check of profession_result_array){
+    for (let profession_crafting_check of profession_result_array) {
         recipe_options.recipes = recipe_options.recipes.concat(profession_crafting_check.recipes);
         recipe_options.recipe_ids = recipe_options.recipe_ids.concat(profession_crafting_check.recipe_ids);
-        recipe_options.craftable = recipe_options.craftable | profession_crafting_check.craftable;
+        recipe_options.craftable = recipe_options.craftable || profession_crafting_check.craftable;
     }
 
     cacheSet('craftable_by_professions_cache', key, recipe_options);
@@ -366,6 +365,11 @@ async function checkIsCrafting(item_id, character_professions, region) {
  * @param {object} item_detail Details about the item we are checking.
  */
 async function checkProfessionCrafting(profession_list, prof, region, item_id, item_detail) {
+    const cache_key = `${region}:${prof}:${item_id}`;
+    if (await cacheCheck('craftable_by_profession', cache_key)) {
+        return cacheGet('craftable_by_profession', cache_key);
+    }
+
     const profession_recipe_options = {
         craftable: false,
         recipes: [],
@@ -382,9 +386,22 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
 
     logger.debug(`Scanning profession: ${profession_detail.name}`);
 
-    for (let skill_tier of crafting_levels) {
-        //only run on shadowlands tiers, unless exclude_before_shadowlands is set to false
-        //skill_tier.name.includes('Shadowlands') (is in shadowlands)
+    const crafting_promises = [];
+    for(let skill_tier of crafting_levels){
+        crafting_promises.push(checkProfessionTierCrafting(skill_tier));
+    }
+
+    await Promise.all(crafting_promises);
+
+    cacheSet('craftable_by_profession', cache_key, profession_recipe_options);
+
+    return profession_recipe_options;
+
+    /**
+     * Scan a tier of a given profession to see if it can craft an item.
+     * @param skill_tier The tier level to check.
+     */
+    async function checkProfessionTierCrafting(skill_tier) {
         let check_scan_tier = skill_tier.name.includes('Shadowlands');
         if (!exclude_before_shadowlands) {
             check_scan_tier = true;
@@ -430,7 +447,7 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
                                 profession_recipe_options.craftable = true;
                             }
                         } else {
-                            logger.debug(`Skipping Recipe: (${recipe.id}) "${recipe.name}"`);
+                            //logger.debug(`Skipping Recipe: (${recipe.id}) "${recipe.name}"`);
                         }
                     }
                 }
@@ -439,7 +456,6 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
             }
         }
     }
-    return profession_recipe_options;
 }
 
 /**
@@ -461,7 +477,7 @@ async function getAuctionHouse(server_id, server_region) {
     // Download the auction house for the server_id
     // If the auction house is older than an hour then remove it from the cached_data.fetched_auction_houses array
     if (await cacheCheck('fetched_auctions_data', server_id, 3.6e+6)) {
-        return await cacheGet('fetched_auctions_data', server_id);
+        return cacheGet('fetched_auctions_data', server_id);
     }
 
     logger.info('Auction house is out of date, fetching it fresh.')
