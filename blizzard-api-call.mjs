@@ -7,8 +7,7 @@ const logger = parentLogger.child();
 const allowed_connections_per_period = 100;
 const period_reset_window = 1500;
 
-let currently_running = 0;
-let run = true;
+let allowed_during_period = 0;
 let check_count = 0;
 
 function sleep(ms) {
@@ -20,8 +19,8 @@ function sleep(ms) {
 class BlizzardTimeoutManager extends events { }
 const emitter = new BlizzardTimeoutManager();
 function exec_reset() {
-    check_count+=period_reset_window;
-    if (run) {
+    check_count += period_reset_window;
+    if (emitter.run) {
         if (check_count >= period_reset_window) {
             check_count = 0;
             emitter.emit('reset');
@@ -31,14 +30,18 @@ function exec_reset() {
 }
 
 function shutdownApiManager() {
-    run = false;
+    emitter.emit('shutdown');
 }
 
 async function manageBlizzardTimeout() {
     emitter.on('reset', () => {
         //logger.debug(`Resetting connection pool: used ${currently_running} of available ${allowed_connections_per_period}`);
-        currently_running = 0;
+        allowed_during_period = 0;
     });
+    emitter.on('shutdown', () => {
+        emitter.run = false;
+    });
+    emitter.run = true;
     setTimeout(exec_reset, 1000);
 }
 
@@ -54,12 +57,12 @@ async function getBlizzardAPIResponse(region_code, authorization_token, data, ur
     let proceed = false;
     let wait_count = 0;
     while (!proceed) {
-        if (currently_running > allowed_connections_per_period) {
+        if (allowed_during_period > allowed_connections_per_period) {
             wait_count++;
             await sleep(1000);
         } else {
             proceed = true;
-            currently_running++;
+            allowed_during_period++;
         }
     }
     if (wait_count > 0) {

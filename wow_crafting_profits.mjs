@@ -312,7 +312,6 @@ async function checkIsCrafting(item_id, character_professions, region) {
     const profession_result_array = [];
 
     // This may be too many concurrent promises
-
     const character_profession_check_promises = [];
     for (let prof of character_professions) {
         character_profession_check_promises.push(checkProfessionCrafting(profession_list, prof, region, item_id, item_detail));
