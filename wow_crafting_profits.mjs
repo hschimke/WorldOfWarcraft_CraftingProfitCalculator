@@ -1011,13 +1011,13 @@ function constructShoppingList(intermediate_data, on_hand) {
             li.quantity = needed;
 
             // Update the cost for this list item
-            if (li.cost.vendor != undefined) {
+            if (li.cost.vendor !== undefined) {
                 li.cost.vendor *= li.quantity;
             }
-            if (li.ah != undefined) {
-                li.ah.high *= li.quantity;
-                li.ah.low *= li.quantity;
-                li.ah.average *= li.quantity;
+            if (li.cost.ah !== undefined) {
+                li.cost.ah.high *= li.quantity;
+                li.cost.ah.low *= li.quantity;
+                li.cost.ah.average *= li.quantity;
             }
         }
         shopping_lists[rank] = shopping_list;
@@ -1043,7 +1043,7 @@ function build_shopping_list(intermediate_data, rank_requested) {
             name: intermediate_data.name,
             quantity: intermediate_data.required,
             cost: {
-                ah: intermediate_data.ah,
+                ah: Object.assign({},intermediate_data.ah),
                 vendor: intermediate_data.vendor,
             },
         });
@@ -1058,7 +1058,7 @@ function build_shopping_list(intermediate_data, rank_requested) {
                     name: intermediate_data.name,
                     quantity: intermediate_data.required,
                     cost: {
-                        ah: intermediate_data.ah,
+                        ah: Object.assign({},intermediate_data.ah),
                         vendor: intermediate_data.vendor,
                     },
                 });
@@ -1071,15 +1071,6 @@ function build_shopping_list(intermediate_data, rank_requested) {
                             logger.debug(`Need ${al.quantity} of ${al.name} (${al.id}) for each of ${needed}`)
 
                             al.quantity = al.quantity * needed;
-
-                            if( al.cost.vendor !== undefined ){
-                                al.cost.vendor = al.cost.vendor * al.quantity;
-                            }
-                            if( al.cost.ah !== undefined ){
-                                al.cost.ah.high = al.cost.ah.high  * al.quantity;
-                                al.cost.ah.low = al.cost.ah.low * al.quantity;
-                                al.cost.ah.average = al.cost.ah.average * al.quantity;
-                            }
 
                             shopping_list.push(al);
                         });
