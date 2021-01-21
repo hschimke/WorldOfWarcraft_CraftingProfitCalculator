@@ -4,7 +4,8 @@ import events from 'events';
 
 const logger = parentLogger.child();
 
-const allowed_connections_per_minutes = 100;
+const allowed_connections_per_period = 100;
+const period_reset_window = 1500;
 
 let currently_running = 0;
 let run = true;
@@ -19,9 +20,9 @@ function sleep(ms) {
 class BlizzardTimeoutManager extends events { }
 const emitter = new BlizzardTimeoutManager();
 function exec_reset() {
-    check_count++;
+    check_count+=period_reset_window;
     if (run) {
-        if (check_count >= 60) {
+        if (check_count >= period_reset_window) {
             check_count = 0;
             emitter.emit('reset');
         }
@@ -35,7 +36,7 @@ function shutdownApiManager() {
 
 async function manageBlizzardTimeout() {
     emitter.on('reset', () => {
-        logger.debug(`Resetting connection pool: used ${currently_running} of available ${allowed_connections_per_minutes}`);
+        //logger.debug(`Resetting connection pool: used ${currently_running} of available ${allowed_connections_per_period}`);
         currently_running = 0;
     });
     setTimeout(exec_reset, 1000);
@@ -53,7 +54,7 @@ async function getBlizzardAPIResponse(region_code, authorization_token, data, ur
     let proceed = false;
     let wait_count = 0;
     while (!proceed) {
-        if (currently_running > allowed_connections_per_minutes) {
+        if (currently_running > allowed_connections_per_period) {
             wait_count++;
             await sleep(1000);
         } else {
