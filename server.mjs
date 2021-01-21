@@ -40,7 +40,7 @@ app.post('/show_output', (req, res) => {
         logger.debug(`Custom search for item: ${req.body.item_id}, server: ${req.body.server}, region: ${req.body.region}, professions: ${req.body.professions}. JSON DATA: ${json_data.inventory.length}`);
     } else if (req.body.type == 'json') {
         logger.debug('json search');
-        config = new RunConfiguration(json_data, req.body.item_id, 1);
+        config = new RunConfiguration(json_data, req.body.item_id, Number(req.body.needed));
         config.region
         logger.debug(`JSON search for item: ${config.item_id}, server: ${config.realm_name}, region: ${config.realm_region}, professions: ${config.professions}. JSON DATA: ${json_data.inventory.length}`);
     }
