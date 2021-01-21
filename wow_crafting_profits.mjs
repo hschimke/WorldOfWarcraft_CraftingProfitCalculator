@@ -856,13 +856,13 @@ async function generateOutputFormat(price_data, region) {
     if ((price_data.ah_price != undefined) && (price_data.ah_price.total_sales > 0)) {
         object_output.ah = {
             sales: price_data.ah_price.total_sales,
-            high: price_data.ah_price.high * price_data.item_quantity,
-            low: price_data.ah_price.low * price_data.item_quantity,
-            average: price_data.ah_price.average * price_data.item_quantity,
+            high: price_data.ah_price.high,
+            low: price_data.ah_price.low,
+            average: price_data.ah_price.average,
         }
     }
     if (price_data.vendor_price > 0) {
-        object_output.vendor = price_data.vendor_price * price_data.item_quantity
+        object_output.vendor = price_data.vendor_price;
     }
     if (price_data.recipe_options != undefined) {
         for (let recipe_option of price_data.recipe_options) {
@@ -1070,17 +1070,15 @@ function build_shopping_list(intermediate_data, rank_requested) {
                             let al = sl;
                             logger.debug(`Need ${al.quantity} of ${al.name} (${al.id}) for each of ${needed}`)
 
-                            let orig_quantity = al.quantity;
-
                             al.quantity = al.quantity * needed;
 
                             if( al.cost.vendor !== undefined ){
-                                al.cost.vendor = (al.cost.vendor / orig_quantity) * al.quantity;
+                                al.cost.vendor = al.cost.vendor * al.quantity;
                             }
                             if( al.cost.ah !== undefined ){
-                                al.cost.ah.high = (al.cost.ah.high / orig_quantity) * al.quantity;
-                                al.cost.ah.low = (al.cost.ah.low / orig_quantity) * al.quantity;
-                                al.cost.ah.average = (al.cost.ah.average / orig_quantity) * al.quantity;
+                                al.cost.ah.high = al.cost.ah.high  * al.quantity;
+                                al.cost.ah.low = al.cost.ah.low * al.quantity;
+                                al.cost.ah.average = al.cost.ah.average * al.quantity;
                             }
 
                             shopping_list.push(al);
