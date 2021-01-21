@@ -1069,7 +1069,20 @@ function build_shopping_list(intermediate_data, rank_requested) {
                         build_shopping_list(part, 0).forEach((sl) => {
                             let al = sl;
                             logger.debug(`Need ${al.quantity} of ${al.name} (${al.id}) for each of ${needed}`)
+
+                            let orig_quantity = al.quantity;
+
                             al.quantity = al.quantity * needed;
+
+                            if( al.cost.vendor !== undefined ){
+                                al.cost.vendor = (al.cost.vendor / orig_quantity) * al.quantity;
+                            }
+                            if( al.cost.ah !== undefined ){
+                                al.cost.ah.high = (al.cost.ah.high / orig_quantity) * al.quantity;
+                                al.cost.ah.low = (al.cost.ah.low / orig_quantity) * al.quantity;
+                                al.cost.ah.average = (al.cost.ah.average / orig_quantity) * al.quantity;
+                            }
+
                             shopping_list.push(al);
                         });
                     }
