@@ -117,7 +117,6 @@ async function getConnectedRealmId(server_name, server_region) {
     }
 
     const list_connected_realms_api = '/data/wow/connected-realm/index';
-    const get_connected_realm_api = '/data/wow/connected-realm'; // /{connectedRealmId}
     const list_connected_realms_form = {
         'namespace': 'dynamic-us',
         'locale': 'en_US'
@@ -464,7 +463,6 @@ async function getAuctionHouse(server_id, server_region) {
     logger.info('Auction house is out of date, fetching it fresh.')
 
     const auction_house_fetch_uri = `/data/wow/connected-realm/${server_id}/auctions`;
-    const auth_token = await getAuthorizationToken();
     const ah = await getBlizzardAPIResponse(
         server_region,
         await getAuthorizationToken(),
