@@ -1,6 +1,6 @@
+import events from 'events';
 import got from 'got';
 import { parentLogger } from './logging.mjs';
-import events from 'events';
 
 const logger = parentLogger.child();
 

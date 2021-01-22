@@ -1,13 +1,13 @@
 'use strict';
-import got from 'got';
 import fs from 'fs/promises';
-import { parentLogger } from './logging.mjs';
-import { getAuthorizationToken } from './blizz_oath.mjs';
+import got from 'got';
 import { getBlizzardAPIResponse, shutdownApiManager } from './blizzard-api-call.mjs';
+import { getAuthorizationToken } from './blizz_oath.mjs';
+import { bonuses_cache, cacheCheck, cacheGet, cacheSet, rank_mappings_cache, saveCache, shopping_recipe_exclusion_list } from './cache/cached-data-sources.mjs';
+import { parentLogger } from './logging.mjs';
 
 const logger = parentLogger.child();
 
-import { saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list, cacheCheck, cacheGet, cacheSet } from './cache/cached-data-sources.mjs';
 const raidbots_bonus_lists = bonuses_cache;
 const rankings = rank_mappings_cache;
 const shopping_recipe_exclusions = shopping_recipe_exclusion_list;
