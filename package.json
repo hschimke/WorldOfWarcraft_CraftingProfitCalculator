@@ -4,7 +4,10 @@
 	"description": "An application to determine the profitability of a crafted item on the public auction house.",
 	"main": "wow_crafting_profits.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"fill-cache": "node ./run.mjs --item 'simple wood'",
+		"clear-cache": "rm ./cache/cache.db",
+		"server": "node ./server.mjs"
 	},
 	"repository": {
 		"type": "git",
