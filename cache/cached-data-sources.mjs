@@ -74,7 +74,7 @@ function dbClose(db) {
     return new Promise((accept, reject) => {
         db.close((err) => {
             if (err) {
-                logger.err('Issue closing database', err);
+                logger.error('Issue closing database', err);
                 reject();
             }
             logger.debug('Database closed');
