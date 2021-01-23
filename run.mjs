@@ -76,11 +76,11 @@ try {
     }
 
     if (good) {
-        professions = Array.from(new Set(character_config_json.professions));
-
         if (argv.json) {
             region = character_config_json.realm.region_name;
             server = character_config_json.realm.realm_name;
+
+            professions = Array.from(new Set(character_config_json.professions));
         }
     }
 } catch (e) {
