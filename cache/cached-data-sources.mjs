@@ -1,4 +1,3 @@
-'use strict';
 import fs from 'fs/promises';
 import { parentLogger } from '../logging.mjs';
 import sqlite3 from 'sqlite3';

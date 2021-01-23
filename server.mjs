@@ -1,4 +1,3 @@
-'use strict';
 import express from 'express';
 import path from 'path';
 import { runWithJSONConfig, shutdown } from './wow_crafting_profits.mjs';

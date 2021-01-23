@@ -1,4 +1,3 @@
-'use strict';
 import fs from 'fs/promises';
 import got from 'got';
 import { getBlizzardAPIResponse, shutdownApiManager } from './blizzard-api-call.mjs';

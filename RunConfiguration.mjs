@@ -1,4 +1,3 @@
-'use strict';
 import { parentLogger } from './logging.mjs';
 const logger = parentLogger.child();
 
