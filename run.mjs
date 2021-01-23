@@ -45,7 +45,7 @@ const argv = yargs(hideBin(process.argv))
         type: 'number',
         default: 1
     })
-    .option('json_config', {
+    .option('json_data', {
         description: 'JSON configuration data',
         alias: 'j',
         type: 'string',
@@ -64,7 +64,7 @@ let item = argv.item;
 let required = argv.count;
 
 try {
-    character_config_json = JSON.parse(argv.json_config);
+    character_config_json = JSON.parse(argv.json_data);
     let good = true;
     let has_inventory = true;
     let has_professions = true;

@@ -1,7 +1,9 @@
 import winston from 'winston';
 
+const lowest_level_to_report = (process.env.LOG_LEVEL !== undefined) ? process.env.LOG_LEVEL : 'info';
+
 const parentLogger = winston.createLogger({
-    level: 'debug',
+    level: lowest_level_to_report,
     format: winston.format.json(),
     //defaultMeta: { service: 'user-service' },
     transports: [
@@ -21,7 +23,7 @@ const parentLogger = winston.createLogger({
 if (process.env.NODE_ENV !== 'production') {
     parentLogger.add(new winston.transports.Console({
         format: winston.format.simple(),
-        level: 'debug',
+        level: lowest_level_to_report,
     }));
 }
 
