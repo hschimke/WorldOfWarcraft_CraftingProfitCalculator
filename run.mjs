@@ -39,6 +39,12 @@ const argv = yargs(hideBin(process.argv))
         type: 'string',
         default: '171276',
     })
+    .option('count', {
+        description: 'How many of the main item to build',
+        alias: 'c',
+        type: 'number',
+        default: 1
+    })
     .option('json_config', {
         description: 'JSON configuration data',
         alias: 'j',
@@ -55,6 +61,7 @@ let region = argv.region;
 let server = argv.server;
 let professions = argv.profession;
 let item = argv.item;
+let required = argv.count;
 
 try {
     character_config_json = JSON.parse(argv.json_config);
@@ -93,6 +100,6 @@ const config = new RunConfiguration({
         realm_name: server,
         region_name: region,
     },
-}, item, 1);
+}, item, required);
 
 cliRun(config);
