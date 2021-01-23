@@ -3,9 +3,10 @@ An application to determine the profitability of a crafted item on a given realm
 
 ## Installation
 To install the program clone the repository, install dependencies, and acquire a battle.net api token.
-`git clone https://github.com/hschimke/WorldOfWarcraft_CraftingProfitCalculator`
-`cd WorldOfWarcraft_CraftingProfitCalculator`
-`npm install`
+
+    git clone https://github.com/hschimke/WorldOfWarcraft_CraftingProfitCalculator
+    cd WorldOfWarcraft_CraftingProfitCalculator
+    npm install
 
 The battle.net Client ID and Client Secret must be placed in the environment for the application. The two required environment variables are `CLIENT_ID` and `CLIENT_SECRET`.
 
