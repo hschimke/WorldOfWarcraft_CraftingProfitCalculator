@@ -4,9 +4,8 @@ import { parentLogger } from './logging.mjs';
 
 const logger = parentLogger.child();
 
-const secrets = JSON.parse(await readFile(new URL('./secrets.json', import.meta.url)));
-const clientID = '9d85a3dfca994efa969df07bd1e47695';
-const clientSecret = secrets.keys.client_secret;
+const clientID = process.env.CLIENT_ID;
+const clientSecret = process.env.CLIENT_SECRET;
 
 const authorization_uri = 'https://us.battle.net/oauth/token';
 const clientAccessToken = {

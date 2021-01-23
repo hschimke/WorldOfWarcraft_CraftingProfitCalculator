@@ -105,6 +105,7 @@ dist
 
 # Secrets
 secrets.json
+*.env
 
 # Cached Data
 cache/*.json
