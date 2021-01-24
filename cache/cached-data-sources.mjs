@@ -40,7 +40,7 @@ async function loadCache() {
         bonuses_cache = JSON.parse(await fs.readFile(new URL(bonuses_cache_fn, import.meta.url)));
     } catch (e) {
         logger.info(`Couldn't find bonuses data, fetching fresh.`);
-        const fetched_bonus_data = await (await got(data_sources.sources[bonuses_cache_fn].href)).body;
+        const fetched_bonus_data = (await got(data_sources.sources[bonuses_cache_fn].href)).body;
         fs.writeFile(new URL(bonuses_cache_fn, import.meta.url), fetched_bonus_data, 'utf8');
         bonuses_cache = JSON.parse(fetched_bonus_data);
     }

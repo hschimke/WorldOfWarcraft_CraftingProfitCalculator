@@ -618,7 +618,11 @@ async function getItemBonusLists(item_id, auction_house) {
  */
 function getLvlModifierForBonus(bonus_id) {
     if (bonus_id in raidbots_bonus_lists) {
-        return raidbots_bonus_lists[bonus_id].level;
+        if ('level' in raidbots_bonus_lists[bonus_id]) {
+            return raidbots_bonus_lists[bonus_id].level;
+        } else {
+            return -1;
+        }
     } else {
         return -1;
     }
@@ -683,12 +687,12 @@ async function performProfitAnalysis(region, server, character_professions, item
     // Eventually bonus_lists should be treated as separate items and this should happen first
     // When that's the case we should actually return an entire extra set of price data based on each
     // possible bonus_list. They're actually different items, blizz just tells us they aren't.
-    price_obj.bonus_lists = await getItemBonusLists(item_id, auction_house);
+    price_obj.bonus_lists = Array.from( new Set(await getItemBonusLists(item_id, auction_house)));
     let bonus_link = {};
     for (let bl of price_obj.bonus_lists) {
         for (let b of bl) {
             const mod = getLvlModifierForBonus(b);
-            if (mod != -1) {
+            if (mod !== -1) {
                 const new_level = base_ilvl + mod
                 bonus_link[new_level] = b;
                 logger.debug(`Bonus level ${b} results in crafted ilvl of ${new_level}`);
@@ -739,6 +743,17 @@ async function performProfitAnalysis(region, server, character_professions, item
         }
     } else {
         logger.debug(`Item ${item_detail.name} (${item_id}) not craftable with professions: ${character_professions}`);
+        if (price_obj.bonus_lists.length > 0) {
+            price_obj.bonus_prices = [];
+            const bl_flat = Array.from(new Set(price_obj.bonus_lists.flat())).filter((bonus) => bonus in raidbots_bonus_lists && 'level' in raidbots_bonus_lists[bonus]);
+            for (const bonus of bl_flat) {
+                const level_uncrafted_ah_cost = {
+                    level: base_ilvl + raidbots_bonus_lists[bonus].level,
+                    ah: await getAHItemPrice(item_id, auction_house, bonus)
+                };
+                price_obj.bonus_prices.push(level_uncrafted_ah_cost);
+            }
+        }
     }
 
     return price_obj;
@@ -844,7 +859,7 @@ function goldFormatter(price_in) {
     const copper = price % 100;
     const silver = (((price % 10000) - copper)) / 100;
     const gold = (price - (price % 10000)) / 10000;
-    return `${gold}g ${silver}s ${copper}c`;
+    return `${gold.toLocaleString()}g ${silver.toLocaleString()}s ${copper.toLocaleString()}c`;
 }
 
 /**
@@ -906,6 +921,20 @@ async function generateOutputFormat(price_data, region) {
         }
     }
 
+    if (price_data.bonus_prices !== undefined) {
+        object_output.bonus_prices = price_data.bonus_prices.map((bonus_price) => {
+            return {
+                level: bonus_price.level,
+                ah: {
+                    sales: bonus_price.ah.total_sales,
+                    high: bonus_price.ah.high,
+                    low: bonus_price.ah.low,
+                    average: bonus_price.ah.average,
+                }
+            };
+        })
+    }
+
     return object_output;
 }
 
@@ -932,13 +961,13 @@ function textFriendlyOutputFormat(output_data, indent) {
     //logger.debug('Building Formatted Price List');
 
     return_string += indentAdder(indent) + `${output_data.name} (${output_data.id}) Requires ${output_data.required}\n`;
-    if ((output_data.ah != undefined) && (output_data.ah.sales > 0)) {
+    if ((output_data.ah !== undefined) && (output_data.ah.sales > 0)) {
         return_string += indentAdder(indent + 1) + `AH ${output_data.ah.sales}: ${goldFormatter(output_data.ah.high)}/${goldFormatter(output_data.ah.low)}/${goldFormatter(output_data.ah.average)}\n`;
     }
     if (output_data.vendor > 0) {
         return_string += indentAdder(indent + 1) + `Vendor ${goldFormatter(output_data.vendor)}\n`;
     }
-    if (output_data.recipes != undefined) {
+    if (output_data.recipes !== undefined) {
         for (let recipe_option of output_data.recipes) {
             return_string += indentAdder(indent + 1) + `${recipe_option.name} - ${recipe_option.rank} - (${recipe_option.id}) : ${goldFormatter(recipe_option.high)}/${goldFormatter(recipe_option.low)}/${goldFormatter(recipe_option.average)}\n`;
             if ((recipe_option.ah != undefined) && (recipe_option.ah.sales > 0)) {
@@ -954,9 +983,16 @@ function textFriendlyOutputFormat(output_data, indent) {
         }
     }
 
+    if (output_data.bonus_prices !== undefined) {
+        for (const bonus_price of output_data.bonus_prices) {
+            return_string += indentAdder(indent + 2) + `${output_data.name} (${output_data.id}) iLvl ${bonus_price.level}\n`;
+            return_string += indentAdder(indent + 3) + `AH ${bonus_price.ah.sales}: ${goldFormatter(bonus_price.ah.high)}/${goldFormatter(bonus_price.ah.low)}/${goldFormatter(bonus_price.ah.average)}\n`;
+        }
+    }
+
     //logger.debug('Building formatted shopping list');
     // Add lists if it's appropriate
-    if ('shopping_lists' in output_data) {
+    if ('shopping_lists' in output_data && Object.keys(output_data.shopping_lists).length > 0) {
         return_string += indentAdder(indent) + `Shopping List For: ${output_data.name}\n`;
         for (let list of Object.keys(output_data.shopping_lists)) {
             return_string += indentAdder(indent + 1) + `List for rank ${list}\n`;
