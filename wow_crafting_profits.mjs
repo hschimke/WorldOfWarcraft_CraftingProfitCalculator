@@ -687,18 +687,18 @@ async function performProfitAnalysis(region, server, character_professions, item
     // Eventually bonus_lists should be treated as separate items and this should happen first
     // When that's the case we should actually return an entire extra set of price data based on each
     // possible bonus_list. They're actually different items, blizz just tells us they aren't.
-    price_obj.bonus_lists = Array.from( new Set(await getItemBonusLists(item_id, auction_house)));
+    price_obj.bonus_lists = Array.from(new Set(await getItemBonusLists(item_id, auction_house)));
     let bonus_link = {};
-    for (let bl of price_obj.bonus_lists) {
-        for (let b of bl) {
-            const mod = getLvlModifierForBonus(b);
-            if (mod !== -1) {
-                const new_level = base_ilvl + mod
-                bonus_link[new_level] = b;
-                logger.debug(`Bonus level ${b} results in crafted ilvl of ${new_level}`);
-            }
+    const bl_flat = Array.from(new Set(price_obj.bonus_lists.flat())).filter((bonus) => bonus in raidbots_bonus_lists && 'level' in raidbots_bonus_lists[bonus]);
+    for (const bonus of bl_flat) {
+        const mod = getLvlModifierForBonus(bonus);
+        if (mod !== -1) {
+            const new_level = base_ilvl + mod
+            bonus_link[new_level] = bonus;
+            logger.debug(`Bonus level ${bonus} results in crafted ilvl of ${new_level}`);
         }
     }
+    
     const recipe_id_list = item_craftable.recipe_ids.sort();
 
     price_obj.recipe_options = [];
@@ -745,7 +745,6 @@ async function performProfitAnalysis(region, server, character_professions, item
         logger.debug(`Item ${item_detail.name} (${item_id}) not craftable with professions: ${character_professions}`);
         if (price_obj.bonus_lists.length > 0) {
             price_obj.bonus_prices = [];
-            const bl_flat = Array.from(new Set(price_obj.bonus_lists.flat())).filter((bonus) => bonus in raidbots_bonus_lists && 'level' in raidbots_bonus_lists[bonus]);
             for (const bonus of bl_flat) {
                 const level_uncrafted_ah_cost = {
                     level: base_ilvl + raidbots_bonus_lists[bonus].level,
