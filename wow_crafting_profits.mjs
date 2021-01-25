@@ -211,7 +211,7 @@ async function getItemDetails(item_id, region) {
  */
 async function getBlizProfessionsList(region) {
     const profession_list_uri = '/data/wow/profession/index'; // professions.name / professions.id
-    return await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+    return getBlizzardAPIResponse(region, await getAuthorizationToken(), {
         'namespace': 'static-us',
         'locale': 'en_US'
     }, profession_list_uri);
@@ -224,7 +224,7 @@ async function getBlizProfessionsList(region) {
  */
 async function getBlizProfessionDetail(profession_id, region) {
     const profession_detail_uri = `/data/wow/profession/${profession_id}`; // skill_tiers.name skill_tiers.id
-    return await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+    return getBlizzardAPIResponse(region, await getAuthorizationToken(), {
         'namespace': 'static-us',
         'locale': 'en_US'
     },
@@ -400,12 +400,18 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
             // Get a list of all recipes each level can do
             const skill_tier_detail = await getBlizSkillTierDetail(check_profession_id, skill_tier.id, region);
 
+            let checked_categories = 0;
+            let recipes_checked = 0;
+
             if (skill_tier_detail.categories != undefined) {
                 const categories = skill_tier_detail.categories;
 
+                checked_categories += categories.length;
                 for (let cat of categories) {
                     for (let rec of cat.recipes) {
                         const recipe = await getBlizRecipeDetail(rec.id, region);
+                        recipes_checked++;
+                        //logger.debug(`Check recipe ${recipe.name}`);
                         if (!(recipe.name.includes('Prospect') || recipe.name.includes('Mill'))) {
                             let crafty = false;
                             if ('alliance_crafted_item' in recipe) {
@@ -443,6 +449,7 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
             } else {
                 logger.debug(`Skill tier ${skill_tier.name} has no categories.`);
             }
+            logger.debug(`Checked ${recipes_checked} recipes in ${checked_categories} categories for ${item_id} in ${skill_tier.name}`);
         }
     }
 }
