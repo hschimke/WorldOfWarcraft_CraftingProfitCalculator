@@ -8,7 +8,7 @@ const allowed_connections_per_period = 100;
 const period_reset_window = 1500;
 
 let allowed_during_period = 0;
-let check_count = 0;
+let in_use = 0;
 
 function sleep(ms) {
     return new Promise((resolve) => {
@@ -16,33 +16,34 @@ function sleep(ms) {
     });
 }
 
-class BlizzardTimeoutManager extends events { }
+class BlizzardTimeoutManager extends events {
+    intervalTimeout;
+}
 const emitter = new BlizzardTimeoutManager();
 function exec_reset() {
-    check_count += period_reset_window;
-    if (emitter.run) {
-        if (check_count >= period_reset_window) {
-            check_count = 0;
-            emitter.emit('reset');
-        }
-        setTimeout(exec_reset, 1000);
-    }
+    emitter.emit('reset');
 }
 
 function shutdownApiManager() {
     emitter.emit('shutdown');
 }
 
+emitter.on('reset', () => {
+    logger.debug(`Resetting connection pool: used ${allowed_during_period} of available ${allowed_connections_per_period}, ${in_use} currently used`);
+    allowed_during_period = 0;
+});
+emitter.on('shutdown', () => {
+    logger.debug(`Stop API manager with ${allowed_during_period} still running and ${in_use} in use`);
+    clearInterval(emitter.intervalTimeout);
+});
+emitter.on('start', () => {
+    logger.debug(`Start API manager with window ${period_reset_window}`);
+    emitter.intervalTimeout = setInterval(exec_reset, period_reset_window);
+    emitter.intervalTimeout.unref();
+});
+
 async function manageBlizzardTimeout() {
-    emitter.on('reset', () => {
-        //logger.debug(`Resetting connection pool: used ${currently_running} of available ${allowed_connections_per_period}`);
-        allowed_during_period = 0;
-    });
-    emitter.on('shutdown', () => {
-        emitter.run = false;
-    });
-    emitter.run = true;
-    setTimeout(exec_reset, 1000);
+    emitter.emit('start');
 }
 
 const base_uri = 'api.blizzard.com';
@@ -68,6 +69,7 @@ async function getBlizzardAPIResponse(region_code, authorization_token, data, ur
     if (wait_count > 0) {
         logger.debug(`Waited ${wait_count} seconds for an available API window.`);
     }
+    in_use++;
     try {
         const api_response = await got(`https://${region_code}.${base_uri}${uri}`, {
             reponseType: 'json',
@@ -78,7 +80,7 @@ async function getBlizzardAPIResponse(region_code, authorization_token, data, ur
             },
             searchParams: data
         }).json();
-        //currently_running--;
+        in_use--;
         return api_response;
     } catch (error) {
         logger.error('Issue fetching blizzard data: (' + `https://${region_code}.${base_uri}${uri}` + ') ' + error);
