@@ -1,6 +1,5 @@
 import fs from 'fs/promises';
-import got from 'got';
-import { getBlizzardAPIResponse, shutdownApiManager } from './blizzard-api-call.mjs';
+import { getBlizzardAPIResponse, getBlizzardRawUriResponse, shutdownApiManager } from './blizzard-api-call.mjs';
 import { getAuthorizationToken } from './blizz_oath.mjs';
 import { bonuses_cache, cacheCheck, cacheGet, cacheSet, rank_mappings_cache, saveCache, shopping_recipe_exclusion_list } from './cache/cached-data-sources.mjs';
 import { parentLogger } from './logging.mjs';
@@ -23,6 +22,7 @@ const CRAFTABLE_BY_PROFESSION_SET_CACHE = 'craftable_by_professions_cache';
 const CRAFTABLE_BY_SINGLE_PROFESSION_CACHE = 'craftable_by_profession';
 const AUCTION_DATA_CACHE = 'fetched_auctions_data';
 const PROFESSION_DETAIL_CACHE = 'profession_detail_data';
+const PROFESSION_LIST_CACHE = 'regional_profession_list';
 
 /**
  * Search through the item database for a string, returning the item id of the item.
@@ -149,20 +149,12 @@ async function getConnectedRealmId(server_name, server_region) {
     // Pull the data for each connection until you find one with the server name in question
     for (let realm_href of all_connected_realms.connected_realms) {
         const hr = realm_href.href;
-        const connected_realm_detail = await got(hr, {
-            reponseType: 'json',
-            method: 'GET',
-            headers: {
-                'Connection': 'keep-alive',
-                'Authorization': `Bearer ${access_token.access_token}`
-            },
-            searchparams: get_connected_realm_form
-        }).json();
+        const connected_realm_detail = await getBlizzardRawUriResponse(access_token, get_connected_realm_form, hr);
         const realm_list = connected_realm_detail.realms;
         let found_realm = false;
         for (let rlm of realm_list) {
-            logger.debug(`Realm ${rlm.name['en_US']}`);
-            if (rlm.name['en_US'].localeCompare(server_name, undefined, { sensitivity: 'accent' }) == 0) {
+            logger.debug(`Realm ${rlm.name}`);
+            if (rlm.name.localeCompare(server_name, undefined, { sensitivity: 'accent' }) == 0) {
                 logger.debug(`Realm ${rlm} matches ${server_name}`);
                 found_realm = true;
                 break;
@@ -210,12 +202,21 @@ async function getItemDetails(item_id, region) {
  * @param {!string} region The region to search
  */
 async function getBlizProfessionsList(region) {
+    const key = region;
     const profession_list_uri = '/data/wow/profession/index'; // professions.name / professions.id
 
-    return getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+    if (await cacheCheck(PROFESSION_LIST_CACHE, key)) {
+        return cacheGet(PROFESSION_LIST_CACHE, key);
+    }
+
+    const result = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
         'namespace': 'static-us',
         'locale': 'en_US'
     }, profession_list_uri);
+
+    cacheSet(PROFESSION_LIST_CACHE, key, result);
+
+    return result;
 }
 
 /**
@@ -237,8 +238,8 @@ async function getBlizProfessionDetail(profession_id, region) {
     },
         profession_detail_uri);
 
-        cacheSet(PROFESSION_DETAIL_CACHE,key,result);
-        return result;
+    cacheSet(PROFESSION_DETAIL_CACHE, key, result);
+    return result;
 }
 
 /**
@@ -359,7 +360,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
     return recipe_options;
 }
 
-function getProfessionId(profession_list, profession_name){
+function getProfessionId(profession_list, profession_name) {
     return profession_list.professions.find((item) => {
         return (item.name.localeCompare(profession_name, undefined, { sensitivity: 'accent' }) == 0);
     }).id;
@@ -719,7 +720,7 @@ async function performProfitAnalysis(region, server, character_professions, item
             logger.debug(`Bonus level ${bonus} results in crafted ilvl of ${new_level}`);
         }
     }
-    
+
     const recipe_id_list = item_craftable.recipe_ids.sort();
 
     price_obj.recipe_options = [];

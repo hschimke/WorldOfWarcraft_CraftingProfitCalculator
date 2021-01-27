@@ -62,7 +62,7 @@ async function loadCache() {
     }
 
     // db open
-    const table_create_string = 'CREATE TABLE IF NOT EXISTS key_values (namespace TEXT, key TEXT, value BLOB, cached INTEGER, PRIMARY KEY (namespace,key))';
+    const table_create_string = 'CREATE TABLE IF NOT EXISTS key_values (namespace TEXT, key TEXT, value TEXT, cached INTEGER, PRIMARY KEY (namespace,key))';
     await dbRun(db, table_create_string);
     await dbRun(db, 'PRAGMA journal_mode=WAL');
     await dbRun(db, 'PRAGMA synchronous = normal');

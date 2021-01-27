@@ -83,10 +83,49 @@ async function getBlizzardAPIResponse(region_code, authorization_token, data, ur
         in_use--;
         return api_response;
     } catch (error) {
-        logger.error('Issue fetching blizzard data: (' + `https://${region_code}.${base_uri}${uri}` + ') ' + error);
+        logger.error(`Issue fetching blizzard data: (https://${region_code}.${base_uri}${uri}) ` + error);
+    }
+}
+
+/**
+ * 
+ * @param {object} authorization_token An oath access token to use for the request.
+ * @param {object} data The request data to send.
+ * @param {string} uri Raw url including transport to query.
+ */
+async function getBlizzardRawUriResponse(authorization_token, data, uri) {
+    let proceed = false;
+    let wait_count = 0;
+    while (!proceed) {
+        if (allowed_during_period > allowed_connections_per_period) {
+            wait_count++;
+            await sleep(1000);
+        } else {
+            proceed = true;
+            allowed_during_period++;
+        }
+    }
+    if (wait_count > 0) {
+        logger.debug(`Waited ${wait_count} seconds for an available API window.`);
+    }
+    in_use++;
+    try {
+        const api_response = await got(uri, {
+            reponseType: 'json',
+            method: 'GET',
+            headers: {
+                'Connection': 'keep-alive',
+                'Authorization': `Bearer ${authorization_token.access_token}`
+            },
+            searchParams: data
+        }).json();
+        in_use--;
+        return api_response;
+    } catch (error) {
+        logger.error(`Issue fetching blizzard data: (${uri}) ` + error);
     }
 }
 
 manageBlizzardTimeout();
 
-export { getBlizzardAPIResponse, shutdownApiManager };
+export { getBlizzardAPIResponse, getBlizzardRawUriResponse, shutdownApiManager };
