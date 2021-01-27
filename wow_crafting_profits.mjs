@@ -22,6 +22,7 @@ const PROFESSION_RECIPE_DETAIL_CACHE = 'fetched_profession_recipe_detail_data';
 const CRAFTABLE_BY_PROFESSION_SET_CACHE = 'craftable_by_professions_cache';
 const CRAFTABLE_BY_SINGLE_PROFESSION_CACHE = 'craftable_by_profession';
 const AUCTION_DATA_CACHE = 'fetched_auctions_data';
+const PROFESSION_DETAIL_CACHE = 'profession_detail_data';
 
 /**
  * Search through the item database for a string, returning the item id of the item.
@@ -147,7 +148,6 @@ async function getConnectedRealmId(server_name, server_region) {
 
     // Pull the data for each connection until you find one with the server name in question
     for (let realm_href of all_connected_realms.connected_realms) {
-        logger.debug(`Check realm with href: ${realm_href.href}`);
         const hr = realm_href.href;
         const connected_realm_detail = await got(hr, {
             reponseType: 'json',
@@ -211,6 +211,7 @@ async function getItemDetails(item_id, region) {
  */
 async function getBlizProfessionsList(region) {
     const profession_list_uri = '/data/wow/profession/index'; // professions.name / professions.id
+
     return getBlizzardAPIResponse(region, await getAuthorizationToken(), {
         'namespace': 'static-us',
         'locale': 'en_US'
@@ -223,12 +224,21 @@ async function getBlizProfessionsList(region) {
  * @param region The region in which to search.
  */
 async function getBlizProfessionDetail(profession_id, region) {
+    const key = `${region}::${profession_id}`;
+
+    if (await cacheCheck(PROFESSION_DETAIL_CACHE, key)) {
+        return cacheGet(PROFESSION_DETAIL_CACHE, key);
+    }
+
     const profession_detail_uri = `/data/wow/profession/${profession_id}`; // skill_tiers.name skill_tiers.id
-    return getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+    const result = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
         'namespace': 'static-us',
         'locale': 'en_US'
     },
         profession_detail_uri);
+
+        cacheSet(PROFESSION_DETAIL_CACHE,key,result);
+        return result;
 }
 
 /**
@@ -349,6 +359,12 @@ async function checkIsCrafting(item_id, character_professions, region) {
     return recipe_options;
 }
 
+function getProfessionId(profession_list, profession_name){
+    return profession_list.professions.find((item) => {
+        return (item.name.localeCompare(profession_name, undefined, { sensitivity: 'accent' }) == 0);
+    }).id;
+}
+
 /**
  * Check a single profession to see if an item is craftable by it.
  * @param {Array<object>} profession_list List of all available professions from Blizzard.
@@ -369,9 +385,7 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
         recipe_ids: []
     };
 
-    const check_profession_id = profession_list.professions.find((item) => {
-        return (item.name.localeCompare(prof, undefined, { sensitivity: 'accent' }) == 0);
-    }).id;
+    const check_profession_id = getProfessionId(profession_list, prof);
 
     // Get a list of the crafting levels for the professions
     const profession_detail = await getBlizProfessionDetail(check_profession_id, region);

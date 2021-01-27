@@ -1,4 +1,3 @@
-import { readFile } from 'fs/promises';
 import got from 'got';
 import { parentLogger } from './logging.mjs';
 

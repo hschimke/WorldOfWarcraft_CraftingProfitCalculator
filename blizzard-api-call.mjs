@@ -29,7 +29,7 @@ function shutdownApiManager() {
 }
 
 emitter.on('reset', () => {
-    logger.debug(`Resetting connection pool: used ${allowed_during_period} of available ${allowed_connections_per_period}, ${in_use} currently used`);
+    //logger.debug(`Resetting connection pool: used ${allowed_during_period} of available ${allowed_connections_per_period}, ${in_use} currently used`);
     allowed_during_period = 0;
 });
 emitter.on('shutdown', () => {
