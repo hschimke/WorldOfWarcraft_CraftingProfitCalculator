@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import { getBlizzardAPIResponse, getBlizzardRawUriResponse, shutdownApiManager } from './blizzard-api-call.mjs';
 import { getAuthorizationToken } from './blizz_oath.mjs';
-import { bonuses_cache, cacheCheck, cacheGet, cacheSet, rank_mappings_cache, saveCache, shopping_recipe_exclusion_list } from './cache/cached-data-sources.mjs';
+import { bonuses_cache, cacheCheck, cacheGet, cacheSet, rank_mappings_cache, saveCache, shopping_recipe_exclusion_list } from './cached-data-sources.mjs';
 import { parentLogger } from './logging.mjs';
 
 const logger = parentLogger.child();

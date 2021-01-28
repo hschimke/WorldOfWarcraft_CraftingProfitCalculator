@@ -1,5 +1,5 @@
 import fs from 'fs/promises';
-import { parentLogger } from '../logging.mjs';
+import { parentLogger } from './logging.mjs';
 import sqlite3 from 'sqlite3';
 import got from 'got';
 
@@ -8,10 +8,10 @@ let db;
 
 const database_fn = './cache/cache.db';
 
-const bonuses_cache_fn = './bonuses.json';
-const rank_mappings_cache_fn = './rank-mappings.json';
-const shopping_recipe_exclusion_list_fn = './shopping-recipe-exclusion-list.json'
-const data_sources_fn = './data-sources.json';
+const bonuses_cache_fn = './cache/bonuses.json';
+const rank_mappings_cache_fn = './cache/rank-mappings.json';
+const shopping_recipe_exclusion_list_fn = './cache/shopping-recipe-exclusion-list.json'
+const data_sources_fn = './cache/data-sources.json';
 
 let bonuses_cache;
 let rank_mappings_cache;
