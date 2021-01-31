@@ -80,6 +80,24 @@ function dbRun(db, query, values) {
 }
 
 /**
+ * Run a query and return result.
+ * @param {Object} db THe database to query against.
+ * @param {string} query The query to run.
+ * @param {Array.<string>} values The paramaters for the query.
+ */
+function dbAll(db,query,values) {
+    return new Promise((accept, reject) => {
+        db.all(query, values, (err, rows) => {
+            if (err) {
+                logger.error(`Issue running query '${query}' and values ${values}`, err);
+                reject();
+            }
+            accept(rows);
+        })
+    });
+}
+
+/**
  * 
  * @param {Object} db The database to run queries against.
  * @param {{Array.<string>}} queries An array of queries to run against the database.
@@ -106,4 +124,4 @@ function dbSerialize(db, queries, values) {
     });
 }
 
-export {dbOpen, dbClose, dbRun, dbGet, dbSerialize};
+export {dbOpen, dbClose, dbRun, dbGet, dbAll, dbSerialize};
