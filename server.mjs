@@ -3,13 +3,16 @@ import path from 'path';
 import { runWithJSONConfig, shutdown } from './wow_crafting_profits.mjs';
 import { RunConfiguration } from './RunConfiguration.mjs';
 import { parentLogger } from './logging.mjs';
+import bodyParser from 'body-parser';
 
 const logger = parentLogger.child();
 
 const app = express();
-const port = 3000;
+const port = 3001;
 
 app.use(express.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
 
 app.get('/', (req, res) => {
     logger.debug('json form requested');

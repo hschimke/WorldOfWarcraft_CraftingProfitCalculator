@@ -8,7 +8,8 @@
 		"fill-cache": "node -r dotenv/config ./run.mjs --item 'simple wood'",
 		"clear-cache": "rm ./cache/cache.db",
 		"server": "node -r dotenv/config ./server.mjs",
-		"cli": "node -r dotenv/config ./run.mjs"
+		"cli": "node -r dotenv/config ./run.mjs",
+		"client-server": "concurrently \"npm run server\" \"cd client && npm start\""
 	},
 	"repository": {
 		"type": "git",
@@ -27,6 +28,7 @@
 	},
 	"homepage": "https://github.com/hschimke/WorldOfWarcraft_CraftingProfitCalculator#readme",
 	"dependencies": {
+		"body-parser": "^1.19.0",
 		"dotenv": "^8.2.0",
 		"express": "^4.17.1",
 		"got": "^11.8.1",
@@ -34,5 +36,8 @@
 		"winston": "^3.3.3",
 		"yargs": "^16.2.0"
 	},
-	"type": "module"
+	"type": "module",
+	"devDependencies": {
+		"concurrently": "^5.3.0"
+	}
 }

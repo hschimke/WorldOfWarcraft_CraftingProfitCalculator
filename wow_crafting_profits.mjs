@@ -3,7 +3,7 @@ import { bonuses_cache, cacheCheck, cacheGet, cacheSet, rank_mappings_cache, sav
 import { parentLogger } from './logging.mjs';
 import { getItemId, getConnectedRealmId, getItemDetails, getBlizRecipeDetail, checkIsCrafting, getCraftingRecipe, getAuctionHouse } from './blizzard-api-helpers.mjs';
 import { shutdownApiManager } from './blizzard-api-call.mjs';
-import {textFriendlyOutputFormat} from './text-output-helpers.mjs';
+import {textFriendlyOutputFormat} from './client/src/text-output-helpers.mjs';
 
 const logger = parentLogger.child();
 

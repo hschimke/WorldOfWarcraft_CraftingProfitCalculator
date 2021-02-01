@@ -55,11 +55,11 @@ function textFriendlyOutputFormat(output_data, indent) {
     if (output_data.recipes !== undefined) {
         for (let recipe_option of output_data.recipes) {
             return_string += indentAdder(indent + 1) + `${recipe_option.name} - ${recipe_option.rank} - (${recipe_option.id}) : ${goldFormatter(recipe_option.high)}/${goldFormatter(recipe_option.low)}/${goldFormatter(recipe_option.average)}\n`;
-            if ((recipe_option.ah != undefined) && (recipe_option.ah.sales > 0)) {
+            if ((recipe_option.ah !== undefined) && (recipe_option.ah.sales > 0)) {
                 return_string += indentAdder(indent + 2) + `AH ${recipe_option.ah.sales}: ${goldFormatter(recipe_option.ah.high)}/${goldFormatter(recipe_option.ah.low)}/${goldFormatter(recipe_option.ah.average)}\n`;
             }
             return_string += '\n';
-            if (recipe_option.parts != undefined) {
+            if (recipe_option.parts !== undefined) {
                 for (let opt of recipe_option.parts) {
                     return_string += textFriendlyOutputFormat(opt, indent + 2)
                     return_string += '\n'
@@ -82,12 +82,12 @@ function textFriendlyOutputFormat(output_data, indent) {
         for (let list of Object.keys(output_data.shopping_lists)) {
             return_string += indentAdder(indent + 1) + `List for rank ${list}\n`;
             for (let li of output_data.shopping_lists[list]) {
-                return_string += indentAdder(indent + 2) + `[${(new String(li.quantity)).padStart(8, ' ')}] -- ${li.name} (${li.id})\n`;
-                if (li.cost.vendor != undefined) {
+                return_string += indentAdder(indent + 2) + `[${li.quantity.toLocaleString().padStart(8, ' ')}] -- ${li.name} (${li.id})\n`;
+                if (li.cost.vendor !== undefined) {
                     return_string += indentAdder(indent + 10);
                     return_string += `vendor: ${goldFormatter(li.cost.vendor)}\n`;
                 }
-                if (li.cost.ah != undefined) {
+                if (li.cost.ah !== undefined) {
                     return_string += indentAdder(indent + 10);
                     return_string += `ah: ${goldFormatter(li.cost.ah.high)}/${goldFormatter(li.cost.ah.low)}/${goldFormatter(li.cost.ah.average)}\n`;
                 }
