@@ -1,4 +1,5 @@
 import React from 'react';
+import './RunForm.css';
 
 class SimpleRunFrom extends React.Component {
     constructor(props) {
@@ -17,7 +18,7 @@ class SimpleRunFrom extends React.Component {
 
     render() {
         return (
-            <form onSubmit={this.handleSubmit}>
+            <form onSubmit={this.handleSubmit} className="RunForm">
                 <label for="item">Item:
                     <input type="text" name="item" value={this.props.item} onChange={this.handleChange} />
                 </label>
@@ -56,7 +57,7 @@ class AdvancedRunFrom extends React.Component {
     render() {
         const profession_list = this.props.allProfessions;
         return (
-            <form onSubmit={this.handleSubmit}>
+            <form onSubmit={this.handleSubmit} className="RunForm">
                 <label for="item">Item:
                     <input type="text" name="item" value={this.props.item} onChange={this.handleChange} />
                 </label>
@@ -69,8 +70,8 @@ class AdvancedRunFrom extends React.Component {
                 <label for="required">Required Count:
                     <input type="text" name="required" value={this.props.required} onChange={this.handleChange} />
                 </label>
-                <fieldset>
-                    Professions:
+                <fieldset className="Professoins">
+                    <span>Professions:</span>
                     {profession_list.map(item=>{
                         return (
                             <label>

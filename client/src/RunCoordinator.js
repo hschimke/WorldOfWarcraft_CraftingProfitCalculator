@@ -2,6 +2,7 @@ import React from 'react';
 import { AdvancedRunFrom, SimpleRunFrom } from './RunForm.js';
 import { apiRunCall } from './ApiClient.js';
 import RunResultDisplay from './RunResultDisplay.js';
+import './RunCoordinator.css';
 
 class RunCoordinator extends React.Component {
     constructor(props) {
@@ -102,7 +103,7 @@ class RunCoordinator extends React.Component {
                 button_enabled={this.state.enabled_run_button} />
         }
         return (
-            <div>
+            <div className="RunCoordinator">
                 <fieldset>
                     <select onChange={this.pickForm} value={this.state.run_type}>
                         <option value="advanced">Advanced</option>

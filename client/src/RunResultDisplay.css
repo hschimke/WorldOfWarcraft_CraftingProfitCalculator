@@ -1,0 +1,74 @@
+.RunResultDisplay {
+    clear: both;
+    display: block;
+    border-width:1px;
+    border-color: black;
+    border-style: solid;
+    width: fit-content;
+}
+
+.RunResultDisplay div {
+    border-width:1px;
+    border-color: black;
+    border-style: none;
+}
+
+.Status {}
+
+
+.RawResult pre {
+    text-align: left;
+    font-family: monospace;
+}
+
+.WebResult {
+    text-align: left;
+}
+
+.RunResultItem {
+}
+
+.Bonuses {
+}
+
+.ShoppingListItem {
+    margin-left: 25px;
+}
+
+.ShoppingListItem .Quantity {
+    text-align:right;
+    padding-right: 10px;
+    vertical-align: top;
+    width:50px;
+}
+
+.ShoppingList {
+    margin-left: 25px;
+}
+
+.ShoppingLists {}
+
+.RecipeListing {}
+
+.VendorItemPrice {}
+
+.AHItemPrice {}
+
+.PriceData {}
+
+.RecipeListing {
+    display: block;
+    margin-left: 25px;
+}
+
+.PriceData .Gold {
+    color: gold;
+}
+
+.PriceData .Silver {
+    color: silver;
+}
+
+.PriceData .Copper {
+    color: #b87333;
+}

@@ -1,0 +1,28 @@
+.RunForm {
+    
+}
+
+.RunForm label {
+    display: block;
+    width: fit-content;
+    float:none;
+}
+
+.RunForm .Professoins {
+    text-align: left;
+}
+
+.RunForm .Professoins label {
+    width:25%;
+    float: left;
+    padding-right: 50px;
+}
+
+.RunForm .Professoins span {
+    display:block;
+    clear: both;
+    font-weight: bold;
+}
+
+.RunForm .professions input {
+}
