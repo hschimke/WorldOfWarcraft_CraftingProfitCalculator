@@ -65,20 +65,18 @@ class ShoppingLists extends React.Component {
 class ShoppingList extends React.Component {
     render() {
         return (
-            <table className="ShoppingList">
-                <thead>
-                    <tr>
-                        <td colSpan="2">
-                            List for rank {this.props.level}
-                        </td>
-                        </tr>
-                </thead>
-                <tbody>
-                    {this.props.list.map(list_item => {
-                        return <ShoppingListItem item={list_item} />
-                    })}
-                </tbody>
-            </table>
+            <ul className="ShoppingList">
+                <li>
+                    <span className="ShoppingListTitle">
+                        List for rank {this.props.level}
+                    </span>
+                    <ul>
+                        {this.props.list.map(list_item => {
+                            return <ShoppingListItem item={list_item} />
+                        })}
+                    </ul>
+                </li>
+            </ul>
         );
     }
 }
@@ -90,11 +88,11 @@ class ShoppingListItem extends React.Component {
         const show_ah = (li.cost.ah !== undefined);
 
         return (
-            <tr className="ShoppingListItem">
-                <td className="Quantity">
+            <li className="ShoppingListItem">
+                <span className="Quantity">
                     {li.quantity.toLocaleString()}
-                </td>
-                <td>
+                </span>
+                <span>
                     {li.name} ({li.id})
                     {show_vendor &&
                         <VendorItemPrice vendor={li.cost.vendor} />
@@ -102,8 +100,8 @@ class ShoppingListItem extends React.Component {
                     {show_ah &&
                         <AHItemPrice ah={li.cost.ah} />
                     }
-                </td>
-            </tr>
+                </span>
+            </li>
         );
     }
 }

@@ -8,7 +8,7 @@ import bodyParser from 'body-parser';
 const logger = parentLogger.child();
 
 const app = express();
-const port = 3001;
+const port = process.env.SERVER_PORT;
 
 app.use(express.urlencoded({ extended: false }));
 app.use(bodyParser.json());
