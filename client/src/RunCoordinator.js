@@ -1,7 +1,7 @@
 import React from 'react';
 import { AdvancedRunFrom, SimpleRunFrom } from './RunForm.js';
 import { apiRunCall } from './ApiClient.js';
-import {textFriendlyOutputFormat} from './text-output-helpers.mjs';
+import RunResultDisplay from './RunResultDisplay.js';
 
 class RunCoordinator extends React.Component {
     constructor(props) {
@@ -23,7 +23,7 @@ class RunCoordinator extends React.Component {
             professions: all_professions.slice(),
             all_professions: all_professions.slice(),
             enabled_run_button: true,
-            output_display: 'Empty Output',
+            output_display: 'empty',
         };
     }
 
@@ -56,8 +56,9 @@ class RunCoordinator extends React.Component {
     }
 
     handleApiRun(data){
-        this.setState({output_display:textFriendlyOutputFormat(data,1)});
+        this.setState({output_display:'ready'});
         //this.setState({output_display:JSON.stringify(data,null,1)});
+        this.setState({raw_run:data});
         this.setState({enabled_run_button:true});
     }
 
@@ -81,7 +82,7 @@ class RunCoordinator extends React.Component {
 
     render() {
         let runform;
-        const output = <pre>{this.state.output_display}</pre>;
+        //const output = <pre>{this.state.output_display}</pre>;
         if (this.state.run_type === 'advanced') {
             runform = <AdvancedRunFrom
                 handleInputChange={this.handleInputChange} handleSubmit={this.handleSubmit} handleCheckbox={this.handleCheckbox}
@@ -112,7 +113,7 @@ class RunCoordinator extends React.Component {
                     {runform}
                 </div>
                 <div>
-                    {output}
+                    <RunResultDisplay raw_run={this.state.raw_run} status={this.state.output_display} />
                 </div>
             </div>
         );
