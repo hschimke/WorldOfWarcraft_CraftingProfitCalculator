@@ -40,10 +40,15 @@
 
 .ShoppingListItem .Quantity {
     vertical-align: top;
+    text-align: right;
 }
 
 .ShoppingListItem .Data {
     padding-left: 20px;
+}
+
+.ShoppingListItem .Data .VendorItemPrice,.AHItemPrice {
+    font-size: 10pt;
 }
 
 .ShoppingList {
@@ -53,8 +58,14 @@
 .ShoppingLists {
     display: block;
     float: right;
-    background-color: gray;
     padding-left: 25px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.ShoppingListsHeader {
+    font-weight: bold;
+    font-size: 14pt;
 }
 
 .ShoppingListTitle {
@@ -65,9 +76,9 @@
 
 .VendorItemPrice {}
 
-.AHItemPrice {}
+.AHItemPrice { }
 
-.PriceData {}
+.PriceData { }
 
 .RecipeListing {
     display: block;
@@ -75,13 +86,26 @@
 }
 
 .PriceData .Gold {
-    color: gold;
 }
 
 .PriceData .Silver {
-    color: silver;
 }
 
 .PriceData .Copper {
+}
+
+.PriceData .Gold .Currency {
+    color: gold;
+}
+
+.PriceData .Silver .Currency {
+    color: silver;
+}
+
+.PriceData .Copper .Currency {
     color: #b87333;
+}
+
+.PriceData .Currency::after {
+    content: "\00a0";
 }

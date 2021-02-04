@@ -9,7 +9,18 @@ function goldFormatter(price_in) {
     const gold = (price - (price % 10000)) / 10000;
     return (
         <span className="PriceData">
-            <span className="Gold">{gold.toLocaleString()}g</span> <span className="Silver">{silver.toLocaleString()}s</span> <span className="Copper">{copper.toLocaleString()}c</span>
+            <span className="Gold">
+                {gold.toLocaleString()}
+                <span className="Currency">g</span>
+            </span>
+            <span className="Silver">
+                {silver.toLocaleString()}
+                <span className="Currency">s</span>
+            </span>
+            <span className="Copper">
+                {copper.toLocaleString()}
+                <span className="Currency">c</span>
+            </span>
         </span>
     );
 }
@@ -17,7 +28,9 @@ function goldFormatter(price_in) {
 class AHItemPrice extends React.Component {
     render() {
         return (
-            <div className="AHItemPrice">AH {this.props.ah.sales}: {goldFormatter(this.props.ah.high)}/{goldFormatter(this.props.ah.low)}/{goldFormatter(this.props.ah.average)}</div>
+            <div className="AHItemPrice">
+                AH {this.props.ah.sales}: {goldFormatter(this.props.ah.high)}/{goldFormatter(this.props.ah.low)}/{goldFormatter(this.props.ah.average)}
+            </div>
         );
     }
 }
@@ -25,7 +38,9 @@ class AHItemPrice extends React.Component {
 class VendorItemPrice extends React.Component {
     render() {
         return (
-            <div className="VendorItemPrice">Vendor {goldFormatter(this.props.vendor)}</div>
+            <div className="VendorItemPrice">
+                Vendor {goldFormatter(this.props.vendor)}
+            </div>
         );
     }
 }
