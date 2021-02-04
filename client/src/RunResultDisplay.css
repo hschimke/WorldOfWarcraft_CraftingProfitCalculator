@@ -1,10 +1,9 @@
 .RunResultDisplay {
     clear: both;
     display: block;
-    border-width:1px;
-    border-color: black;
-    border-style: solid;
-    width: fit-content;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 25px;
 }
 
 .RunResultDisplay div {
@@ -28,25 +27,39 @@
 .RunResultItem {
 }
 
+.RunResultItemRecipes {
+    float:left;
+}
+
 .Bonuses {
 }
 
 .ShoppingListItem {
-    margin-left: 25px;
+    
 }
 
 .ShoppingListItem .Quantity {
-    text-align:right;
-    padding-right: 10px;
     vertical-align: top;
-    width:50px;
+}
+
+.ShoppingListItem .Data {
+    padding-left: 20px;
 }
 
 .ShoppingList {
-    margin-left: 25px;
+    padding-left:20px;
 }
 
-.ShoppingLists {}
+.ShoppingLists {
+    display: block;
+    float: right;
+    background-color: gray;
+    padding-left: 25px;
+}
+
+.ShoppingListTitle {
+    font-weight: bold;
+}
 
 .RecipeListing {}
 

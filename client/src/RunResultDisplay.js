@@ -36,7 +36,19 @@ class RecipeListing extends React.Component {
         const show_parts = (this.props.recipe.parts !== undefined);
         return (
             <div className="RecipeListing">
-                <div>{this.props.recipe.name} - {this.props.recipe.rank} - ({this.props.recipe.id}) : {goldFormatter(this.props.recipe.high)}/{goldFormatter(this.props.recipe.low)}/{goldFormatter(this.props.recipe.average)}</div>
+                <div className="RecipeHeader">
+                    <span className="RecipeName">
+                        {this.props.recipe.name}
+                    </span>
+                    <span className="RecipeRank">
+                        {this.props.recipe.rank}</span>
+                    <span className="RecipeId">
+                        ({this.props.recipe.id})
+                    </span>
+                    <span className="RecipeCost">
+                        {goldFormatter(this.props.recipe.high)}/{goldFormatter(this.props.recipe.low)}/{goldFormatter(this.props.recipe.average)}
+                    </span>
+                </div>
                 {show_ah_price &&
                     <AHItemPrice ah={this.props.recipe.ah} />}
                 {show_parts &&
@@ -53,7 +65,9 @@ class ShoppingLists extends React.Component {
     render() {
         return (
             <div className="ShoppingLists">
-                Shopping List For: {this.props.name}
+                <span className="ShoppingListsHeader">
+                    Shopping List For: {this.props.name}
+                </span>
                 {Object.keys(this.props.lists).map(list => {
                     return <ShoppingList list={this.props.lists[list]} level={list} />
                 })}
@@ -65,18 +79,22 @@ class ShoppingLists extends React.Component {
 class ShoppingList extends React.Component {
     render() {
         return (
-            <ul className="ShoppingList">
-                <li>
-                    <span className="ShoppingListTitle">
-                        List for rank {this.props.level}
-                    </span>
-                    <ul>
-                        {this.props.list.map(list_item => {
-                            return <ShoppingListItem item={list_item} />
-                        })}
-                    </ul>
-                </li>
-            </ul>
+            <table className="ShoppingList">
+                <thead>
+                    <tr>
+                        <th colSpan="2">
+                            <span className="ShoppingListTitle">
+                                List for rank {this.props.level}
+                            </span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {this.props.list.map(list_item => {
+                        return <ShoppingListItem item={list_item} />
+                    })}
+                </tbody>
+            </table>
         );
     }
 }
@@ -88,11 +106,11 @@ class ShoppingListItem extends React.Component {
         const show_ah = (li.cost.ah !== undefined);
 
         return (
-            <li className="ShoppingListItem">
-                <span className="Quantity">
+            <tr className="ShoppingListItem">
+                <td className="Quantity">
                     {li.quantity.toLocaleString()}
-                </span>
-                <span>
+                </td>
+                <td className="Data">
                     {li.name} ({li.id})
                     {show_vendor &&
                         <VendorItemPrice vendor={li.cost.vendor} />
@@ -100,8 +118,8 @@ class ShoppingListItem extends React.Component {
                     {show_ah &&
                         <AHItemPrice ah={li.cost.ah} />
                     }
-                </span>
-            </li>
+                </td>
+            </tr>
         );
     }
 }
@@ -127,28 +145,30 @@ class RunResultItem extends React.Component {
         shopping = ('shopping_lists' in output_data && Object.keys(output_data.shopping_lists).length > 0);
         return (
             <div className="RunResultItem">
-                {`${output_data.name} (${output_data.id}) Requires ${output_data.required}`}
-                {ah_addin &&
-                    <AHItemPrice ah={output_data.ah} />
-                }
-                {vendor_addin &&
-                    <VendorItemPrice vendor={output_data.vendor} />
-                }
-                {recipes &&
-                    output_data.recipes.map(recipe => {
-                        return <RecipeListing recipe={recipe} />
-                    })
-                }
-                {bonuses &&
-                    output_data.bonus_prices.map(bonus_price => {
-                        return (
-                            <div className="Bonuses">
-                                {output_data.name} ({output_data.id}) iLvl {bonus_price.level}
-                                <AHItemPrice ah={bonus_price.ah} />
-                            </div>
-                        );
-                    })
-                }
+                <div className="RunResultItemRecipes">
+                    {`${output_data.name} (${output_data.id}) Requires ${output_data.required}`}
+                    {ah_addin &&
+                        <AHItemPrice ah={output_data.ah} />
+                    }
+                    {vendor_addin &&
+                        <VendorItemPrice vendor={output_data.vendor} />
+                    }
+                    {recipes &&
+                        output_data.recipes.map(recipe => {
+                            return <RecipeListing recipe={recipe} />
+                        })
+                    }
+                    {bonuses &&
+                        output_data.bonus_prices.map(bonus_price => {
+                            return (
+                                <div className="Bonuses">
+                                    {output_data.name} ({output_data.id}) iLvl {bonus_price.level}
+                                    <AHItemPrice ah={bonus_price.ah} />
+                                </div>
+                            );
+                        })
+                    }
+                </div>
                 {shopping &&
                     <ShoppingLists lists={output_data.shopping_lists} name={output_data.name} />
                 }
@@ -171,9 +191,11 @@ class RunResultDisplay extends React.Component {
         }
         return (
             <div className="RunResultDisplay">
-                <div className="Status">
-                    {this.props.status}
-                </div>
+                {this.props.status !== 'ready' &&
+                    <div className="Status">
+                        {this.props.status}
+                    </div>
+                }
                 {SHOW_RES &&
                     <div class="RawResult">
                         <pre>
