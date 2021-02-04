@@ -19,16 +19,16 @@ class SimpleRunFrom extends React.Component {
     render() {
         return (
             <form onSubmit={this.handleSubmit} className="RunForm">
-                <label for="item">Item:
+                <label>Item:
                     <input type="text" name="item" value={this.props.item} onChange={this.handleChange} />
                 </label>
-                <label for="required">Required Count:
+                <label>Required Count:
                     <input type="text" name="required" value={this.props.required} onChange={this.handleChange} />
                 </label>
-                <label for="addon_data">Addon Data
+                <label>Addon Data
                     <textarea name="addon_data" rows="20" cols="100" value={this.props.addon_data} onChange={this.handleChange} />
                 </label>
-                <input type="submit" disabled={!this.props.button_enabled} value="Run" />
+                <button type="submit" disabled={!this.props.button_enabled} value="Run">Run</button>
             </form >
         );
     }
@@ -50,7 +50,7 @@ class AdvancedRunFrom extends React.Component {
         this.props.handleSubmit(e);
     }
 
-    handleCheckbox(e){
+    handleCheckbox(e) {
         this.props.handleCheckbox(e);
     }
 
@@ -58,21 +58,21 @@ class AdvancedRunFrom extends React.Component {
         const profession_list = this.props.allProfessions;
         return (
             <form onSubmit={this.handleSubmit} className="RunForm">
-                <label for="item">Item:
+                <label>Item:
                     <input type="text" name="item" value={this.props.item} onChange={this.handleChange} />
                 </label>
-                <label for="region">Region:
+                <label>Region:
                     <input type="text" name="region" value={this.props.region} onChange={this.handleChange} />
                 </label>
-                <label for="realm">Server:
+                <label>Server:
                     <input type="text" name="realm" value={this.props.realm} onChange={this.handleChange} />
                 </label>
-                <label for="required">Required Count:
+                <label>Required Count:
                     <input type="text" name="required" value={this.props.required} onChange={this.handleChange} />
                 </label>
-                <fieldset className="Professoins">
+                <fieldset className="Professions">
                     <span>Professions:</span>
-                    {profession_list.map(item=>{
+                    {profession_list.map(item => {
                         return (
                             <label>
                                 {item}:
@@ -81,10 +81,10 @@ class AdvancedRunFrom extends React.Component {
                         );
                     })}
                 </fieldset>
-                <label for="addon_data">Addon Data
+                <label>Addon Data
                     <textarea name="addon_data" rows="20" cols="100" value={this.props.addon_data} onChange={this.handleChange} />
                 </label>
-                <input type="submit" disabled={!this.props.button_enabled} value="Run" />
+                <button type="submit" disabled={!this.props.button_enabled} value="Run">Run</button>
             </form >
         );
     }

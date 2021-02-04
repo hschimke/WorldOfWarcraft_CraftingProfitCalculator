@@ -1,5 +1,7 @@
 .App {
   text-align: center;
+  margin:15px;
+  height: 100%;
 }
 
 .App .Main {
