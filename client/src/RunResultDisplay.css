@@ -12,8 +12,10 @@
     border-style: none;
 }
 
-.Status {}
-
+.Status {
+    font-size: 14px;
+    font-family: monospace;
+}
 
 .RawResult pre {
     text-align: left;
@@ -24,88 +26,21 @@
     text-align: left;
 }
 
-.RunResultItem {
-}
+.RunResultItem {}
 
 .RunResultItemRecipes {
     float:left;
 }
 
-.Bonuses {
-}
-
-.ShoppingListItem {
-    
-}
-
-.ShoppingListItem .Quantity {
-    vertical-align: top;
-    text-align: right;
-}
-
-.ShoppingListItem .Data {
-    padding-left: 20px;
-}
-
-.ShoppingListItem .Data .VendorItemPrice,.AHItemPrice {
-    font-size: 10pt;
-}
-
-.ShoppingList {
-    padding-left:20px;
-}
-
-.ShoppingLists {
-    display: block;
-    float: right;
-    padding-left: 25px;
-    padding-top: 10px;
-    padding-bottom: 10px;
-}
-
-.ShoppingListsHeader {
-    font-weight: bold;
-    font-size: 14pt;
-}
-
-.ShoppingListTitle {
-    font-weight: bold;
-}
+.Bonuses {}
 
 .RecipeListing {}
-
-.VendorItemPrice {}
-
-.AHItemPrice { }
-
-.PriceData { }
 
 .RecipeListing {
     display: block;
     margin-left: 25px;
 }
 
-.PriceData .Gold {
-}
-
-.PriceData .Silver {
-}
-
-.PriceData .Copper {
-}
-
-.PriceData .Gold .Currency {
-    color: gold;
-}
-
-.PriceData .Silver .Currency {
-    color: silver;
-}
-
-.PriceData .Copper .Currency {
-    color: #b87333;
-}
-
-.PriceData .Currency::after {
-    content: "\00a0";
+.RecipeCost {
+    font-size: 10pt;
 }

@@ -1,49 +1,8 @@
 import React from 'react';
 import { textFriendlyOutputFormat } from './text-output-helpers.mjs';
 import './RunResultDisplay.css';
-
-function goldFormatter(price_in) {
-    const price = Math.trunc(price_in);
-    const copper = price % 100;
-    const silver = (((price % 10000) - copper)) / 100;
-    const gold = (price - (price % 10000)) / 10000;
-    return (
-        <span className="PriceData">
-            <span className="Gold">
-                {gold.toLocaleString()}
-                <span className="Currency">g</span>
-            </span>
-            <span className="Silver">
-                {silver.toLocaleString()}
-                <span className="Currency">s</span>
-            </span>
-            <span className="Copper">
-                {copper.toLocaleString()}
-                <span className="Currency">c</span>
-            </span>
-        </span>
-    );
-}
-
-class AHItemPrice extends React.Component {
-    render() {
-        return (
-            <div className="AHItemPrice">
-                AH {this.props.ah.sales}: {goldFormatter(this.props.ah.high)}/{goldFormatter(this.props.ah.low)}/{goldFormatter(this.props.ah.average)}
-            </div>
-        );
-    }
-}
-
-class VendorItemPrice extends React.Component {
-    render() {
-        return (
-            <div className="VendorItemPrice">
-                Vendor {goldFormatter(this.props.vendor)}
-            </div>
-        );
-    }
-}
+import {goldFormatter, VendorItemPrice, AHItemPrice} from './GoldFormatter.js';
+import {ShoppingLists} from './ShoppingLists.js';
 
 class RecipeListing extends React.Component {
     render() {
@@ -76,69 +35,6 @@ class RecipeListing extends React.Component {
     }
 }
 
-class ShoppingLists extends React.Component {
-    render() {
-        return (
-            <div className="ShoppingLists">
-                <span className="ShoppingListsHeader">
-                    Shopping List For: {this.props.name}
-                </span>
-                {Object.keys(this.props.lists).map(list => {
-                    return <ShoppingList list={this.props.lists[list]} level={list} />
-                })}
-            </div>
-        );
-    }
-}
-
-class ShoppingList extends React.Component {
-    render() {
-        return (
-            <table className="ShoppingList">
-                <thead>
-                    <tr>
-                        <th colSpan="2">
-                            <span className="ShoppingListTitle">
-                                List for rank {this.props.level}
-                            </span>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {this.props.list.map(list_item => {
-                        return <ShoppingListItem item={list_item} />
-                    })}
-                </tbody>
-            </table>
-        );
-    }
-}
-
-class ShoppingListItem extends React.Component {
-    render() {
-        const li = this.props.item;
-        const show_vendor = (li.cost.vendor !== undefined);
-        const show_ah = (li.cost.ah !== undefined);
-
-        return (
-            <tr className="ShoppingListItem">
-                <td className="Quantity">
-                    {li.quantity.toLocaleString()}
-                </td>
-                <td className="Data">
-                    {li.name} ({li.id})
-                    {show_vendor &&
-                        <VendorItemPrice vendor={li.cost.vendor} />
-                    }
-                    {show_ah &&
-                        <AHItemPrice ah={li.cost.ah} />
-                    }
-                </td>
-            </tr>
-        );
-    }
-}
-
 class RunResultItem extends React.Component {
     constructor(props) {
         super(props);
@@ -161,7 +57,17 @@ class RunResultItem extends React.Component {
         return (
             <div className="RunResultItem">
                 <div className="RunResultItemRecipes">
-                    {`${output_data.name} (${output_data.id}) Requires ${output_data.required}`}
+                    <div className="RunResultItemRecipesHeader">
+                        <span className="ItemName">
+                            {output_data.name}
+                        </span>
+                        <span className="ItemId">
+                            ({output_data.id})
+                        </span>
+                        <span className="Required">
+                            Requires {output_data.required}
+                        </span>
+                    </div>
                     {ah_addin &&
                         <AHItemPrice ah={output_data.ah} />
                     }

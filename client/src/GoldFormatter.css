@@ -1,0 +1,30 @@
+.PriceData { }
+
+.PriceData .Gold {
+}
+
+.PriceData .Silver {
+}
+
+.PriceData .Copper {
+}
+
+.PriceData .Gold .Currency {
+    color: gold;
+}
+
+.PriceData .Silver .Currency {
+    color: silver;
+}
+
+.PriceData .Copper .Currency {
+    color: #b87333;
+}
+
+.PriceData .Currency::after {
+    content: "\00a0";
+}
+
+.VendorItemPrice {}
+
+.AHItemPrice {}
