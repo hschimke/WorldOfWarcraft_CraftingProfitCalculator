@@ -1,4 +1,6 @@
-.PriceData { }
+.PriceData {
+    font-family: monospace;
+}
 
 .PriceData .Gold {
 }

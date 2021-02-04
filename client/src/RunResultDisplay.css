@@ -6,12 +6,6 @@
     padding-top: 25px;
 }
 
-.RunResultDisplay div {
-    border-width:1px;
-    border-color: black;
-    border-style: none;
-}
-
 .Status {
     font-size: 14px;
     font-family: monospace;
@@ -26,7 +20,9 @@
     text-align: left;
 }
 
-.RunResultItem {}
+.RunResultItem {
+    margin-left: 10px;
+}
 
 .RunResultItemRecipes {
     float:left;
@@ -43,4 +39,39 @@
 
 .RecipeCost {
     font-size: 10pt;
+}
+
+.RunResultItemRecipes .VendorItemPrice,.AHItemPrice{
+    font-size: 10pt;
+}
+
+.RunResultItemRecipesHeader {
+    font-size: 14pt;
+    padding-bottom: 5px;
+}
+
+.RecipeListing .RunResultItemRecipesHeader {
+    font-size: 12pt;
+    padding-bottom: 5px;
+}
+
+.RecipeHeader {
+    font-size: 12pt;
+}
+
+.RecipeHeader .RecipeHeaderDetails {
+    display: block;
+    clear: both;
+}
+
+.RunResultItemRecipesChildren {
+    overflow: hidden;
+    max-height: 10000px;
+    transition-property: all;
+    transition-duration: .5s;
+    transition-timing-function:ease-in-out;
+}
+
+.RunResultItemRecipesChildren.HiddenChild {
+    max-height: 0px;
 }

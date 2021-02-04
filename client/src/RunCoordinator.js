@@ -25,6 +25,7 @@ class RunCoordinator extends React.Component {
             all_professions: all_professions.slice(),
             enabled_run_button: true,
             output_display: 'empty',
+            show_raw_result: false,
         };
     }
 
@@ -78,7 +79,16 @@ class RunCoordinator extends React.Component {
     }
 
     pickForm(e) {
-        this.setState({ run_type: e.target.value });
+        switch(e.target.name){
+            case 'formType':
+                this.setState({ run_type: e.target.value });
+                break;
+            case 'includeRaw':
+                this.setState({ show_raw_result: e.target.checked });
+                break;
+            default:
+                break;
+        }
     }
 
     render() {
@@ -104,17 +114,24 @@ class RunCoordinator extends React.Component {
         }
         return (
             <div className="RunCoordinator">
-                <fieldset>
-                    <select onChange={this.pickForm} value={this.state.run_type}>
-                        <option value="advanced">Advanced</option>
-                        <option value="simple">Simple</option>
-                    </select>
-                </fieldset>
+                <form className="TypePicker">
+                    <label>
+                        Run Type:
+                        <select onChange={this.pickForm} value={this.state.run_type} name="formType">
+                            <option value="advanced">Advanced</option>
+                            <option value="simple">Simple</option>
+                        </select>
+                    </label>
+                    <label>
+                        Include Raw Output:
+                        <input type="checkbox" name="includeRaw" value={this.state.show_raw_result} onChange={this.pickForm} />
+                    </label>
+                </form>
                 <div>
                     {runform}
                 </div>
                 <div>
-                    <RunResultDisplay raw_run={this.state.raw_run} status={this.state.output_display} />
+                    <RunResultDisplay raw_run={this.state.raw_run} status={this.state.output_display} show_raw_result={this.state.show_raw_result} />
                 </div>
             </div>
         );

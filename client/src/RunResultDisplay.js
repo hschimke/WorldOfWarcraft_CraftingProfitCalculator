@@ -11,13 +11,15 @@ class RecipeListing extends React.Component {
         return (
             <div className="RecipeListing">
                 <div className="RecipeHeader">
-                    <span className="RecipeName">
-                        {this.props.recipe.name}
-                    </span>
-                    <span className="RecipeRank">
-                        {this.props.recipe.rank}</span>
-                    <span className="RecipeId">
-                        ({this.props.recipe.id})
+                    <span className="RecipeHeaderDetails">
+                        <span className="RecipeName">
+                            {this.props.recipe.name}
+                        </span>
+                        <span className="RecipeRank">
+                            {this.props.recipe.rank}</span>
+                        <span className="RecipeId">
+                            ({this.props.recipe.id})
+                        </span>
                     </span>
                     <span className="RecipeCost">
                         {goldFormatter(this.props.recipe.high)}/{goldFormatter(this.props.recipe.low)}/{goldFormatter(this.props.recipe.average)}
@@ -38,7 +40,14 @@ class RecipeListing extends React.Component {
 class RunResultItem extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {};
+        this.state = {
+            show_children: true,
+        };
+        this.toggleChildren = this.toggleChildren.bind(this);
+    }
+
+    toggleChildren(e){
+        this.setState({show_children:!this.state.show_children});
     }
 
     render() {
@@ -54,10 +63,12 @@ class RunResultItem extends React.Component {
         recipes = (output_data.recipes !== undefined);
         bonuses = (output_data.bonus_prices !== undefined);
         shopping = ('shopping_lists' in output_data && Object.keys(output_data.shopping_lists).length > 0);
+
+        let children_styles = this.state.show_children ? '' : ' HiddenChild';
         return (
             <div className="RunResultItem">
                 <div className="RunResultItemRecipes">
-                    <div className="RunResultItemRecipesHeader">
+                    <div className="RunResultItemRecipesHeader" onClick={this.toggleChildren}>
                         <span className="ItemName">
                             {output_data.name}
                         </span>
@@ -74,21 +85,23 @@ class RunResultItem extends React.Component {
                     {vendor_addin &&
                         <VendorItemPrice vendor={output_data.vendor} />
                     }
-                    {recipes &&
-                        output_data.recipes.map(recipe => {
-                            return <RecipeListing recipe={recipe} />
-                        })
-                    }
-                    {bonuses &&
-                        output_data.bonus_prices.map(bonus_price => {
-                            return (
-                                <div className="Bonuses">
-                                    {output_data.name} ({output_data.id}) iLvl {bonus_price.level}
-                                    <AHItemPrice ah={bonus_price.ah} />
-                                </div>
-                            );
-                        })
-                    }
+                    <div className={'RunResultItemRecipesChildren' + children_styles}>
+                        {recipes &&
+                            output_data.recipes.map(recipe => {
+                                return <RecipeListing recipe={recipe} />
+                            })
+                        }
+                        {bonuses &&
+                            output_data.bonus_prices.map(bonus_price => {
+                                return (
+                                    <div className="Bonuses">
+                                        {output_data.name} ({output_data.id}) iLvl {bonus_price.level}
+                                        <AHItemPrice ah={bonus_price.ah} />
+                                    </div>
+                                );
+                            })
+                        }
+                    </div>
                 </div>
                 {shopping &&
                     <ShoppingLists lists={output_data.shopping_lists} name={output_data.name} />
@@ -101,12 +114,12 @@ class RunResultItem extends React.Component {
 class RunResultDisplay extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {};
+        this.state = { };
     }
 
     render() {
-        const SHOW_RES = false;
-        let res = '';
+        const SHOW_RES = this.props.show_raw_result;
+        let res;
         if (this.props.status === 'ready' && this.props.raw_run !== undefined) {
             res = textFriendlyOutputFormat(this.props.raw_run, 1);
         }

@@ -3,6 +3,7 @@
 .ShoppingListItem .Quantity {
     vertical-align: top;
     text-align: right;
+    font-family: monospace;
 }
 
 .ShoppingListItem .Data {
