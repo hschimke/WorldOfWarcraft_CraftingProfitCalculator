@@ -12,7 +12,8 @@
 .RunForm label input[type=text],textarea {
     display:block;
     width: 75%;
-    padding:10px
+    padding:10px;
+    background-color: #42A86B;
 }
 
 .RunForm .Professions {

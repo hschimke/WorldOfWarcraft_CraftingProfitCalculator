@@ -5,7 +5,7 @@ function App() {
   return (
     <div className="App">
       <div className="Header">
-
+        <h1>Crafting Profits Calculator</h1>
       </div>
       <div className="Nav">
 

@@ -18,3 +18,9 @@
   font-size: calc(10px + 2vmin);
   color: white;
 }
+
+.App .Header {
+  text-align: left;
+  margin-bottom: 10px;
+  font-family: sans-serif;
+}

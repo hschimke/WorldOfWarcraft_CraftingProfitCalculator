@@ -21,20 +21,22 @@
 }
 
 .RunResultItem {
-    margin-left: 10px;
+    padding-left: 10px;
 }
 
 .RunResultItemRecipes {
     float:left;
 }
 
-.Bonuses {}
+.Bonuses {
+    background-color: green;
+}
 
 .RecipeListing {}
 
 .RecipeListing {
     display: block;
-    margin-left: 25px;
+    padding-left: 25px;
 }
 
 .RecipeCost {
@@ -65,6 +67,10 @@
 }
 
 .RunResultItemRecipesChildren {
+    
+}
+
+.HideableChild {
     overflow: hidden;
     max-height: 10000px;
     transition-property: all;
@@ -72,6 +78,6 @@
     transition-timing-function:ease-in-out;
 }
 
-.RunResultItemRecipesChildren.HiddenChild {
+.HiddenChild {
     max-height: 0px;
 }
