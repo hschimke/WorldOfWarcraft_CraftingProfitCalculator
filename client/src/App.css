@@ -1,26 +1,21 @@
 .App {
   text-align: center;
-  margin:15px;
   height: 100%;
 }
 
 .App .Main {
   text-align: left;
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  margin: 15px;
 }
 
 .App .Header {
   text-align: left;
-  margin-bottom: 10px;
+  padding: 15px;
+  background-color: #001f00;
+}
+
+.App .Header H1 {
   font-family: sans-serif;
+  color: #42A86B;
+  margin: 0px;
 }

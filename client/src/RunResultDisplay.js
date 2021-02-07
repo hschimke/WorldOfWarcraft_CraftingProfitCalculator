@@ -75,6 +75,9 @@ class RunResultItem extends React.Component {
     }
 
     render() {
+        if(this.props.raw_run === undefined ){
+            return null;
+        }
         let ah_addin = false;
         let vendor_addin = false;
         let recipes = false;

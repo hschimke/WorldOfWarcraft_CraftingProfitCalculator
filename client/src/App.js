@@ -8,7 +8,7 @@ function App() {
         <h1>Crafting Profits Calculator</h1>
       </div>
       <div className="Nav">
-
+        
       </div>
       <div className="Main">
         <RunCoordinator />
