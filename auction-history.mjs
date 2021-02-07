@@ -13,10 +13,15 @@ const db_fn = './historical_auctions.db';
 const sql_create_item_table = 'CREATE TABLE IF NOT EXISTS auctions (item_id INTEGER, bonuses TEXT, quantity INTEGER, price INTEGER, downloaded INTEGER, connected_realm_id INTEGER)';
 const sql_create_items_table = 'CREATE TABLE IF NOT EXISTS items (item_id INTEGER, region TEXT, name TEXT, craftable INTEGER, PRIMARY KEY (item_id,region))';
 const sql_create_realms_table = 'CREATE TABLE IF NOT EXISTS realms (connected_realm_id INTEGER, name TEXT, region TEXT, PRIMARY KEY (connected_realm_id,region))';
+const sql_create_realm_scan_table = 'CREATE TABLE IF NOT EXISTS realm_scan_list (connected_realm_id INTEGER, region TEXT, PRIMARY KEY (connected_realm_id,region))';
 
 const sql_run_at_open = [
     'PRAGMA synchronous = normal',
-    'PRAGMA journal_mode=WAL'
+    'PRAGMA journal_mode=WAL',
+    sql_create_item_table,
+    sql_create_items_table,
+    sql_create_realms_table,
+    sql_create_realm_scan_table,
 ];
 
 const sql_run_at_close = [
@@ -37,9 +42,6 @@ async function openDB() {
     for (const query of sql_run_at_open) {
         await dbRun(db, query, []);
     }
-    await dbRun(db, sql_create_item_table, []);
-    await dbRun(db, sql_create_items_table, []);
-    await dbRun(db, sql_create_realms_table, []);
 
     return db;
 }
@@ -130,75 +132,98 @@ async function ingest(region, connected_realm) {
     await closeDB(db);
 }
 
-async function getAuctions(item, realm, region, bonuses){
+async function getAuctions(item, realm, region, bonuses) {
     const sql_build = 'SELECT * FROM auctions';
     const sql_addins = [];
-    const value_searches = []; 
-    if(item !== undefined){
+    const value_searches = [];
+    if (item !== undefined) {
         // Get specific items
         sql_addins.push('item_id = ?');
         value_searches.push(item);
-    }else{
+    } else {
         // All items
     }
-    if(realm !== undefined){
+    if (realm !== undefined) {
         // Get specific realm
         sql_addins.push('connected_realm_id = ?');
         value_searches.push(realm);
-    }else{
+    } else {
         // All realms
     }
-    if(region!==undefined){
+    if (region !== undefined) {
         // Get specific region
         sql_addins.push('connected_realm_id IN (SELECT connected_realm_id FROM realms WHERE region = ?)');
         value_searches.push(region);
-    }else{
+    } else {
         // All regions
     }
-    if(bonuses!==undefined){
+    if (bonuses !== undefined) {
         // Get only with specific bonuses
         sql_addins.push('bonuses = ?');
         value_searches.push(bonuses);
-    }else{
+    } else {
         // any bonuses or none
     }
 
     let run_sql = sql_build;
-    if(sql_addins.length>0){
+    if (sql_addins.length > 0) {
         run_sql += ' WHERE ';
-        for(const addin of sql_addins){
+        for (const addin of sql_addins) {
             run_sql += addin;
             run_sql += ' AND ';
         }
-        run_sql = run_sql.slice(0,run_sql.length-4);
+        run_sql = run_sql.slice(0, run_sql.length - 4);
     }
     let db = await openDB();
-    console.log(run_sql);
-    console.log(await dbAll(db, run_sql, value_searches));
+    //console.log(run_sql);
+    const value = await dbAll(db, run_sql, value_searches);
+    await closeDB(db);
+    return value;
+}
+
+async function addRealmToScanList(realm_name, realm_region) {
+    const sql = 'INSERT INTO realm_scan_list(connected_realm_id,region) VALUES(?,?)';
+    const db = await openDB();
+    await dbRun(db, sql, [await getConnectedRealmId(realm_name, realm_region), realm_region]);
+    await closeDB(db);
+}
+
+async function removeRealmFromScanList(realm_name, realm_region) {
+    const sql = 'DELETE FROM realm_scan_list WHERE connected_realm_id = ? AND region = ?';
+    const db = await openDB();
+    await dbRun(db, sql, [await getConnectedRealmId(realm_name, realm_region), realm_region]);
+    await closeDB(db);
+}
+
+async function scanRealms() {
+    const db = await openDB();
+    const getScannableRealms = 'SELECT connected_realm_id, region FROM realm_scan_list';
+    const realm_scan_list = await dbAll(db, getScannableRealms, []);
+    await Promise.all(realm_scan_list.map((realm) => {
+        return ingest(realm.region, realm.connected_realm_id);
+    }));
     await closeDB(db);
 }
 
 async function init() { }
 
-async function main(region, server) {
-    await getAuthorizationToken();
-    await ingest(region, await getConnectedRealmId(server, region));
-    await saveCache();
-}
-
 await init();
-//await main('US', 'Hyjal');
+
+/*await main('US', 'Hyjal');
 await getAuctions();
 await getAuctions(1);
-await getAuctions(1,2);
-await getAuctions(1,2,3);
-await getAuctions(1,2,3,4);
-await getAuctions(undefined,2,'US',4);
-await getAuctions(1,undefined,3,4);
-await getAuctions(1,2,undefined,4);
-await getAuctions(undefined,undefined,'US',4);
-await getAuctions(1,undefined,undefined,4);
-await getAuctions(1,2,undefined,4);
-await getAuctions(undefined,2,undefined,4);
-await getAuctions(undefined,undefined,undefined,4);
-await getAuctions(undefined,undefined,'US',undefined);
+await getAuctions(1, 2);
+await getAuctions(1, 2, 3);
+await getAuctions(1, 2, 3, 4);
+await getAuctions(undefined, 2, 'US', 4);
+await getAuctions(1, undefined, 3, 4);
+await getAuctions(1, 2, undefined, 4);
+await getAuctions(undefined, undefined, 'US', 4);
+await getAuctions(1, undefined, undefined, 4);
+await getAuctions(1, 2, undefined, 4);
+await getAuctions(undefined, 2, undefined, 4);
+await getAuctions(undefined, undefined, undefined, 4);
+await getAuctions(undefined, undefined, 'US', undefined);
+*/
+
+export { scanRealms, addRealmToScanList, removeRealmFromScanList, getAuctions };
