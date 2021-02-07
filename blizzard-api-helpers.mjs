@@ -1,4 +1,4 @@
-import { getBlizzardAPIResponse, getBlizzardRawUriResponse, shutdownApiManager } from './blizzard-api-call.mjs';
+import { getBlizzardAPIResponse, getBlizzardRawUriResponse } from './blizzard-api-call.mjs';
 import { getAuthorizationToken } from './blizz_oath.mjs';
 import { parentLogger } from './logging.mjs';
 import { cacheCheck, cacheGet, cacheSet, saveCache } from './cached-data-sources.mjs';

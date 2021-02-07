@@ -3,7 +3,8 @@ import { bonuses_cache, cacheCheck, cacheGet, cacheSet, rank_mappings_cache, sav
 import { parentLogger } from './logging.mjs';
 import { getItemId, getConnectedRealmId, getItemDetails, getBlizRecipeDetail, checkIsCrafting, getCraftingRecipe, getAuctionHouse } from './blizzard-api-helpers.mjs';
 import { shutdownApiManager } from './blizzard-api-call.mjs';
-import {textFriendlyOutputFormat} from './client/src/text-output-helpers.mjs';
+import { textFriendlyOutputFormat } from './client/src/text-output-helpers.mjs';
+import { getAuthorizationToken } from './blizz_oath.mjs';
 
 const logger = parentLogger.child();
 
@@ -647,7 +648,8 @@ async function saveOutput(price_data, intermediate_data, formatted_data) {
  * @param {RunConfiguration} json_config The configuration object.
  */
 async function runWithJSONConfig(json_config) {
-    return await run(json_config.realm_region,
+    getAuthorizationToken();
+    return run(json_config.realm_region,
         json_config.realm_name,
         json_config.professions,
         json_config.item_id,
