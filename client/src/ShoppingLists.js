@@ -1,6 +1,6 @@
 import React from 'react';
 import './ShoppingLists.css';
-import {AHItemPrice, VendorItemPrice} from './GoldFormatter.js';
+import { AHItemPrice, VendorItemPrice } from './GoldFormatter.js';
 
 class ShoppingLists extends React.Component {
     render() {
@@ -9,9 +9,11 @@ class ShoppingLists extends React.Component {
                 <span className="ShoppingListsHeader">
                     Shopping List For: {this.props.name}
                 </span>
-                {Object.keys(this.props.lists).map(list => {
-                    return <ShoppingList list={this.props.lists[list]} level={list} />
-                })}
+                <ul>
+                    {Object.keys(this.props.lists).map(list => {
+                        return <ShoppingList list={this.props.lists[list]} level={list} />
+                    })}
+                </ul>
             </div>
         );
     }
@@ -20,22 +22,16 @@ class ShoppingLists extends React.Component {
 class ShoppingList extends React.Component {
     render() {
         return (
-            <table className="ShoppingList">
-                <thead>
-                    <tr>
-                        <th colSpan="2">
-                            <span className="ShoppingListTitle">
-                                List for rank {this.props.level}
-                            </span>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
+            <li className="ShoppingList">
+                <span className="ShoppingListTitle">
+                    List for rank {this.props.level}
+                </span>
+                <ul>
                     {this.props.list.map(list_item => {
                         return <ShoppingListItem item={list_item} />
                     })}
-                </tbody>
-            </table>
+                </ul>
+            </li>
         );
     }
 }
@@ -47,11 +43,11 @@ class ShoppingListItem extends React.Component {
         const show_ah = (li.cost.ah !== undefined);
 
         return (
-            <tr className="ShoppingListItem">
-                <td className="Quantity">
+            <li className="ShoppingListItem">
+                <div className="ShoppingListColumn Quantity">
                     {li.quantity.toLocaleString()}
-                </td>
-                <td className="Data">
+                </div>
+                <div className="ShoppingListColumn Data">
                     {li.name} ({li.id})
                     {show_vendor &&
                         <VendorItemPrice vendor={li.cost.vendor} />
@@ -59,10 +55,10 @@ class ShoppingListItem extends React.Component {
                     {show_ah &&
                         <AHItemPrice ah={li.cost.ah} />
                     }
-                </td>
-            </tr>
+                </div>
+            </li>
         );
     }
 }
 
-export {ShoppingLists};
+export { ShoppingLists };
