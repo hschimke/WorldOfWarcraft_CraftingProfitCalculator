@@ -15,7 +15,7 @@ class RunCoordinator extends React.Component {
 
         const all_professions = ['Jewelcrafting', 'Tailoring', 'Alchemy', 'Herbalism', 'Inscription', 'Enchanting', 'Blacksmithing', 'Mining', 'Engineering', 'Leatherworking', 'Skinning', 'Cooking'];
         this.state = {
-            run_type: 'simple',
+            run_type: 'advanced',
             item: 'Grim-Veiled Bracers',
             addon_data: '',
             required: 1,
@@ -59,7 +59,6 @@ class RunCoordinator extends React.Component {
 
     handleApiRun(data){
         this.setState({output_display:'ready'});
-        //this.setState({output_display:JSON.stringify(data,null,1)});
         this.setState({raw_run:data});
         this.setState({enabled_run_button:true});
     }

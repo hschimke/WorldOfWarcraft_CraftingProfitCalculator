@@ -1,7 +1,8 @@
 import './GoldFormatter.css';
 import React from 'react';
 
-function goldFormatter(price_in) {
+function GoldFormatter(props) {
+    const price_in = props.raw_price;
     const price = Math.trunc(price_in);
     const copper = price % 100;
     const silver = (((price % 10000) - copper)) / 100;
@@ -28,7 +29,7 @@ class AHItemPrice extends React.Component {
     render() {
         return (
             <div className="AHItemPrice">
-                AH {this.props.ah.sales}: {goldFormatter(this.props.ah.high)}/{goldFormatter(this.props.ah.low)}/{goldFormatter(this.props.ah.average)}
+                AH {this.props.ah.sales}: <GoldFormatter raw_price={this.props.ah.high} />/<GoldFormatter raw_price={this.props.ah.low} />/<GoldFormatter raw_price={this.props.ah.average} />
             </div>
         );
     }
@@ -38,10 +39,10 @@ class VendorItemPrice extends React.Component {
     render() {
         return (
             <div className="VendorItemPrice">
-                Vendor {goldFormatter(this.props.vendor)}
+                Vendor <GoldFormatter raw_price={this.props.vendor} />
             </div>
         );
     }
 }
 
-export { goldFormatter, AHItemPrice, VendorItemPrice };
+export { GoldFormatter, AHItemPrice, VendorItemPrice };
