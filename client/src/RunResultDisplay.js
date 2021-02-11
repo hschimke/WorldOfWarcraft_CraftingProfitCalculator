@@ -1,7 +1,7 @@
 import React from 'react';
 import { textFriendlyOutputFormat } from './text-output-helpers.mjs';
 import './RunResultDisplay.css';
-import { goldFormatter, VendorItemPrice, AHItemPrice } from './GoldFormatter.js';
+import { GoldFormatter, VendorItemPrice, AHItemPrice } from './GoldFormatter.js';
 import { ShoppingLists } from './ShoppingLists.js';
 
 const hidden_recipe_listing_header = {
@@ -32,23 +32,34 @@ class RecipeListing extends React.Component {
         const child_addins = this.state.child_display ? '' : ' HiddenChild';
         return (
             <div className="RecipeListing" style={parent_styles}>
-                <div className="RecipeHeader" onClick={this.toggleChildren}>
+                <div className="RecipeHeader">
+                    <span className="RecipeBanner">
+                        Recipe
+                    </span>
                     <span className="RecipeHeaderDetails">
                         <span className="RecipeName">
                             {this.props.recipe.name}
                         </span>
                         <span className="RecipeRank">
-                            {this.props.recipe.rank}</span>
+                            {this.props.recipe.rank}
+                        </span>
                         <span className="RecipeId">
                             ({this.props.recipe.id})
                         </span>
                     </span>
                     <span className="RecipeCost">
-                        {goldFormatter(this.props.recipe.high)}/{goldFormatter(this.props.recipe.low)}/{goldFormatter(this.props.recipe.average)}
+                        <GoldFormatter raw_price={this.props.recipe.high} />
+                        /
+                        <GoldFormatter raw_price={this.props.recipe.low} />
+                        /
+                        <GoldFormatter raw_price={this.props.recipe.average} />
                     </span>
                 </div>
                 {show_ah_price &&
                     <AHItemPrice ah={this.props.recipe.ah} />}
+                <span className="RecipePartsBanner" onClick={this.toggleChildren}>
+                    {this.props.recipe.parts.length} Components
+                </span>
                 <div class={'HideableChild' + child_addins}>
                     {show_parts &&
                         this.props.recipe.parts.map(part => {
@@ -75,7 +86,7 @@ class RunResultItem extends React.Component {
     }
 
     render() {
-        if(this.props.raw_run === undefined ){
+        if (this.props.raw_run === undefined) {
             return null;
         }
         let ah_addin = false;
@@ -97,7 +108,10 @@ class RunResultItem extends React.Component {
         return (
             <div className="RunResultItem">
                 <div className="RunResultItemRecipes" style={parent_styles}>
-                    <div className="RunResultItemRecipesHeader" onClick={this.toggleChildren}>
+                    <div className="RunResultItemRecipesHeader">
+                        <span className="ItemBanner">
+                            Item
+                        </span>
                         <span className="ItemName">
                             {output_data.name}
                         </span>
@@ -114,6 +128,9 @@ class RunResultItem extends React.Component {
                     {vendor_addin &&
                         <VendorItemPrice vendor={output_data.vendor} />
                     }
+                    <span className="ItemRecipesBanner" onClick={this.toggleChildren}>
+                        {output_data.recipes.length} Recipes
+                    </span>
                     <div className={'RunResultItemRecipesChildren HideableChild' + children_classes}>
                         {recipes &&
                             output_data.recipes.map(recipe => {

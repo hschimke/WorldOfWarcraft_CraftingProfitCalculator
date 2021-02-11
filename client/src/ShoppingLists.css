@@ -48,4 +48,7 @@
 
 .ShoppingLists ul {
     list-style: none;
+    margin-left: 0px;
+    margin-top: 5px;
+    padding-left: 0px;
 }

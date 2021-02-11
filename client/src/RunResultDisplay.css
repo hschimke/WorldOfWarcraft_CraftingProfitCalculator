@@ -32,8 +32,6 @@
     background-color: green;
 }
 
-.RecipeListing {}
-
 .RecipeListing {
     display: block;
     padding-left: 25px;
@@ -80,4 +78,10 @@
 
 .HiddenChild {
     max-height: 0px;
+}
+
+.RecipeBanner,.ItemBanner,.RecipePartsBanner,.ItemRecipesBanner {
+    display: block;
+    font-family: sans-serif;
+    font-variant-caps: all-petite-caps;
 }

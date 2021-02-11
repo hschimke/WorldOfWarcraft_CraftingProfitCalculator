@@ -26,7 +26,7 @@ class SimpleRunFrom extends React.Component {
                     <input type="text" name="required" value={this.props.required} onChange={this.handleChange} />
                 </label>
                 <label>Addon Data
-                    <textarea name="addon_data" rows="20" cols="100" value={this.props.addon_data} onChange={this.handleChange} />
+                    <textarea name="addon_data" rows="5" cols="100" value={this.props.addon_data} onChange={this.handleChange} />
                 </label>
                 <button type="submit" disabled={!this.props.button_enabled} value="Run">Run</button>
             </form >
@@ -82,7 +82,7 @@ class AdvancedRunFrom extends React.Component {
                     })}
                 </fieldset>
                 <label>Addon Data
-                    <textarea name="addon_data" rows="20" cols="100" value={this.props.addon_data} onChange={this.handleChange} />
+                    <textarea name="addon_data" rows="5" cols="100" value={this.props.addon_data} onChange={this.handleChange} />
                 </label>
                 <button type="submit" disabled={!this.props.button_enabled} value="Run">Run</button>
             </form >
