@@ -35,6 +35,7 @@
 .RecipeListing {
     display: block;
     padding-left: 25px;
+    background-color: #3FB5B0;
 }
 
 .RecipeCost {
@@ -43,6 +44,10 @@
 
 .RunResultItemRecipes .VendorItemPrice,.AHItemPrice{
     font-size: 10pt;
+}
+
+.RunResultItemRecipes {
+    background-color: #359690;
 }
 
 .RunResultItemRecipesHeader {

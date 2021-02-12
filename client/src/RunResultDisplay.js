@@ -4,13 +4,9 @@ import './RunResultDisplay.css';
 import { GoldFormatter, VendorItemPrice, AHItemPrice } from './GoldFormatter.js';
 import { ShoppingLists } from './ShoppingLists.js';
 
-const hidden_recipe_listing_header = {
-    'background-color': '#FFB5B0',
-};
+const hidden_recipe_listing_header = {};
 
-const hidden_run_result_header = {
-    'background-color': '#F59690',
-};
+const hidden_run_result_header = {};
 
 class RecipeListing extends React.Component {
     constructor(props) {
