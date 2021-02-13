@@ -1,8 +1,8 @@
 import fs from 'fs/promises';
-import { parentLogger } from './logging.mjs';
+import { parentLogger } from './logging.js';
 import sqlite3 from 'sqlite3';
 import got from 'got';
-import {dbOpen, dbClose, dbRun, dbGet, dbSerialize} from './sqlite3-helpers.mjs';
+import {dbOpen, dbClose, dbRun, dbGet, dbSerialize} from './sqlite3-helpers.js';
 
 const logger = parentLogger.child();
 let db;

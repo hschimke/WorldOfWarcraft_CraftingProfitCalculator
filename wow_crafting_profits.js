@@ -1,10 +1,10 @@
 import fs from 'fs/promises';
-import { bonuses_cache, cacheCheck, cacheGet, cacheSet, rank_mappings_cache, saveCache, shopping_recipe_exclusion_list } from './cached-data-sources.mjs';
-import { parentLogger } from './logging.mjs';
-import { getItemId, getConnectedRealmId, getItemDetails, getBlizRecipeDetail, checkIsCrafting, getCraftingRecipe, getAuctionHouse } from './blizzard-api-helpers.mjs';
-import { shutdownApiManager } from './blizzard-api-call.mjs';
-import { textFriendlyOutputFormat } from './client/src/text-output-helpers.mjs';
-import { getAuthorizationToken } from './blizz_oath.mjs';
+import { bonuses_cache, cacheCheck, cacheGet, cacheSet, rank_mappings_cache, saveCache, shopping_recipe_exclusion_list } from './cached-data-sources.js';
+import { parentLogger } from './logging.js';
+import { getItemId, getConnectedRealmId, getItemDetails, getBlizRecipeDetail, checkIsCrafting, getCraftingRecipe, getAuctionHouse } from './blizzard-api-helpers.js';
+import { shutdownApiManager } from './blizzard-api-call.js';
+import { textFriendlyOutputFormat } from './client/src/text-output-helpers.js';
+import { getAuthorizationToken } from './blizz_oath.js';
 
 const logger = parentLogger.child();
 

@@ -1,7 +1,7 @@
-import { getBlizzardAPIResponse, getBlizzardRawUriResponse } from './blizzard-api-call.mjs';
-import { getAuthorizationToken } from './blizz_oath.mjs';
-import { parentLogger } from './logging.mjs';
-import { cacheCheck, cacheGet, cacheSet, saveCache } from './cached-data-sources.mjs';
+import { getBlizzardAPIResponse, getBlizzardRawUriResponse } from './blizzard-api-call.js';
+import { getAuthorizationToken } from './blizz_oath.js';
+import { parentLogger } from './logging.js';
+import { cacheCheck, cacheGet, cacheSet, saveCache } from './cached-data-sources.js';
 
 const logger = parentLogger.child();
 

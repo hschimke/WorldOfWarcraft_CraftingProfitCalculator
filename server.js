@@ -1,8 +1,8 @@
 import express from 'express';
 import path from 'path';
-import { runWithJSONConfig, shutdown } from './wow_crafting_profits.mjs';
-import { RunConfiguration } from './RunConfiguration.mjs';
-import { parentLogger } from './logging.mjs';
+import { runWithJSONConfig, shutdown } from './wow_crafting_profits.js';
+import { RunConfiguration } from './RunConfiguration.js';
+import { parentLogger } from './logging.js';
 import bodyParser from 'body-parser';
 
 const logger = parentLogger.child();

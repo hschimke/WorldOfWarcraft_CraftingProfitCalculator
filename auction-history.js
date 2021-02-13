@@ -1,10 +1,10 @@
-import { dbOpen, dbClose, dbRun, dbGet, dbAll, dbSerialize } from './sqlite3-helpers.mjs';
-import { getAuctionHouse, getConnectedRealmId, checkIsCrafting } from './blizzard-api-helpers.mjs';
-import { parentLogger } from './logging.mjs';
+import { dbOpen, dbClose, dbRun, dbGet, dbAll, dbSerialize } from './sqlite3-helpers.js';
+import { getAuctionHouse, getConnectedRealmId, checkIsCrafting } from './blizzard-api-helpers.js';
+import { parentLogger } from './logging.js';
 import sqlite3 from 'sqlite3';
-import { getItemDetails } from './blizzard-api-helpers.mjs';
-import { saveCache } from './cached-data-sources.mjs';
-import { getAuthorizationToken } from './blizz_oath.mjs';
+import { getItemDetails } from './blizzard-api-helpers.js';
+import { saveCache } from './cached-data-sources.js';
+import { getAuthorizationToken } from './blizz_oath.js';
 
 const logger = parentLogger.child();
 

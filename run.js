@@ -1,7 +1,7 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { RunConfiguration } from './RunConfiguration.mjs';
-import { cliRun } from './wow_crafting_profits.mjs';
+import { RunConfiguration } from './RunConfiguration.js';
+import { cliRun } from './wow_crafting_profits.js';
 
 //blacksmithing
 //const test_item = 171414;

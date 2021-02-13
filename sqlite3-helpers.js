@@ -1,4 +1,4 @@
-import { parentLogger } from './logging.mjs';
+import { parentLogger } from './logging.js';
 
 const logger = parentLogger.child();
 
