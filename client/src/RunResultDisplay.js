@@ -1,5 +1,5 @@
 import React from 'react';
-import { textFriendlyOutputFormat } from './text-output-helpers.js';
+import { textFriendlyOutputFormat } from './text-output-helpers.mjs';
 import './RunResultDisplay.css';
 import { GoldFormatter, VendorItemPrice, AHItemPrice } from './GoldFormatter.js';
 import { ShoppingLists } from './ShoppingLists.js';
