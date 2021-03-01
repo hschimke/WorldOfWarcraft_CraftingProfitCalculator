@@ -1,0 +1,12 @@
+[Unit]
+Description=CPC auction scrape
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/wow_cpc
+Environment='NODE_ENV=production'
+ExectStart=/opt/wow_cpc/scripts/scrape.sh
+User=WOW_CPC
+
+[Install]
+WantedBy=multi-user.target

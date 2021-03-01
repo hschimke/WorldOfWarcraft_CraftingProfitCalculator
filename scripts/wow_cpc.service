@@ -1,0 +1,12 @@
+[Unit]
+Description=WoW CPC Backend and Frontend server
+
+[Service]
+type=simple
+WorkingDirectory=/opt/wow_cpc
+Environment='NODE_ENV=production'
+ExectStart=/usr/bin/npm run server
+User=WOW_CPC
+
+[Install]
+WantedBy=multi-user.target

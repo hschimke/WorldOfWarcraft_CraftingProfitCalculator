@@ -1,0 +1,10 @@
+[Unit]
+Description=Hourly CPC auction scrape
+
+[Timer]
+OnCalendar=hourly
+AccuracySec=7m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,3 +1,3 @@
-import { scanRealms, addRealmToScanList } from './auction-history.js';
+import { scanRealms } from './auction-history.js';
 
 scanRealms();
