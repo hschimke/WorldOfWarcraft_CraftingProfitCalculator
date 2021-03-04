@@ -38,3 +38,6 @@ systemctl enable wow_cpc.service
 
 # Start Server
 systemctl start wow_cpc.service
+
+# Start Timer
+systemctl start wow_cpc_auction_scrape.timer
