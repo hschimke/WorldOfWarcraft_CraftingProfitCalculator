@@ -1,6 +1,6 @@
 #!/bin/bash
 
 cd "${INSTALL_DIRECTORY}"
-cd ../client
+cd ./client
 npm run build
 mv ./build ../html
