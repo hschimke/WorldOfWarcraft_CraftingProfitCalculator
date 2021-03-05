@@ -3,7 +3,6 @@ import path from 'path';
 import { runWithJSONConfig, shutdown } from './wow_crafting_profits.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { parentLogger } from './logging.js';
-import bodyParser from 'body-parser';
 
 const logger = parentLogger.child();
 
@@ -11,12 +10,12 @@ const app = express();
 const port = process.env.SERVER_PORT;
 
 app.use(express.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+app.use(express.json());
 
 
 app.get('/', (req, res) => {
     logger.debug('json form requested');
-    res.sendFile(path.resolve('html/json_form.html'));
+    res.sendFile(path.resolve('html/build/index.html'));
 });
 
 app.get('/custom', (req, res) => {
