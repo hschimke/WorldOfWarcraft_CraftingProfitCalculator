@@ -3,4 +3,5 @@
 cd "${INSTALL_DIRECTORY}"
 cd ./client
 npm run build
-mv --update ./build ../html
+rm -r ../html/build
+mv ./build ../html
