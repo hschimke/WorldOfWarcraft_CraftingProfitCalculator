@@ -12,6 +12,7 @@ const port = process.env.SERVER_PORT;
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
+app.use(express.static(path.join(__dirname, 'html/build')));
 
 app.get('/', (req, res) => {
     logger.debug('json form requested');
