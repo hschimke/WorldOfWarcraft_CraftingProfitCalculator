@@ -5,12 +5,12 @@ readonly TMP_DIR="/tmp/cpc_db_hold"
 COPY_DB=0
 
 # Stop everything, if it exists
-systemctl disable wow_cpc_auction_scrape.service
 systemctl disable wow_cpc_auction_scrape.timer
+systemctl disable wow_cpc_auction_scrape.service
 systemctl disable wow_cpc.service
+systemctl stop wow_cpc_auction_scrape.timer
 systemctl stop wow_cpc_auction_scrape.service
 systemctl stop wow_cpc.service
-systemctl stop wow_cpc_auction_scrape.timer
 
 # Copy out the old databases if they exist
 if [ -d "${INSTALL_DIRECTORY}" ]
