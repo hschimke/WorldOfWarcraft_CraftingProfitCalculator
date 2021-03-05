@@ -15,6 +15,7 @@ systemctl stop wow_cpc_auction_scrape.timer
 # Copy out the old databases if they exist
 if [ -d "${INSTALL_DIRECTORY}" ]
   then
+    echo "Directory exists, copying database files."
     mkdir "${TMP_DIR}"
     cp "${INSTALL_DIRECTORY}/cache/cache.db" "${TMP_DIR}/"
     cp "${INSTALL_DIRECTORY}/historical_auctions.db" "${TMP_DIR}/"
@@ -22,7 +23,11 @@ if [ -d "${INSTALL_DIRECTORY}" ]
 fi
 
 # Make the directory if it doesn't exist
-[ ! -d "${INSTALL_DIRECTORY}" ] && mkdir "${INSTALL_DIRECTORY}"
+if [ ! -d "${INSTALL_DIRECTORY}" ] 
+  then
+    echo "Install location does not exist, creating."
+    mkdir "${INSTALL_DIRECTORY}"
+fi
 
 user_exists(){ id "$1" &>/dev/null; }
 if user_exists $USER; then
@@ -34,7 +39,7 @@ else
 fi
 
 # Perform build
-./build.sh
+bash ./build.sh
 
 # Copy files
 cp --archive ../ $INSTALL_DIRECTORY
@@ -46,11 +51,12 @@ cp "${INSTALL_DIRECTORY}/scripts/wow_cpc.service" /etc/systemd/system/wow_cpc.se
 
 # Install modules
 export INSTALL_DIRECTORY
-./install_modules.sh
+bash ./install_modules.sh
 
 # Copy back old databases, if we copied them
 if [ $COPY_DB -eq 1 ]
   then
+    echo "Restoring database files."
     cp "${TMP_DIR}/cache.db" "${INSTALL_DIRECTORY}/cache/cache.db"
     cp "${TMP_DIR}/historical_auctions.db" "${INSTALL_DIRECTORY}/historical_auctions.db"
     rmdir -r "${TMP_DIR}"
