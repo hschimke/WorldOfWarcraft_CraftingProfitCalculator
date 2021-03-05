@@ -62,6 +62,9 @@ if [ $COPY_DB -eq 1 ]
     rmdir -r "${TMP_DIR}"
 fi
 
+# Change directory ownership
+chown -R $USER "${INSTALL_DIRECTORY}"
+
 # Activate SystemD Units
 systemctl enable wow_cpc_auction_scrape.service
 systemctl enable wow_cpc_auction_scrape.timer
