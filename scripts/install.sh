@@ -44,6 +44,10 @@ cp "${INSTALL_DIRECTORY}/scripts/wow_cpc_auction_scrape.service" /etc/systemd/sy
 cp "${INSTALL_DIRECTORY}/scripts/wow_cpc_auction_scrape.timer" /etc/systemd/system/wow_cpc_auction_scrape.timer
 cp "${INSTALL_DIRECTORY}/scripts/wow_cpc.service" /etc/systemd/system/wow_cpc.service
 
+# Install modules
+export INSTALL_DIRECTORY
+./install_modules.sh
+
 # Copy back old databases, if we copied them
 if [ $COPY_DB -eq 1 ]
   then
