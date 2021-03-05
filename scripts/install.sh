@@ -38,9 +38,6 @@ else
     usermod -L $USER
 fi
 
-# Perform build
-bash ./build.sh
-
 # Copy files
 cp --archive ../ $INSTALL_DIRECTORY
 
@@ -52,6 +49,9 @@ cp "${INSTALL_DIRECTORY}/scripts/wow_cpc.service" /etc/systemd/system/wow_cpc.se
 # Install modules
 export INSTALL_DIRECTORY
 bash ./install_modules.sh
+
+# Perform build
+bash ./build.sh
 
 # Copy back old databases, if we copied them
 if [ $COPY_DB -eq 1 ]
