@@ -59,7 +59,7 @@ if [ $COPY_DB -eq 1 ]
     echo "Restoring database files."
     cp "${TMP_DIR}/cache.db" "${INSTALL_DIRECTORY}/cache/cache.db"
     cp "${TMP_DIR}/historical_auctions.db" "${INSTALL_DIRECTORY}/historical_auctions.db"
-    rmdir -r "${TMP_DIR}"
+    rm -r "${TMP_DIR}"
 fi
 
 # Change directory ownership
