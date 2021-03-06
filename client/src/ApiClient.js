@@ -10,6 +10,18 @@ function apiRunCall(run_data, cb) {
         .then(cb);
 }
 
+function apiAuctionHistoryFetch(item_data, cb) {
+    return fetch('/auction_history', {
+        method: 'POST',
+        body: JSON.stringify(item_data),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    }).then(checkStatus)
+        .then(parseJSON)
+        .then(cb);
+}
+
 function checkStatus(response) {
     if (response.status >= 200 && response.status < 300) {
         return response;
@@ -25,4 +37,4 @@ function parseJSON(response) {
     return response.json();
 }
 
-export { apiRunCall };
+export { apiRunCall, apiAuctionHistoryFetch };
