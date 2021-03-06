@@ -3,6 +3,7 @@ import path from 'path';
 import { runWithJSONConfig, shutdown } from './wow_crafting_profits.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { parentLogger } from './logging.js';
+import { getAuctions } from './auction-history.js';
 
 const logger = parentLogger.child();
 
@@ -17,11 +18,6 @@ app.use(express.static(path.resolve('html/build')));
 app.get('/', (req, res) => {
     logger.debug('json form requested');
     res.sendFile(path.resolve('html/build/index.html'));
-});
-
-app.get('/custom', (req, res) => {
-    logger.debug('custom form requested');
-    res.sendFile(path.resolve('html/custom_run_form.html'));
 });
 
 app.post('/show_output', (req, res) => {
@@ -84,6 +80,16 @@ app.post('/json_output', (req, res) => {
     runWithJSONConfig(config).then((data) => {
         const { price, intermediate, formatted } = data;
         res.send(intermediate);
+    });
+});
+
+app.post('/auction_history', (req, res) => {
+    const item = req.body.item;
+    const realm = req.body.realm;
+    const region = req.body.region;
+    const bonuses = req.body.bonuses;
+    getAuctions(item, realm, region, bonuses).then(result => {
+        res.json(result);
     });
 });
 

@@ -1,8 +1,7 @@
 import { dbOpen, dbClose, dbRun, dbGet, dbAll, dbSerialize } from './sqlite3-helpers.js';
-import { getAuctionHouse, getConnectedRealmId, checkIsCrafting } from './blizzard-api-helpers.js';
+import { getAuctionHouse, getConnectedRealmId, checkIsCrafting, getItemId, getItemDetails } from './blizzard-api-helpers.js';
 import { parentLogger } from './logging.js';
 import sqlite3 from 'sqlite3';
-import { getItemDetails } from './blizzard-api-helpers.js';
 import { saveCache } from './cached-data-sources.js';
 import { getAuthorizationToken } from './blizz_oath.js';
 
@@ -138,8 +137,19 @@ async function getAuctions(item, realm, region, bonuses) {
     const value_searches = [];
     if (item !== undefined) {
         // Get specific items
+        let item_id = 0;
+        if (Number.isFinite(Number(item))) {
+            item_id = item;
+        } else {
+            item_id = await getItemId(region, item);
+            if (item_id < 0) {
+                logger.error(`No itemId could be found for ${item}`);
+                throw (new Error(`No itemId could be found for ${item}`));
+            }
+            logger.info(`Found ${item_id} for ${item}`);
+        }
         sql_addins.push('item_id = ?');
-        value_searches.push(item);
+        value_searches.push(item_id);
     } else {
         // All items
     }
