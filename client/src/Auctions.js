@@ -22,7 +22,7 @@ class Auctions extends React.Component {
         const target = event.target;
         const value = target.type === 'checkbox' ? target.checked : target.value;
         const name = target.name;
-        
+
         this.setState({
             [name]: value
         });
@@ -37,11 +37,12 @@ class Auctions extends React.Component {
             region: this.state.region,
             bonuses: undefined,
         }
-        apiAuctionHistoryFetch(send_data, this.handleApiRun);
+        apiAuctionHistoryFetch(send_data, this.handleApiReturn);
     }
 
     handleApiReturn(data) {
         this.setState({ button_enabled: true });
+        this.setState({raw_data: data});
     }
 
     render() {
@@ -62,6 +63,11 @@ class Auctions extends React.Component {
                     </label>
                     <button type="submit" disabled={!this.state.button_enabled} value="Run">Run</button>
                 </form>
+                <div className="RawReturn">
+                    <pre>
+                        {JSON.stringify(this.state.raw_data, undefined, 2)}
+                    </pre>
+                </div>
             </div>
         );
     }

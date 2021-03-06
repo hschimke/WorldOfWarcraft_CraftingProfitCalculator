@@ -88,7 +88,9 @@ app.post('/auction_history', (req, res) => {
     const realm = req.body.realm;
     const region = req.body.region;
     const bonuses = req.body.bonuses;
+    logger.info(`Request for item: ${item}, realm: ${realm}, region: ${region}, bonuses: ${bonuses}`);
     getAuctions(item, realm, region, bonuses).then(result => {
+        logger.debug(`Return auction data`);
         res.json(result);
     });
 });

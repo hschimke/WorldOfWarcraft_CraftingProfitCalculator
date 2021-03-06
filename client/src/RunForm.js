@@ -74,9 +74,9 @@ class AdvancedRunFrom extends React.Component {
                     <span>Professions:</span>
                     {profession_list.map(item => {
                         return (
-                            <label>
+                            <label key={`${item}key`}>
                                 {item}:
-                                <input type="checkbox" name={item} key={`${item}key`} checked={!!this.props.professions.includes(item)} onChange={this.handleCheckbox} />
+                                <input type="checkbox" name={item} checked={!!this.props.professions.includes(item)} onChange={this.handleCheckbox} />
                             </label>
                         );
                     })}

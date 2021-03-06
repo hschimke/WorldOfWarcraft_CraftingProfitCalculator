@@ -132,6 +132,7 @@ async function ingest(region, connected_realm) {
 }
 
 async function getAuctions(item, realm, region, bonuses) {
+    logger.debug(`getAuctions(${item}, ${realm}, ${region}, ${bonuses})`);
     const sql_build = 'SELECT * FROM auctions';
     const sql_addins = [];
     const value_searches = [];
@@ -154,9 +155,20 @@ async function getAuctions(item, realm, region, bonuses) {
         // All items
     }
     if (realm !== undefined) {
+        let server_id = 0;
+        if (Number.isFinite(Number(realm))) {
+            server_id = realm;
+        } else {
+            server_id = await getConnectedRealmId(realm, region);
+            if (server_id < 0) {
+                logger.error(`No connected realm id could be found for ${realm}`);
+                throw (new Error(`No connected realm id could be found for ${realm}`));
+            }
+            logger.info(`Found ${server_id} for ${realm}`);
+        }
         // Get specific realm
         sql_addins.push('connected_realm_id = ?');
-        value_searches.push(realm);
+        value_searches.push(server_id);
     } else {
         // All realms
     }
@@ -187,7 +199,8 @@ async function getAuctions(item, realm, region, bonuses) {
     let db = await openDB();
     //console.log(run_sql);
     const value = await dbAll(db, run_sql, value_searches);
-    await closeDB(db);
+    logger.debug(`Found ${value.length} items`);
+    closeDB(db);
     return value;
 }
 

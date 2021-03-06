@@ -12,31 +12,33 @@ import {
 
 function App() {
   return (
-    <div className="App">
-      <div className="Header">
-        <h1>Crafting Profits Calculator</h1>
+    <Router>
+      <div className="App">
+        <div className="Header">
+          <h1>Crafting Profits Calculator</h1>
+        </div>
+        <div className="Nav">
+          <ul>
+            <li>
+              <Link to="/">Profit Calculator</Link>
+            </li>
+            <li>
+              <Link to="/auctions">Auction Price History</Link>
+            </li>
+          </ul>
+        </div>
+        <div className="Main">
+          <Switch>
+            <Route path="/auctions">
+              <Auctions />
+            </Route>
+            <Route path="/">
+              <RunCoordinator />
+            </Route>
+          </Switch>
+        </div>
       </div>
-      <div className="Nav">
-        <ul>
-          <li>
-            <Link to="/">Profit Calculator</Link>
-          </li>
-          <li>
-            <Link to="/auctions">Auction Price History</Link>
-          </li>
-        </ul>
-      </div>
-      <div className="Main">
-        <Switch>
-          <Route path="/auctions">
-            <Auctions />
-          </Route>
-          <Route path="/">
-            <RunCoordinator />
-          </Route>
-        </Switch>
-      </div>
-    </div>
+    </Router>
   );
 }
 
