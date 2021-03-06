@@ -97,7 +97,7 @@ async function ingest(region, connected_realm) {
     await dbRun(db, 'BEGIN TRANSACTION', []);
 
     for (const item of item_set) {
-        const result = await dbGet(db, sql_check_item, [connected_realm, region]);
+        const result = await dbGet(db, sql_check_item, [item, region]);
 
         let found = false;
         if (result.how_many > 0) {
