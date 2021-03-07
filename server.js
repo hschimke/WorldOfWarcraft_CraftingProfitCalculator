@@ -20,7 +20,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.resolve('html/build/index.html'));
 });
 
-app.get('*', (req,res) =>{
+app.get('*', (req, res) => {
     logger.debug('Unknown route requested');
     res.sendFile(path.resolve('html/build/index.html'));
 });
@@ -84,7 +84,7 @@ app.post('/json_output', (req, res) => {
 
     runWithJSONConfig(config).then((data) => {
         const { price, intermediate, formatted } = data;
-        res.send(intermediate);
+        res.json(intermediate);
     });
 });
 
@@ -100,11 +100,11 @@ app.post('/auction_history', (req, res) => {
     logger.info(`Request for item: ${item}, realm: ${realm}, region: ${region}, bonuses: ${bonuses}, start_dtm: ${start_dtm}, end_dtm: ${end_dtm}`);
     getAuctions(item, realm, region, bonuses, start_dtm, end_dtm).then(result => {
         return_a = result;
-        getAuctions(item, realm, region, bonuses, result.latest, result.latest).then( final => {
-            logger.debug(`Return auction data`);
-            return_a.latest_data = final;
-            res.json(return_a);
-        })
+        return getAuctions(item, realm, region, bonuses, result.latest, result.latest);
+    }).then(final => {
+        logger.debug(`Return auction data`);
+        return_a.latest_data = final;
+        res.json(return_a);
     });
 });
 
