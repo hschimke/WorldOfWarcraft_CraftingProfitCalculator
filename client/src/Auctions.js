@@ -93,6 +93,7 @@ class Auctions extends React.Component {
                                     0: {
                                         type: 'polynomial',
                                         degree: 2,
+                                        color: 'red',
                                     },
                                 },
                             }}
@@ -100,10 +101,10 @@ class Auctions extends React.Component {
                         />
                     }
                     <pre>
-                        {JSON.stringify(this.state.chart_data, undefined, 2)}
+                        {false && JSON.stringify(this.state.chart_data, undefined, 2)}
                     </pre>
                     <pre>
-                        {JSON.stringify(this.state.raw_data, undefined, 2)}
+                        {false && JSON.stringify(this.state.raw_data, undefined, 2)}
                     </pre>
                 </div>
             </div>
