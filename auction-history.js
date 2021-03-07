@@ -134,6 +134,10 @@ async function ingest(region, connected_realm) {
 async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
     logger.debug(`getAuctions(${item}, ${realm}, ${region}, ${bonuses})`);
     const sql_build = 'SELECT * FROM auctions';
+    const sql_build_min = 'SELECT MIN(price) AS MIN_PRICE FROM auctions';
+    const sql_build_max = 'SELECT MAX(price) AS MAX_PRICE FROM auctions';
+    const sql_build_avg = 'SELECT SUM(price*quantity)/SUM(quantity) AS AVG_PRICE FROM auctions';
+    const sql_build_latest_dtm = 'SELECT MAX(downloaded) AS LATEST_DOWNLOAD FROM auctions';
     const sql_addins = [];
     const value_searches = [];
     if (item !== undefined) {
@@ -201,21 +205,43 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
         // No latest fetched date time
     }
 
-    let run_sql = sql_build;
-    if (sql_addins.length > 0) {
-        run_sql += ' WHERE ';
-        for (const addin of sql_addins) {
-            run_sql += addin;
-            run_sql += ' AND ';
-        }
-        run_sql = run_sql.slice(0, run_sql.length - 4);
-    }
+    const run_sql = build_sql_with_addins(sql_build, sql_addins);
+    const min_sql = build_sql_with_addins(sql_build_min, sql_addins);
+    const max_sql = build_sql_with_addins(sql_build_max, sql_addins);
+    const avg_sql = build_sql_with_addins(sql_build_avg, sql_addins);
+    const latest_dl_sql = build_sql_with_addins(sql_build_latest_dtm, sql_addins);
+
     let db = await openDB();
     //console.log(run_sql);
     const value = await dbAll(db, run_sql, value_searches);
-    logger.debug(`Found ${value.length} items`);
+    const min_value = (await dbGet(db, min_sql, value_searches)).MIN_PRICE;
+    const max_value = (await dbGet(db, max_sql, value_searches)).MAX_PRICE;
+    const avg_value = (await dbGet(db, avg_sql, value_searches)).AVG_PRICE;
+    const latest_dl_value = (await dbGet(db, latest_dl_sql, value_searches)).LATEST_DOWNLOAD
+
+    logger.debug(`Found ${value.length} items, max: ${max_value}, min: ${min_value}, avg: ${avg_value}`);
     closeDB(db);
-    return value;
+    
+    return {
+        min: min_value,
+        max: max_value,
+        avg: avg_value,
+        latest: latest_dl_value,
+        all_data: value,
+    };
+
+    function build_sql_with_addins(base_sql, addin_list) {
+        let construct_sql = base_sql;
+        if (addin_list.length > 0) {
+            construct_sql += ' WHERE ';
+            for (const addin of addin_list) {
+                construct_sql += addin;
+                construct_sql += ' AND ';
+            }
+            construct_sql = construct_sql.slice(0, construct_sql.length - 4);
+        }
+        return construct_sql;
+    }
 }
 
 async function addRealmToScanList(realm_name, realm_region) {

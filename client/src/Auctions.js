@@ -47,7 +47,7 @@ class Auctions extends React.Component {
         this.setState({ raw_data: data });
 
         const chart_data = [['Downloaded', 'Price']];
-        data.forEach(element=>{
+        data.all_data.forEach(element=>{
             for(let i = 0; i<element.quantity; i++){
                 chart_data.push([new Date(element.downloaded), element.price]);
             }
@@ -104,7 +104,7 @@ class Auctions extends React.Component {
                         {false && JSON.stringify(this.state.chart_data, undefined, 2)}
                     </pre>
                     <pre>
-                        {false && JSON.stringify(this.state.raw_data, undefined, 2)}
+                        {true && JSON.stringify(this.state.raw_data, undefined, 2)}
                     </pre>
                 </div>
             </div>

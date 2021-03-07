@@ -16,7 +16,12 @@ app.use(express.json());
 app.use(express.static(path.resolve('html/build')));
 
 app.get('/', (req, res) => {
-    logger.debug('json form requested');
+    logger.debug('Homepage requested');
+    res.sendFile(path.resolve('html/build/index.html'));
+});
+
+app.get('*', (req,res) =>{
+    logger.debug('Unknown route requested');
     res.sendFile(path.resolve('html/build/index.html'));
 });
 
@@ -90,10 +95,16 @@ app.post('/auction_history', (req, res) => {
     const bonuses = req.body.bonuses;
     const start_dtm = req.body.start_dtm;
     const end_dtm = req.body.end_dtm;
+
+    let return_a;
     logger.info(`Request for item: ${item}, realm: ${realm}, region: ${region}, bonuses: ${bonuses}, start_dtm: ${start_dtm}, end_dtm: ${end_dtm}`);
     getAuctions(item, realm, region, bonuses, start_dtm, end_dtm).then(result => {
-        logger.debug(`Return auction data`);
-        res.json(result);
+        return_a = result;
+        getAuctions(item, realm, region, bonuses, result.latest, result.latest).then( final => {
+            logger.debug(`Return auction data`);
+            return_a.latest_data = final;
+            res.json(return_a);
+        })
     });
 });
 
