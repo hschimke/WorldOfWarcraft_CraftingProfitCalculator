@@ -131,7 +131,7 @@ async function ingest(region, connected_realm) {
     await closeDB(db);
 }
 
-async function getAuctions(item, realm, region, bonuses) {
+async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
     logger.debug(`getAuctions(${item}, ${realm}, ${region}, ${bonuses})`);
     const sql_build = 'SELECT * FROM auctions';
     const sql_addins = [];
@@ -185,6 +185,20 @@ async function getAuctions(item, realm, region, bonuses) {
         value_searches.push(bonuses);
     } else {
         // any bonuses or none
+    }
+    if (start_dtm !== undefined) {
+        // Include oldest fetch date time
+        sql_addins.push('downloaded >= ?');
+        value_searches.push(start_dtm);
+    } else {
+        // No start fetched date time limit
+    }
+    if (end_dtm !== undefined) {
+        // Include newest fetch date time
+        sql_addins.push('downloaded <= ?');
+        value_searches.push(end_dtm);
+    } else {
+        // No latest fetched date time
     }
 
     let run_sql = sql_build;

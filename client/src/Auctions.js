@@ -42,7 +42,12 @@ class Auctions extends React.Component {
 
     handleApiReturn(data) {
         this.setState({ button_enabled: true });
-        this.setState({raw_data: data});
+        this.setState({ raw_data: data });
+
+        const chart_data = [['Downloaded', 'Price']].concat(data.map(element => {
+            return [element.downloaded, element.price];
+        }));
+        this.setState({ chart_data: chart_data });
     }
 
     render() {
@@ -64,6 +69,9 @@ class Auctions extends React.Component {
                     <button type="submit" disabled={!this.state.button_enabled} value="Run">Run</button>
                 </form>
                 <div className="RawReturn">
+                    <pre>
+                        {JSON.stringify(this.state.chart_data, undefined, 2)}
+                    </pre>
                     <pre>
                         {JSON.stringify(this.state.raw_data, undefined, 2)}
                     </pre>

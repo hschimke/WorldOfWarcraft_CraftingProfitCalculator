@@ -89,4 +89,5 @@
     display: block;
     font-family: sans-serif;
     font-variant-caps: all-petite-caps;
+    cursor: pointer;
 }

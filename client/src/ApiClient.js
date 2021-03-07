@@ -1,19 +1,15 @@
 function apiRunCall(run_data, cb) {
-    return fetch('/json_output', {
-        method: 'POST',
-        body: JSON.stringify(run_data),
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    }).then(checkStatus)
-        .then(parseJSON)
-        .then(cb);
+    return apiCall('/json_output', run_data, cb);
 }
 
 function apiAuctionHistoryFetch(item_data, cb) {
-    return fetch('/auction_history', {
+    return apiCall('/auction_history', item_data, cb);
+}
+
+function apiCall(end_point, data, cb) {
+    return fetch(end_point, {
         method: 'POST',
-        body: JSON.stringify(item_data),
+        body: JSON.stringify(data),
         headers: {
             'Content-Type': 'application/json',
         },

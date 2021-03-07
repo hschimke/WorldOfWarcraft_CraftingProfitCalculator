@@ -88,8 +88,10 @@ app.post('/auction_history', (req, res) => {
     const realm = req.body.realm;
     const region = req.body.region;
     const bonuses = req.body.bonuses;
-    logger.info(`Request for item: ${item}, realm: ${realm}, region: ${region}, bonuses: ${bonuses}`);
-    getAuctions(item, realm, region, bonuses).then(result => {
+    const start_dtm = req.body.start_dtm;
+    const end_dtm = req.body.end_dtm;
+    logger.info(`Request for item: ${item}, realm: ${realm}, region: ${region}, bonuses: ${bonuses}, start_dtm: ${start_dtm}, end_dtm: ${end_dtm}`);
+    getAuctions(item, realm, region, bonuses, start_dtm, end_dtm).then(result => {
         logger.debug(`Return auction data`);
         res.json(result);
     });
