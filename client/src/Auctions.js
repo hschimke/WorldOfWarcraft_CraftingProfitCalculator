@@ -46,9 +46,13 @@ class Auctions extends React.Component {
         this.setState({ button_enabled: true });
         this.setState({ raw_data: data });
 
-        const chart_data = [['Downloaded', 'Price']].concat(data.map(element => {
-            return [new Date(element.downloaded), element.price];
-        }));
+        const chart_data = [['Downloaded', 'Price']];
+        data.forEach(element=>{
+            for(let i = 0; i<element.quantity; i++){
+                chart_data.push([new Date(element.downloaded), element.price]);
+            }
+        });
+
         this.setState({ chart_ready: true });
         this.setState({ chart_data: chart_data });
     }
@@ -85,6 +89,12 @@ class Auctions extends React.Component {
                                 hAxis: { title: 'Time' },
                                 vAxis: { title: 'Price' },
                                 legend: 'none',
+                                trendlines: {
+                                    0: {
+                                        type: 'polynomial',
+                                        degree: 2,
+                                    },
+                                },
                             }}
                             rootProps={{ 'data-testid': '1' }}
                         />
