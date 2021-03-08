@@ -2,6 +2,7 @@ import React from 'react';
 import './Auctions.css';
 import { apiAuctionHistoryFetch } from './ApiClient.js';
 import { Chart } from "react-google-charts";
+import { GoldFormatter } from './GoldFormatter.js';
 
 class Auctions extends React.Component {
     constructor(props) {
@@ -46,11 +47,11 @@ class Auctions extends React.Component {
         this.setState({ button_enabled: true });
         this.setState({ raw_data: data });
 
+        const latest = data.price_map[data.latest];
+
         const bubble_chart = [['ID', 'Auctions', 'Price', 'Quantity']];
-        Object.keys(data.latest_data.price_map).forEach(key => {
-            data.price_map[key].data.forEach(element => {
-                bubble_chart.push(['', element.sales_at_price, element.price, element.quantity_at_price]);
-            });
+        latest.data.forEach(element => {
+            bubble_chart.push(['', element.sales_at_price, element.price, element.quantity_at_price]);
         });
 
         const bar_chart = [['Fetch', 'High', 'Low', 'Average']];
@@ -73,6 +74,7 @@ class Auctions extends React.Component {
         this.setState({ bubble_chart_data: bubble_chart });
         this.setState({ bar_chart_data: bar_chart });
         this.setState({ volume_chart_data: sales_volume_chart });
+        this.setState({ latest: latest });
     }
     // https://react-google-charts.com/scatter-chart
     render() {
@@ -93,9 +95,12 @@ class Auctions extends React.Component {
                     </label>
                     <button type="submit" disabled={!this.state.button_enabled} value="Run">Run</button>
                 </form>
-                <div className="RawReturn">
-                    {
-                        (this.state.chart_ready === true) &&
+                {
+                    (this.state.chart_ready === true) &&
+                    <div className="DataReturnDisplay">
+                        <PriceSummary title="Current Spot" high={this.state.raw_data.price_map[this.state.raw_data.latest].max_value} low={this.state.raw_data.price_map[this.state.raw_data.latest].min_value} average={this.state.raw_data.price_map[this.state.raw_data.latest].avg_value} />
+                        <PriceSummary title="Historical" high={this.state.raw_data.max} low={this.state.raw_data.min} average={this.state.raw_data.avg} />
+                        <PriceChart title="Current Breakdown" rows={this.state.raw_data.price_map[this.state.raw_data.latest].data} />
                         <Chart
                             width={'500px'}
                             height={'300px'}
@@ -107,9 +112,7 @@ class Auctions extends React.Component {
                             }}
                             rootProps={{ 'data-testid': '2' }}
                         />
-                    }
-                    {
-                        (this.state.chart_ready === true) &&
+
                         <Chart
                             width={'500px'}
                             height={'300px'}
@@ -121,27 +124,25 @@ class Auctions extends React.Component {
                                 chart: {
                                     title: 'Price Over Time',
                                 },
-                                  trendlines: {
+                                trendlines: {
                                     0: {
                                         type: 'polynomial',
-                                        degree: 2,
+                                        degree: 3,
                                     },
                                     1: {
                                         type: 'polynomial',
-                                        degree: 2,
+                                        degree: 3,
                                     },
                                     2: {
                                         type: 'polynomial',
-                                        degree: 2,
+                                        degree: 3,
                                     },
-                                  },
+                                },
                             }}
                             // For tests
                             rootProps={{ 'data-testid': '2' }}
                         />
-                    }
-                    {
-                        (this.state.chart_ready === true) &&
+
                         <Chart
                             width={'500px'}
                             height={'300px'}
@@ -153,27 +154,79 @@ class Auctions extends React.Component {
                                 chart: {
                                     title: 'Sales Over Time',
                                 },
-                                  trendlines: {
+                                trendlines: {
                                     0: {
                                         type: 'polynomial',
                                         degree: 2,
                                     },
-                                  },
+                                },
                             }}
                             // For tests
                             rootProps={{ 'data-testid': '2' }}
                         />
-                    }
+                    </div>
+                }
+                <div className="RawReturn">
                     <pre>
-                        {false && JSON.stringify(this.state.chart_data, undefined, 2)}
-                    </pre>
-                    <pre>
-                        {false && JSON.stringify(this.state.raw_data, undefined, 2)}
+                        {true && JSON.stringify(this.state.raw_data, undefined, 2)}
                     </pre>
                 </div>
             </div>
         );
     }
+}
+
+function PriceSummary(props) {
+    return (
+        <div className="PriceSummary">
+            <span>{props.title}</span>
+            <span>
+                <GoldFormatter raw_price={props.high} />
+            </span>
+            <span>
+                <GoldFormatter raw_price={props.average} />
+            </span>
+            <span>
+                <GoldFormatter raw_price={props.low} />
+            </span>
+        </div>
+    );
+}
+
+function PriceChart(props){
+    return(
+        <div className="PriceChart">
+            <span>{props.title}</span>
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            Price
+                        </th>
+                        <th>
+                            Quantity Available
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {
+                        props.rows.map(row => {
+                            return(
+                                <tr key={row.price}>
+                                    <td>
+                                        {row.price}
+                                    </td>
+                                    <td>
+                                        {row.quantity_at_price}
+                                    </td>
+                                </tr>
+                            );
+                        })
+                    }
+                </tbody>
+            </table>
+        </div>
+    );
 }
 
 export default Auctions;
