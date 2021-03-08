@@ -132,8 +132,11 @@ async function ingest(region, connected_realm) {
 }
 
 async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
-    logger.debug(`getAuctions(${item}, ${realm}, ${region}, ${bonuses})`);
+    logger.debug(`getAuctions(${item}, ${realm}, ${region}, ${bonuses}, ${start_dtm}, ${end_dtm})`);
     const sql_build = 'SELECT * FROM auctions';
+    const sql_build_distinct_dtm = 'SELECT DISTINCT downloaded FROM auctions';
+    const sql_build_price_map = 'SELECT price, count(price) AS sales_at_price, sum(quantity) AS quantity_at_price FROM auctions';
+    const sql_group_by_price_addin = 'GROUP BY price';
     const sql_build_min = 'SELECT MIN(price) AS MIN_PRICE FROM auctions';
     const sql_build_max = 'SELECT MAX(price) AS MAX_PRICE FROM auctions';
     const sql_build_avg = 'SELECT SUM(price*quantity)/SUM(quantity) AS AVG_PRICE FROM auctions';
@@ -210,16 +213,31 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
     const max_sql = build_sql_with_addins(sql_build_max, sql_addins);
     const avg_sql = build_sql_with_addins(sql_build_avg, sql_addins);
     const latest_dl_sql = build_sql_with_addins(sql_build_latest_dtm, sql_addins);
+    const distinct_download_sql = build_sql_with_addins(sql_build_distinct_dtm,sql_addins);
+
+    const min_dtm_sql = build_sql_with_addins(sql_build_min, [...sql_addins,'downloaded = ?']);
+    const max_dtm_sql = build_sql_with_addins(sql_build_max, [...sql_addins,'downloaded = ?']);
+    const avg_dtm_sql = build_sql_with_addins(sql_build_avg, [...sql_addins,'downloaded = ?']);
+    const price_group_sql = build_sql_with_addins(sql_build_price_map,[...sql_addins,'downloaded = ?']) + ' ' + sql_group_by_price_addin;
 
     let db = await openDB();
     //console.log(run_sql);
-    const value = await dbAll(db, run_sql, value_searches);
+    const all_auctions = await dbAll(db, run_sql, value_searches);
     const min_value = (await dbGet(db, min_sql, value_searches)).MIN_PRICE;
     const max_value = (await dbGet(db, max_sql, value_searches)).MAX_PRICE;
     const avg_value = (await dbGet(db, avg_sql, value_searches)).AVG_PRICE;
     const latest_dl_value = (await dbGet(db, latest_dl_sql, value_searches)).LATEST_DOWNLOAD
 
-    logger.debug(`Found ${value.length} items, max: ${max_value}, min: ${min_value}, avg: ${avg_value}`);
+    const price_data_by_download = {};
+    for( const row of (await dbAll(db,distinct_download_sql,value_searches))){
+        price_data_by_download[row.downloaded] = {};
+        price_data_by_download[row.downloaded].data = await dbAll(db,price_group_sql,[...value_searches,row.downloaded]);
+        price_data_by_download[row.downloaded].min_value = (await dbGet(db, min_dtm_sql, [...value_searches,row.downloaded])).MIN_PRICE;
+        price_data_by_download[row.downloaded].max_value = (await dbGet(db, max_dtm_sql, [...value_searches,row.downloaded])).MAX_PRICE;
+        price_data_by_download[row.downloaded].avg_value = (await dbGet(db, avg_dtm_sql, [...value_searches,row.downloaded])).AVG_PRICE;
+    }
+
+    logger.debug(`Found ${all_auctions.length} items, max: ${max_value}, min: ${min_value}, avg: ${avg_value}`);
     closeDB(db);
     
     return {
@@ -227,7 +245,8 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
         max: max_value,
         avg: avg_value,
         latest: latest_dl_value,
-        all_data: value,
+        all_data: all_auctions,
+        price_map: price_data_by_download,
     };
 
     function build_sql_with_addins(base_sql, addin_list) {

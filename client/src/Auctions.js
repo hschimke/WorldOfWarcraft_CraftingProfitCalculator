@@ -47,14 +47,40 @@ class Auctions extends React.Component {
         this.setState({ raw_data: data });
 
         const chart_data = [['Downloaded', 'Price']];
-        data.all_data.forEach(element=>{
-            for(let i = 0; i<element.quantity; i++){
+        data.all_data.forEach(element => {
+            for (let i = 0; i < element.quantity; i++) {
                 chart_data.push([new Date(element.downloaded), element.price]);
             }
         });
 
+        const bubble_chart = [['ID', 'Auctions', 'Price', 'Quantity']];
+        Object.keys(data.latest_data.price_map).forEach(key => {
+            data.price_map[key].data.forEach(element => {
+                bubble_chart.push(['', element.sales_at_price, element.price, element.quantity_at_price]);
+            });
+        });
+
+        const bar_chart = [['Fetch', 'High', 'Low', 'Average']];
+        Object.keys(data.price_map).forEach(key => {
+            const element = data.price_map[key];
+            bar_chart.push([new Date(Number(key)), element.max_value, element.min_value, element.avg_value]);
+        });
+
+        const sales_volume_chart = [['Date', 'Qauntity']];
+        Object.keys(data.price_map).forEach(key => {
+            let sales_by_key = 0;
+            data.price_map[key].data.forEach(element => {
+                sales_by_key += element.quantity_at_price;
+            });
+            sales_volume_chart.push([new Date(Number(key)), sales_by_key]);
+        });
+
+
         this.setState({ chart_ready: true });
         this.setState({ chart_data: chart_data });
+        this.setState({ bubble_chart_data: bubble_chart });
+        this.setState({ bar_chart_data: bar_chart });
+        this.setState({ volume_chart_data: sales_volume_chart });
     }
     // https://react-google-charts.com/scatter-chart
     render() {
@@ -100,11 +126,81 @@ class Auctions extends React.Component {
                             rootProps={{ 'data-testid': '1' }}
                         />
                     }
+                    {
+                        (this.state.chart_ready === true) &&
+                        <Chart
+                            width={'500px'}
+                            height={'300px'}
+                            chartType="BubbleChart"
+                            loader={<div>Loading Chart</div>}
+                            data={this.state.bubble_chart_data}
+                            options={{
+                                colorAxis: { colors: ['yellow', 'red'] },
+                            }}
+                            rootProps={{ 'data-testid': '2' }}
+                        />
+                    }
+                    {
+                        (this.state.chart_ready === true) &&
+                        <Chart
+                            width={'500px'}
+                            height={'300px'}
+                            chartType="ColumnChart"
+                            loader={<div>Loading Chart</div>}
+                            data={this.state.bar_chart_data}
+                            options={{
+                                // Material design options
+                                chart: {
+                                    title: 'Price Over Time',
+                                },
+                                  trendlines: {
+                                    0: {
+                                        type: 'polynomial',
+                                        degree: 2,
+                                    },
+                                    1: {
+                                        type: 'polynomial',
+                                        degree: 2,
+                                    },
+                                    2: {
+                                        type: 'polynomial',
+                                        degree: 2,
+                                    },
+                                  },
+                            }}
+                            // For tests
+                            rootProps={{ 'data-testid': '2' }}
+                        />
+                    }
+                    {
+                        (this.state.chart_ready === true) &&
+                        <Chart
+                            width={'500px'}
+                            height={'300px'}
+                            chartType="ColumnChart"
+                            loader={<div>Loading Chart</div>}
+                            data={this.state.volume_chart_data}
+                            options={{
+                                // Material design options
+                                chart: {
+                                    title: 'Sales Over Time',
+                                },
+                                  trendlines: {
+                                    0: {
+                                        type: 'polynomial',
+                                        degree: 2,
+                                    },
+                                  },
+                            }}
+                            // For tests
+                            rootProps={{ 'data-testid': '2' }}
+                        />
+                    }
                     <pre>
                         {false && JSON.stringify(this.state.chart_data, undefined, 2)}
                     </pre>
                     <pre>
-                        {true && JSON.stringify(this.state.raw_data, undefined, 2)}
+                        {false && JSON.stringify(this.state.raw_data, undefined, 2)}
                     </pre>
                 </div>
             </div>
