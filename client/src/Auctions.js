@@ -168,7 +168,7 @@ class Auctions extends React.Component {
                 }
                 <div className="RawReturn">
                     <pre>
-                        {true && JSON.stringify(this.state.raw_data, undefined, 2)}
+                        {false && JSON.stringify(this.state.raw_data, undefined, 2)}
                     </pre>
                 </div>
             </div>
@@ -179,16 +179,19 @@ class Auctions extends React.Component {
 function PriceSummary(props) {
     return (
         <div className="PriceSummary">
-            <span>{props.title}</span>
-            <span>
+            <span className="PriceSummaryTitle">{props.title}</span>
+            <div>
+                <span className="PriceSummarySection">High:</span>
                 <GoldFormatter raw_price={props.high} />
-            </span>
-            <span>
+            </div>
+            <div>
+                <span className="PriceSummarySection">Average:</span>
                 <GoldFormatter raw_price={props.average} />
-            </span>
-            <span>
+            </div>
+            <div>
+                <span className="PriceSummarySection">Low:</span>
                 <GoldFormatter raw_price={props.low} />
-            </span>
+            </div>
         </div>
     );
 }

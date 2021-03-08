@@ -1,0 +1,18 @@
+.PriceSummary {
+    display: block;
+    padding-bottom: 10px;
+}
+
+.PriceSummary .PriceSummaryTitle {
+    font-weight: bold;
+}
+
+.PriceSummary .PriceSummarySection {
+    display: inline-block;
+    width: 100px;
+    height: fit-content;
+}
+
+.PriceChart {
+    display: block;
+}
