@@ -46,13 +46,6 @@ class Auctions extends React.Component {
         this.setState({ button_enabled: true });
         this.setState({ raw_data: data });
 
-        const chart_data = [['Downloaded', 'Price']];
-        data.all_data.forEach(element => {
-            for (let i = 0; i < element.quantity; i++) {
-                chart_data.push([new Date(element.downloaded), element.price]);
-            }
-        });
-
         const bubble_chart = [['ID', 'Auctions', 'Price', 'Quantity']];
         Object.keys(data.latest_data.price_map).forEach(key => {
             data.price_map[key].data.forEach(element => {
@@ -77,7 +70,6 @@ class Auctions extends React.Component {
 
 
         this.setState({ chart_ready: true });
-        this.setState({ chart_data: chart_data });
         this.setState({ bubble_chart_data: bubble_chart });
         this.setState({ bar_chart_data: bar_chart });
         this.setState({ volume_chart_data: sales_volume_chart });
@@ -102,30 +94,6 @@ class Auctions extends React.Component {
                     <button type="submit" disabled={!this.state.button_enabled} value="Run">Run</button>
                 </form>
                 <div className="RawReturn">
-                    {
-                        (this.state.chart_ready === true) &&
-                        <Chart
-                            width={'600px'}
-                            height={'400px'}
-                            chartType="ScatterChart"
-                            loader={<div>Loading Chart</div>}
-                            data={this.state.chart_data}
-                            options={{
-                                title: 'Price Over Time',
-                                hAxis: { title: 'Time' },
-                                vAxis: { title: 'Price' },
-                                legend: 'none',
-                                trendlines: {
-                                    0: {
-                                        type: 'polynomial',
-                                        degree: 2,
-                                        color: 'red',
-                                    },
-                                },
-                            }}
-                            rootProps={{ 'data-testid': '1' }}
-                        />
-                    }
                     {
                         (this.state.chart_ready === true) &&
                         <Chart

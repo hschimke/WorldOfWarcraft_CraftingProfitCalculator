@@ -10,6 +10,7 @@ const logger = parentLogger.child();
 const db_fn = './historical_auctions.db';
 
 const sql_create_item_table = 'CREATE TABLE IF NOT EXISTS auctions (item_id INTEGER, bonuses TEXT, quantity INTEGER, price INTEGER, downloaded INTEGER, connected_realm_id INTEGER)';
+const sql_create_auctions_index = 'CREATE INDEX IF NOT EXISTS auctions_index ON auctions (item_id, bonuses, quantity, price, downloaded, connected_realm_id)';
 const sql_create_items_table = 'CREATE TABLE IF NOT EXISTS items (item_id INTEGER, region TEXT, name TEXT, craftable INTEGER, PRIMARY KEY (item_id,region))';
 const sql_create_realms_table = 'CREATE TABLE IF NOT EXISTS realms (connected_realm_id INTEGER, name TEXT, region TEXT, PRIMARY KEY (connected_realm_id,region))';
 const sql_create_realm_scan_table = 'CREATE TABLE IF NOT EXISTS realm_scan_list (connected_realm_id INTEGER, region TEXT, PRIMARY KEY (connected_realm_id,region))';
@@ -21,6 +22,7 @@ const sql_run_at_open = [
     sql_create_items_table,
     sql_create_realms_table,
     sql_create_realm_scan_table,
+    sql_create_auctions_index,
 ];
 
 const sql_run_at_close = [
@@ -222,7 +224,6 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
 
     let db = await openDB();
     //console.log(run_sql);
-    const all_auctions = await dbAll(db, run_sql, value_searches);
     const min_value = (await dbGet(db, min_sql, value_searches)).MIN_PRICE;
     const max_value = (await dbGet(db, max_sql, value_searches)).MAX_PRICE;
     const avg_value = (await dbGet(db, avg_sql, value_searches)).AVG_PRICE;
@@ -237,7 +238,7 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
         price_data_by_download[row.downloaded].avg_value = (await dbGet(db, avg_dtm_sql, [...value_searches,row.downloaded])).AVG_PRICE;
     }
 
-    logger.debug(`Found ${all_auctions.length} items, max: ${max_value}, min: ${min_value}, avg: ${avg_value}`);
+    logger.debug(`Found max: ${max_value}, min: ${min_value}, avg: ${avg_value}`);
     closeDB(db);
     
     return {
@@ -245,7 +246,6 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
         max: max_value,
         avg: avg_value,
         latest: latest_dl_value,
-        all_data: all_auctions,
         price_map: price_data_by_download,
     };
 
