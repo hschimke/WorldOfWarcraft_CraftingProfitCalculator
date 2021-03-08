@@ -193,8 +193,8 @@ function PriceSummary(props) {
     );
 }
 
-function PriceChart(props){
-    return(
+function PriceChart(props) {
+    return (
         <div className="PriceChart">
             <span>{props.title}</span>
             <table>
@@ -211,10 +211,10 @@ function PriceChart(props){
                 <tbody>
                     {
                         props.rows.map(row => {
-                            return(
+                            return (
                                 <tr key={row.price}>
                                     <td>
-                                        {row.price}
+                                        <GoldFormatter raw_price={row.price} />
                                     </td>
                                     <td>
                                         {row.quantity_at_price}
