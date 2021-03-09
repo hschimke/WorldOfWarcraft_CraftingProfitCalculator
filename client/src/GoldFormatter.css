@@ -12,15 +12,21 @@
 }
 
 .PriceData .Gold .Currency {
-    color: gold;
+    color:transparent;
+    background-image: url(./Gold.svg);
+    background-size: contain;
 }
 
 .PriceData .Silver .Currency {
-    color: silver;
+    color:transparent;
+    background-image: url(./Silver.svg);
+    background-size: contain;
 }
 
 .PriceData .Copper .Currency {
-    color: #b87333;
+    color:transparent;
+    background-image: url(./Copper.svg);
+    background-size: contain;
 }
 
 .PriceData .Currency::after {
