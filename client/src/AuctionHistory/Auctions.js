@@ -1,8 +1,8 @@
 import React from 'react';
 import './Auctions.css';
-import { apiAuctionHistoryFetch } from './ApiClient.js';
+import { apiAuctionHistoryFetch } from '../Shared/ApiClient.js';
 import { Chart } from "react-google-charts";
-import { GoldFormatter } from './GoldFormatter.js';
+import { GoldFormatter } from '../Shared/GoldFormatter.js';
 
 class Auctions extends React.Component {
     constructor(props) {

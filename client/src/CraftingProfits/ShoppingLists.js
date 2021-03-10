@@ -1,6 +1,6 @@
 import React from 'react';
 import './ShoppingLists.css';
-import { AHItemPrice, VendorItemPrice } from './GoldFormatter.js';
+import { AHItemPrice, VendorItemPrice } from '../Shared/GoldFormatter.js';
 
 class ShoppingLists extends React.Component {
     render() {
