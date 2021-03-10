@@ -77,13 +77,14 @@ async function getItemId(region, item_name) {
         }
     } else {
         // We didn't get any results, that's an error
+        cacheSet(ITEM_SEARCH_CACHE, item_name, -1);
         logger.error(`No items match search ${item_name}`);
         throw (new Error('No Results'));
     }
 
-    if (item_id > 0) {
+    //if (item_id > 0) {
         cacheSet(ITEM_SEARCH_CACHE, item_name, item_id);
-    }
+    //}
 
     return item_id;
 
