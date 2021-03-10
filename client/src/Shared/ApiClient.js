@@ -6,6 +6,14 @@ function apiAuctionHistoryFetch(item_data, cb) {
     return apiCall('/auction_history', item_data, cb);
 }
 
+function apiGetSeenBonuses(payload, cb){
+    return apiCall('/seen_item_bonuses', payload, cb);
+}
+
+function apiGetBonusMappings(cb){
+    return apiCall('/bonus_mappings', {}, cb);
+}
+
 function apiCall(end_point, data, cb) {
     return fetch(end_point, {
         method: 'POST',
@@ -33,4 +41,4 @@ function parseJSON(response) {
     return response.json();
 }
 
-export { apiRunCall, apiAuctionHistoryFetch };
+export { apiRunCall, apiAuctionHistoryFetch, apiGetSeenBonuses, apiGetBonusMappings };

@@ -3,6 +3,7 @@ import './Auctions.css';
 import { apiAuctionHistoryFetch } from '../Shared/ApiClient.js';
 import { Chart } from "react-google-charts";
 import { GoldFormatter } from '../Shared/GoldFormatter.js';
+import {BonusListDropdown} from './BonusListDropdown.js';
 
 class Auctions extends React.Component {
     constructor(props) {
@@ -11,6 +12,7 @@ class Auctions extends React.Component {
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handleApiReturn = this.handleApiReturn.bind(this);
+        this.handleSelectChange = this.handleSelectChange.bind(this);
 
         this.state = {
             button_enabled: true,
@@ -47,6 +49,10 @@ class Auctions extends React.Component {
         this.setState({ button_enabled: true });
         this.setState({ raw_data: data });
 
+        if('ERROR' in data){
+            return;
+        }
+
         const latest = data.price_map[data.latest];
 
         const bubble_chart = [['ID', 'Auctions', 'Price', 'Quantity']];
@@ -76,6 +82,11 @@ class Auctions extends React.Component {
         this.setState({ volume_chart_data: sales_volume_chart });
         this.setState({ latest: latest });
     }
+
+    handleSelectChange(event){
+        alert(event);
+    }
+
     // https://react-google-charts.com/scatter-chart
     render() {
         return (
@@ -93,6 +104,7 @@ class Auctions extends React.Component {
                         Region:
                         <input type="text" name="region" value={this.state.region} onChange={this.handleChange} />
                     </label>
+                    <BonusListDropdown title="Level" item={this.state.item_name} region={this.state.region} selected={this.state.selected_ilvl} handleSelect={this.handleSelectChange} />
                     <button type="submit" disabled={!this.state.button_enabled} value="Run">Run</button>
                 </form>
                 {

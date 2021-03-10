@@ -3,7 +3,8 @@ import path from 'path';
 import { runWithJSONConfig, shutdown } from './wow_crafting_profits.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { parentLogger } from './logging.js';
-import { getAuctions } from './auction-history.js';
+import { getAuctions, getAllBonuses } from './auction-history.js';
+import { bonuses_cache } from './cached-data-sources.js';
 
 const logger = parentLogger.child();
 
@@ -100,8 +101,54 @@ app.post('/auction_history', (req, res) => {
     getAuctions(item, realm, region, bonuses, start_dtm, end_dtm).then(result => {
         logger.debug(`Return auction data`);
         res.json(result);
+    }).catch(error => {
+        res.json({ ERROR: error });
     });
 });
+
+app.post('/seen_item_bonuses', (req, res) => {
+    const item = req.body.item;
+    const region = req.body.region;
+
+    logger.debug(`Getting seen bonus lists for ${item} in ${region}`);
+
+    getAllBonuses(item, region).then(bonuses => {
+        logger.debug(`Regurning bonus lists for ${item}`);
+
+        const b_array = bonuses.bonuses.map(e => {
+            const v = {text: e.bonuses};
+            v.parsed = JSON.parse(e.bonuses);
+            v.reduced = v.parsed.reduce( (acc, cur) => {
+                let value = acc;
+                if( cur in  bonuses_cache){
+                    if('level' in bonuses_cache[cur]){
+                        value += `ilevel ${bonuses.item.level + bonuses_cache[cur].level} `;
+                    }
+                    if('socket' in bonuses_cache[cur]){
+                        value += `socketed `;
+                    }
+                    if('quality' in bonuses_cache[cur]){
+                        value += `quality: ${bonuses_cache[cur].quality} `;
+                    }
+                }
+                return value;
+            }, '');
+            return v;
+        });
+
+        res.json({
+            bonuses: bonuses.bonuses,
+            //item: bonuses.item,
+            mapped: b_array,
+        });
+    }).catch(error => {
+        res.json({ ERROR: error });
+    });
+});
+
+app.post('/bonus_mappings', (req, res) => {
+    res.json(bonuses_cache);
+})
 
 const server = app.listen(port, () => {
     logger.info(`Crafting Profit Calculator running at: http://localhost:${port}`)
