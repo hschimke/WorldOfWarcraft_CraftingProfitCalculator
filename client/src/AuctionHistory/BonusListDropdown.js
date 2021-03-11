@@ -66,7 +66,7 @@ class BonusListDropdown extends React.Component {
                 <select onChange={this.handleChange} name="ilevel" value={this.props.ilevel}>
                         <option value="">Any</option>
                         {this.state.collected.ilvl.map(element => {
-                            return(
+                            return (
                                 <option key={element.id} value={element.id}>{element.level}</option>
                             );
                         })}
@@ -76,8 +76,8 @@ class BonusListDropdown extends React.Component {
                     Socket
                     <select name="sockets" onChange={this.handleChange} value={this.props.sockets}>
                         <option value="">Any</option>
-                        {this.state.collected.socket.map(element=>{
-                            return(
+                        {this.state.collected.socket.map(element => {
+                            return (
                                 <option key={element.id} value={element.id}>{element.sockets}</option>
                             )
                         })}
@@ -88,15 +88,17 @@ class BonusListDropdown extends React.Component {
                 <select onChange={this.handleChange} name="quality" value={this.props.quality}>
                         <option value="">Any</option>
                         {this.state.collected.quality.map(element => {
-                            return(
+                            return (
                                 <option key={element.id} value={element.id}>{element.quality}</option>
                             );
                         })}
                     </select>
                 </label>
-                <pre>
-                    {false && JSON.stringify(this.state.raw, undefined, 2)}
-                </pre>
+                {false &&
+                    <pre>
+                        {JSON.stringify(this.state.raw, undefined, 2)}
+                    </pre>
+                }
             </span>
         );
     }

@@ -102,6 +102,7 @@ app.post('/auction_history', (req, res) => {
         logger.debug(`Return auction data`);
         res.json(result);
     }).catch(error => {
+        logger.error("Issue getting auctions", error);
         res.json({ ERROR: error });
     });
 });
@@ -173,6 +174,7 @@ app.post('/seen_item_bonuses', (req, res) => {
             },
         });
     }).catch(error => {
+        logger.error("Issue getting bonuses", error);
         res.json({ ERROR: error });
     });
 });

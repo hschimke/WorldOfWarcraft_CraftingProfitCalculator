@@ -224,9 +224,9 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
         // Get only with specific bonuses
         bonuses.forEach(b => {
             if (b !== null) {
-                logger.debug(`Add bonus instr(bonuses, ${b}) > 1`);
-                sql_addins.push('instr(bonuses, ?) > 1');
-                value_searches.push(b);
+                logger.debug(`Add bonus ${b} in (select json_each.value from json_each(bonuses))`);
+                sql_addins.push('? IN (SELECT json_each.value FROM json_each(bonuses))');
+                value_searches.push(Number(b));
             }
         })
     } else {
@@ -265,6 +265,11 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
     const max_value = (await dbGet(db, max_sql, value_searches)).MAX_PRICE;
     const avg_value = (await dbGet(db, avg_sql, value_searches)).AVG_PRICE;
     const latest_dl_value = (await dbGet(db, latest_dl_sql, value_searches)).LATEST_DOWNLOAD
+
+    //logger.debug(max_sql);
+    //logger.debug(value_searches.map(v=>{
+    //    return `${typeof(v)}: ${v}`
+    //}));
 
     const price_data_by_download = {};
     for (const row of (await dbAll(db, distinct_download_sql, value_searches))) {
