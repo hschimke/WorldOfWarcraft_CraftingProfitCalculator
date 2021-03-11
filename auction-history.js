@@ -135,7 +135,7 @@ async function ingest(region, connected_realm) {
 
 async function getAllBonuses(item, region) {
     logger.debug(`Fetching bonuses for ${item}`);
-    const sql = 'SELECT DISTINCT bonuses FROM auctions WHERE bonuses NOTNULL AND item_id = ?';
+    const sql = 'SELECT DISTINCT bonuses FROM auctions WHERE item_id = ?';
 
     let item_id = 0;
     if (Number.isFinite(Number(item))) {
@@ -222,8 +222,13 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
     }
     if (bonuses !== undefined) {
         // Get only with specific bonuses
-        sql_addins.push('bonuses = ?');
-        value_searches.push(bonuses);
+        bonuses.forEach(b => {
+            if (b !== null) {
+                logger.debug(`Add bonus instr(bonuses, ${b}) > 1`);
+                sql_addins.push('instr(bonuses, ?) > 1');
+                value_searches.push(b);
+            }
+        })
     } else {
         // any bonuses or none
     }

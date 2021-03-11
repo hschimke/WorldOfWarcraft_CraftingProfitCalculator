@@ -112,27 +112,51 @@ app.post('/seen_item_bonuses', (req, res) => {
 
     logger.debug(`Getting seen bonus lists for ${item} in ${region}`);
 
+    if(item === ''){
+        res.json({ ERROR: 'empty item' });
+    }
+
     getAllBonuses(item, region).then(bonuses => {
         logger.debug(`Regurning bonus lists for ${item}`);
 
+        const ilvl_adjusts = new Set();
+        const socket_adjusts = new Set();
+        const quality_adjusts = new Set();
+        const unknown_adjusts = new Set();
+        let found_empty_bonuses = false;
+
         const b_array = bonuses.bonuses.map(e => {
-            const v = {text: e.bonuses};
+            const v = { text: e.bonuses };
             v.parsed = JSON.parse(e.bonuses);
-            v.reduced = v.parsed.reduce( (acc, cur) => {
-                let value = acc;
-                if( cur in  bonuses_cache){
-                    if('level' in bonuses_cache[cur]){
-                        value += `ilevel ${bonuses.item.level + bonuses_cache[cur].level} `;
+            if (v.parsed !== null) {
+                v.reduced = v.parsed.reduce((acc, cur) => {
+                    let value = acc;
+                    if (cur in bonuses_cache) {
+                        let found = false;
+                        if ('level' in bonuses_cache[cur]) {
+                            value += `ilevel ${bonuses.item.level + bonuses_cache[cur].level} `;
+                            found = true;
+                            ilvl_adjusts.add(cur);
+                        }
+                        if ('socket' in bonuses_cache[cur]) {
+                            value += `socketed `;
+                            found = true;
+                            socket_adjusts.add(cur);
+                        }
+                        if ('quality' in bonuses_cache[cur]) {
+                            value += `quality: ${bonuses_cache[cur].quality} `;
+                            found = true;
+                            quality_adjusts.add(cur);
+                        }
+                        if(!found){
+                            unknown_adjusts.add(cur);
+                        }
                     }
-                    if('socket' in bonuses_cache[cur]){
-                        value += `socketed `;
-                    }
-                    if('quality' in bonuses_cache[cur]){
-                        value += `quality: ${bonuses_cache[cur].quality} `;
-                    }
-                }
-                return value;
-            }, '');
+                    return value;
+                }, '');
+            }else{
+                found_empty_bonuses = true;
+            }
             return v;
         });
 
@@ -140,6 +164,13 @@ app.post('/seen_item_bonuses', (req, res) => {
             bonuses: bonuses.bonuses,
             //item: bonuses.item,
             mapped: b_array,
+            collected: {
+                ilvl: Array.from(ilvl_adjusts).map(i=>{return {id: i, level: bonuses_cache[i].level + bonuses.item.level}}),
+                socket: Array.from(socket_adjusts).map(i=>{return {id: i, sockets: bonuses_cache[i].socket}}),
+                quality: Array.from(quality_adjusts).map(i=>{return {id: i, quality: bonuses_cache[i].quality}}),
+                unknown: Array.from(unknown_adjusts),
+                empty: found_empty_bonuses,
+            },
         });
     }).catch(error => {
         res.json({ ERROR: error });

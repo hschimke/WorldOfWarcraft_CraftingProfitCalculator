@@ -40,7 +40,7 @@ class Auctions extends React.Component {
             item: this.state.item_name,
             realm: this.state.realm_name,
             region: this.state.region,
-            bonuses: undefined,
+            bonuses: [this.state.ilevel, this.state.sockets, this.state.quality],
         }
         apiAuctionHistoryFetch(send_data, this.handleApiReturn);
     }
@@ -84,7 +84,7 @@ class Auctions extends React.Component {
     }
 
     handleSelectChange(event){
-        alert(event);
+        this.handleChange(event);
     }
 
     // https://react-google-charts.com/scatter-chart
@@ -104,7 +104,7 @@ class Auctions extends React.Component {
                         Region:
                         <input type="text" name="region" value={this.state.region} onChange={this.handleChange} />
                     </label>
-                    <BonusListDropdown title="Level" item={this.state.item_name} region={this.state.region} selected={this.state.selected_ilvl} handleSelect={this.handleSelectChange} />
+                    <BonusListDropdown item={this.state.item_name} region={this.state.region} ilevel={this.state.ilevel} quality={this.state.quality} sockets={this.state.sockets} handleSelect={this.handleSelectChange} />
                     <button type="submit" disabled={!this.state.button_enabled} value="Run">Run</button>
                 </form>
                 {

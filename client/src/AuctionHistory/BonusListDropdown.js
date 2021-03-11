@@ -14,6 +14,13 @@ class BonusListDropdown extends React.Component {
             bonuses: [],
             mapped: [],
             bonus_mappings: undefined,
+            collected: {
+                ilvl: [],
+                socket: [],
+                quality: [],
+                unknown: [],
+                empty: true,
+            },
         };
 
         apiGetSeenBonuses({ item: this.props.item, region: this.props.region }, this.handleApiReturn);
@@ -31,8 +38,9 @@ class BonusListDropdown extends React.Component {
             return;
         }
 
+        this.setState({ collected: data.collected });
         this.setState({ bonuses: data.bonuses });
-        this.setState({mapped: data.mapped});
+        this.setState({ mapped: data.mapped });
         this.setState({ raw: data });
     }
 
@@ -42,17 +50,54 @@ class BonusListDropdown extends React.Component {
 
     render() {
         return (
-            <label>
-                {this.props.title}
-                <select onChange={this.handleChange}>
-                    {this.state.mapped.map(bonus => {
-                        return (
-                            <option key={bonus.text}>{bonus.reduced}</option>
-                        )
-                    }
-                    )}
-                </select>
-            </label>
+            <span>
+                <label>
+                    <select>
+                        {this.state.mapped.map(bonus => {
+                            return (
+                                <option key={bonus.text}>{bonus.reduced}</option>
+                            )
+                        }
+                        )}
+                    </select>
+                </label>
+                <label>
+                    Level
+                <select onChange={this.handleChange} name="ilevel" value={this.props.ilevel}>
+                        <option value="">Any</option>
+                        {this.state.collected.ilvl.map(element => {
+                            return(
+                                <option key={element.id} value={element.id}>{element.level}</option>
+                            );
+                        })}
+                    </select>
+                </label>
+                <label>
+                    Socket
+                    <select name="sockets" onChange={this.handleChange} value={this.props.sockets}>
+                        <option value="">Any</option>
+                        {this.state.collected.socket.map(element=>{
+                            return(
+                                <option key={element.id} value={element.id}>{element.sockets}</option>
+                            )
+                        })}
+                    </select>
+                </label>
+                <label>
+                    Quality
+                <select onChange={this.handleChange} name="quality" value={this.props.quality}>
+                        <option value="">Any</option>
+                        {this.state.collected.quality.map(element => {
+                            return(
+                                <option key={element.id} value={element.id}>{element.quality}</option>
+                            );
+                        })}
+                    </select>
+                </label>
+                <pre>
+                    {false && JSON.stringify(this.state.raw, undefined, 2)}
+                </pre>
+            </span>
         );
     }
 }
