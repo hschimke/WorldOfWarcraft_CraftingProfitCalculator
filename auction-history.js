@@ -223,7 +223,7 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
     if (bonuses !== undefined) {
         // Get only with specific bonuses
         bonuses.forEach(b => {
-            if (b !== null) {
+            if (b !== null && b !== '') {
                 logger.debug(`Add bonus ${b} in (select json_each.value from json_each(bonuses))`);
                 sql_addins.push('? IN (SELECT json_each.value FROM json_each(bonuses))');
                 value_searches.push(Number(b));
