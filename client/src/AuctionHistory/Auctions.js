@@ -3,7 +3,7 @@ import './Auctions.css';
 import { apiAuctionHistoryFetch } from '../Shared/ApiClient.js';
 import { Chart } from "react-google-charts";
 import { GoldFormatter } from '../Shared/GoldFormatter.js';
-import {BonusListDropdown} from './BonusListDropdown.js';
+import { BonusListDropdown } from './BonusListDropdown.js';
 
 class Auctions extends React.Component {
     constructor(props) {
@@ -31,6 +31,12 @@ class Auctions extends React.Component {
         this.setState({
             [name]: value
         });
+
+        if (name === 'item_name' || name === 'region' || name === 'realm_name') {
+            this.setState({ ilevel: '' });
+            this.setState({ quality: '' });
+            this.setState({ sockets: '' });
+        }
     }
 
     handleSubmit(event) {
@@ -49,7 +55,7 @@ class Auctions extends React.Component {
         this.setState({ button_enabled: true });
         this.setState({ raw_data: data });
 
-        if('ERROR' in data){
+        if ('ERROR' in data) {
             return;
         }
 
@@ -83,7 +89,7 @@ class Auctions extends React.Component {
         this.setState({ latest: latest });
     }
 
-    handleSelectChange(event){
+    handleSelectChange(event) {
         this.handleChange(event);
     }
 
