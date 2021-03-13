@@ -1,59 +1,75 @@
-import React from 'react';
+import { useState } from 'react';
 import './Auctions.css';
 import { apiAuctionHistoryFetch } from '../Shared/ApiClient.js';
 import { Chart } from "react-google-charts";
 import { GoldFormatter } from '../Shared/GoldFormatter.js';
 import { BonusListDropdown } from './BonusListDropdown.js';
 
-class Auctions extends React.Component {
-    constructor(props) {
-        super(props);
+function Auctions(props) {
+    const [button_enabled, updateButtonEnabled] = useState(true);
+    const [item_name, updateItemName] = useState('Grim-Veiled Bracers');
+    const [realm_name, updateRealmName] = useState('Hyjal');
+    const [region, updateRegion] = useState('US');
+    const [chart_ready, updateChartReady] = useState(false);
+    const [ilevel, updateILevel] = useState('');
+    const [quality, updateQuality] = useState('');
+    const [sockets, updateSockets] = useState('');
+    const [raw_data, updateRawData] = useState();
+    const [bubble_chart_data, updateBubbleChartData] = useState();
+    const [bar_chart_data, updateBarChartData] = useState();
+    const [volume_chart_data, updateVolumeChartData] = useState();
+    const [latest, updateLatest] = useState();
 
-        this.handleChange = this.handleChange.bind(this);
-        this.handleSubmit = this.handleSubmit.bind(this);
-        this.handleApiReturn = this.handleApiReturn.bind(this);
-        this.handleSelectChange = this.handleSelectChange.bind(this);
-
-        this.state = {
-            button_enabled: true,
-            item_name: 'Grim-Veiled Bracers',
-            realm_name: 'Hyjal',
-            region: 'US',
-            chart_ready: false,
-        };
-    }
-
-    handleChange(event) {
+    const handleChange = (event) => {
         const target = event.target;
         const value = target.type === 'checkbox' ? target.checked : target.value;
         const name = target.name;
 
-        this.setState({
-            [name]: value
-        });
+        switch (name) {
+            case 'item_name':
+                updateItemName(value);
+                break;
+            case 'realm_name':
+                updateRealmName(value);
+                break;
+            case 'region':
+                updateRegion(value);
+                break;
+            case 'ilevel':
+                updateILevel(value);
+                break;
+            case 'quality':
+                updateQuality(value);
+                break;
+            case 'sockets':
+                updateSockets(value);
+                break;
+            default:
+                break;
+        }
 
         if (name === 'item_name' || name === 'region' || name === 'realm_name') {
-            this.setState({ ilevel: '' });
-            this.setState({ quality: '' });
-            this.setState({ sockets: '' });
+            updateILevel('');
+            updateQuality('');
+            updateSockets('');
         }
-    }
+    };
 
-    handleSubmit(event) {
+    const handleSubmit = (event) => {
         event.preventDefault();
-        this.setState({ button_enabled: false });
+        updateButtonEnabled(false);
         const send_data = {
-            item: this.state.item_name,
-            realm: this.state.realm_name,
-            region: this.state.region,
-            bonuses: [this.state.ilevel, this.state.sockets, this.state.quality],
+            item: item_name,
+            realm: realm_name,
+            region: region,
+            bonuses: [ilevel, sockets, quality],
         }
-        apiAuctionHistoryFetch(send_data, this.handleApiReturn);
-    }
+        apiAuctionHistoryFetch(send_data, handleApiReturn);
+    };
 
-    handleApiReturn(data) {
-        this.setState({ button_enabled: true });
-        this.setState({ raw_data: data });
+    const handleApiReturn = (data) => {
+        updateButtonEnabled(true);
+        updateRawData(data);
 
         if ('ERROR' in data) {
             return;
@@ -81,117 +97,114 @@ class Auctions extends React.Component {
             sales_volume_chart.push([new Date(Number(key)), sales_by_key]);
         });
 
+        updateChartReady(true);
+        updateBubbleChartData(bubble_chart)
+        updateBarChartData(bar_chart);
+        updateVolumeChartData(sales_volume_chart);
+        updateLatest(latest);
+    };
 
-        this.setState({ chart_ready: true });
-        this.setState({ bubble_chart_data: bubble_chart });
-        this.setState({ bar_chart_data: bar_chart });
-        this.setState({ volume_chart_data: sales_volume_chart });
-        this.setState({ latest: latest });
-    }
-
-    handleSelectChange(event) {
-        this.handleChange(event);
-    }
+    const handleSelectChange = (event) => {
+        handleChange(event);
+    };
 
     // https://react-google-charts.com/scatter-chart
-    render() {
-        return (
-            <div className="Auctions">
-                <form className="AuctionHistorySelector" onSubmit={this.handleSubmit}>
-                    <label>
-                        Item:
-                        <input type="text" name="item_name" value={this.state.item_name} onChange={this.handleChange} />
-                    </label>
-                    <label>
-                        Realm:
-                        <input type="text" name="realm_name" value={this.state.realm_name} onChange={this.handleChange} />
-                    </label>
-                    <label>
-                        Region:
-                        <input type="text" name="region" value={this.state.region} onChange={this.handleChange} />
-                    </label>
-                    <BonusListDropdown item={this.state.item_name} region={this.state.region} ilevel={this.state.ilevel} quality={this.state.quality} sockets={this.state.sockets} handleSelect={this.handleSelectChange} />
-                    <button type="submit" disabled={!this.state.button_enabled} value="Run">Run</button>
-                </form>
-                {
-                    (this.state.chart_ready === true) &&
-                    <div className="DataReturnDisplay">
-                        <PriceSummary title="Current Spot" high={this.state.raw_data.price_map[this.state.raw_data.latest].max_value} low={this.state.raw_data.price_map[this.state.raw_data.latest].min_value} average={this.state.raw_data.price_map[this.state.raw_data.latest].avg_value} />
-                        <PriceSummary title="Historical" high={this.state.raw_data.max} low={this.state.raw_data.min} average={this.state.raw_data.avg} />
-                        <PriceChart title="Current Breakdown" rows={this.state.raw_data.price_map[this.state.raw_data.latest].data} />
-                        <Chart
-                            width={'500px'}
-                            height={'300px'}
-                            chartType="BubbleChart"
-                            loader={<div>Loading Chart</div>}
-                            data={this.state.bubble_chart_data}
-                            options={{
-                                colorAxis: { colors: ['yellow', 'red'] },
-                            }}
-                            rootProps={{ 'data-testid': '2' }}
-                        />
+    return (
+        <div className="Auctions">
+            <form className="AuctionHistorySelector" onSubmit={handleSubmit}>
+                <label>
+                    Item:
+                        <input type="text" name="item_name" value={item_name} onChange={handleChange} />
+                </label>
+                <label>
+                    Realm:
+                        <input type="text" name="realm_name" value={realm_name} onChange={handleChange} />
+                </label>
+                <label>
+                    Region:
+                        <input type="text" name="region" value={region} onChange={handleChange} />
+                </label>
+                <BonusListDropdown item={item_name} region={region} ilevel={ilevel} quality={quality} sockets={sockets} handleSelect={handleSelectChange} />
+                <button type="submit" disabled={!button_enabled} value="Run">Run</button>
+            </form>
+            {
+                (chart_ready === true) &&
+                <div className="DataReturnDisplay">
+                    <PriceSummary title="Current Spot" high={raw_data.price_map[raw_data.latest].max_value} low={raw_data.price_map[raw_data.latest].min_value} average={raw_data.price_map[raw_data.latest].avg_value} />
+                    <PriceSummary title="Historical" high={raw_data.max} low={raw_data.min} average={raw_data.avg} />
+                    <PriceChart title="Current Breakdown" rows={raw_data.price_map[raw_data.latest].data} />
+                    <Chart
+                        width={'500px'}
+                        height={'300px'}
+                        chartType="BubbleChart"
+                        loader={<div>Loading Chart</div>}
+                        data={bubble_chart_data}
+                        options={{
+                            colorAxis: { colors: ['yellow', 'red'] },
+                        }}
+                        rootProps={{ 'data-testid': '2' }}
+                    />
 
-                        <Chart
-                            width={'500px'}
-                            height={'300px'}
-                            chartType="ColumnChart"
-                            loader={<div>Loading Chart</div>}
-                            data={this.state.bar_chart_data}
-                            options={{
-                                // Material design options
-                                chart: {
-                                    title: 'Price Over Time',
+                    <Chart
+                        width={'500px'}
+                        height={'300px'}
+                        chartType="ColumnChart"
+                        loader={<div>Loading Chart</div>}
+                        data={bar_chart_data}
+                        options={{
+                            // Material design options
+                            chart: {
+                                title: 'Price Over Time',
+                            },
+                            trendlines: {
+                                0: {
+                                    type: 'polynomial',
+                                    degree: 3,
                                 },
-                                trendlines: {
-                                    0: {
-                                        type: 'polynomial',
-                                        degree: 3,
-                                    },
-                                    1: {
-                                        type: 'polynomial',
-                                        degree: 3,
-                                    },
-                                    2: {
-                                        type: 'polynomial',
-                                        degree: 3,
-                                    },
+                                1: {
+                                    type: 'polynomial',
+                                    degree: 3,
                                 },
-                            }}
-                            // For tests
-                            rootProps={{ 'data-testid': '2' }}
-                        />
+                                2: {
+                                    type: 'polynomial',
+                                    degree: 3,
+                                },
+                            },
+                        }}
+                        // For tests
+                        rootProps={{ 'data-testid': '2' }}
+                    />
 
-                        <Chart
-                            width={'500px'}
-                            height={'300px'}
-                            chartType="ColumnChart"
-                            loader={<div>Loading Chart</div>}
-                            data={this.state.volume_chart_data}
-                            options={{
-                                // Material design options
-                                chart: {
-                                    title: 'Sales Over Time',
+                    <Chart
+                        width={'500px'}
+                        height={'300px'}
+                        chartType="ColumnChart"
+                        loader={<div>Loading Chart</div>}
+                        data={volume_chart_data}
+                        options={{
+                            // Material design options
+                            chart: {
+                                title: 'Sales Over Time',
+                            },
+                            trendlines: {
+                                0: {
+                                    type: 'polynomial',
+                                    degree: 2,
                                 },
-                                trendlines: {
-                                    0: {
-                                        type: 'polynomial',
-                                        degree: 2,
-                                    },
-                                },
-                            }}
-                            // For tests
-                            rootProps={{ 'data-testid': '2' }}
-                        />
-                    </div>
-                }
-                <div className="RawReturn">
-                    <pre>
-                        {false && JSON.stringify(this.state.raw_data, undefined, 2)}
-                    </pre>
+                            },
+                        }}
+                        // For tests
+                        rootProps={{ 'data-testid': '2' }}
+                    />
                 </div>
+            }
+            <div className="RawReturn">
+                <pre>
+                    {false && JSON.stringify(raw_data, undefined, 2)}
+                </pre>
             </div>
-        );
-    }
+        </div>
+    );
 }
 
 function PriceSummary(props) {
