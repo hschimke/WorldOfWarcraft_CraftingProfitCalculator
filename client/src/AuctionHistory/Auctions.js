@@ -4,6 +4,7 @@ import { apiAuctionHistoryFetch } from '../Shared/ApiClient.js';
 import { Chart } from "react-google-charts";
 import { GoldFormatter } from '../Shared/GoldFormatter.js';
 import { BonusListDropdown } from './BonusListDropdown.js';
+import {RegionSelector} from '../Shared/RegionSelector.js';
 
 function Auctions(props) {
     const [button_enabled, updateButtonEnabled] = useState(true);
@@ -120,10 +121,7 @@ function Auctions(props) {
                     Realm:
                         <input type="text" name="realm_name" value={realm_name} onChange={handleChange} />
                 </label>
-                <label>
-                    Region:
-                        <input type="text" name="region" value={region} onChange={handleChange} />
-                </label>
+                <RegionSelector selected_region={region} onChange={handleChange} label="Region:" />
                 <BonusListDropdown item={item_name} region={region} ilevel={ilevel} quality={quality} sockets={sockets} handleSelect={handleSelectChange} />
                 <button type="submit" disabled={!button_enabled} value="Run">Run</button>
             </form>

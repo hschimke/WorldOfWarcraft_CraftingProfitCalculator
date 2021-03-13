@@ -1,4 +1,5 @@
 import './RunForm.css';
+import {RegionSelector} from '../Shared/RegionSelector.js';
 
 function SimpleRunFrom(props) {
     return (
@@ -24,9 +25,7 @@ function AdvancedRunFrom(props) {
             <label>Item:
                     <input type="text" name="item" value={props.item} onChange={props.handleInputChange} />
             </label>
-            <label>Region:
-                    <input type="text" name="region" value={props.region} onChange={props.handleInputChange} />
-            </label>
+            <RegionSelector selected_region={props.region} onChange={props.handleInputChange} />
             <label>Server:
                     <input type="text" name="realm" value={props.realm} onChange={props.handleInputChange} />
             </label>

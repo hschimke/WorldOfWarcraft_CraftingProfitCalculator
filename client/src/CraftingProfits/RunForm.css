@@ -1,7 +1,3 @@
-.RunForm {
-    
-}
-
 .RunForm label {
     display: block;
     float:none;
@@ -14,6 +10,23 @@
     width: 75%;
     padding:10px;
     background-color: #42A86B;
+}
+
+.RunForm .RegionSelector div span {
+    display: block;
+    background-color: #42A86B;
+    width: 75%;
+    padding: 10px;
+}
+
+.RunForm .RegionSelector div li {
+    background-color: #42A86B;
+    width: 75%;
+    padding: 10px;
+}
+
+.RunForm .RegionSelector div li:hover {
+    background-color: rgb(46, 116, 69);
 }
 
 .RunForm .Professions {
@@ -34,9 +47,6 @@
     display:block;
     clear: both;
     font-weight: bold;
-}
-
-.RunForm .Professions input {
 }
 
 .RunForm button {
