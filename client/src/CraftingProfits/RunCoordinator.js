@@ -111,6 +111,7 @@ function RunCoordinator(props) {
                 {(run_type === 'advanced') &&
                     <AdvancedRunFrom
                         handleInputChange={handleInputChange} handleSubmit={handleSubmit} handleCheckbox={handleCheckbox}
+                        formDispatch={dispatchFormUpdate}
                         item={formData.item}
                         addon_data={formData.addon_data}
                         required={formData.required}
@@ -122,6 +123,7 @@ function RunCoordinator(props) {
                 }
                 {run_type === 'simple' &&
                     <SimpleRunFrom handleInputChange={handleInputChange} handleSubmit={handleSubmit}
+                        formDispatch={dispatchFormUpdate}
                         item={formData.item}
                         addon_data={formData.addon_data}
                         required={formData.required}

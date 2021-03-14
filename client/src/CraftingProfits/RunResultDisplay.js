@@ -49,10 +49,10 @@ function RecipeListing(props) {
             <span className="RecipePartsBanner" onClick={toggleChildren}>
                 {props.recipe.parts.length} Components
                 </span>
-            <div class={'HideableChild' + child_addins}>
+            <div className={'HideableChild' + child_addins}>
                 {show_parts &&
                     props.recipe.parts.map(part => {
-                        return <RunResultItem raw_run={part} show_children={false} />;
+                        return <RunResultItem key={part.id} raw_run={part} show_children={false} />;
                     })
                 }
             </div>
@@ -116,7 +116,7 @@ function RunResultItem({ raw_run, show_children = true }) {
                 <div className={'RunResultItemRecipesChildren HideableChild' + children_classes}>
                     {recipes &&
                         output_data.recipes.map(recipe => {
-                            return <RecipeListing recipe={recipe} />
+                            return <RecipeListing key={recipe.id} recipe={recipe} />
                         })
                     }
                     {bonuses &&

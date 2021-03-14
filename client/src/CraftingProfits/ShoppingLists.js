@@ -9,7 +9,7 @@ function ShoppingLists(props) {
             </span>
             <ul>
                 {Object.keys(props.lists).map(list => {
-                    return <ShoppingList list={props.lists[list]} level={list} />
+                    return <ShoppingList key={list} list={props.lists[list]} level={list} />
                 })}
             </ul>
         </div>
@@ -24,7 +24,7 @@ function ShoppingList(props) {
             </span>
             <ul>
                 {props.list.map(list_item => {
-                    return <ShoppingListItem item={list_item} />
+                    return <ShoppingListItem key={JSON.stringify(list_item)} item={list_item} />
                 })}
             </ul>
         </li>
