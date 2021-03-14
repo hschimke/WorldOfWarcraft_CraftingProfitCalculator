@@ -1,22 +1,45 @@
-import { useState } from 'react';
+import { useState, useReducer } from 'react';
 import { AdvancedRunFrom, SimpleRunFrom } from './RunForm.js';
-import { apiRunCall } from '../Shared/ApiClient.js';
+import { useFetchCPCApi } from '../Shared/ApiClient.js';
 import RunResultDisplay from './RunResultDisplay.js';
 import './RunCoordinator.css';
 
-function RunCoordinator(props) {
-    const [item, updateItem] = useState('Grim-Veiled Bracers');
-    const [addon_data, updateAddonData] = useState('');
-    const [required, updateRequired] = useState(1);
-    const [region, updateRegion] = useState('US');
-    const [realm, updateRealm] = useState('Hyjal');
+const all_professions = ['Jewelcrafting', 'Tailoring', 'Alchemy', 'Herbalism', 'Inscription', 'Enchanting', 'Blacksmithing', 'Mining', 'Engineering', 'Leatherworking', 'Skinning', 'Cooking'];
 
-    const all_professions = ['Jewelcrafting', 'Tailoring', 'Alchemy', 'Herbalism', 'Inscription', 'Enchanting', 'Blacksmithing', 'Mining', 'Engineering', 'Leatherworking', 'Skinning', 'Cooking'];
-    const [professions, updateProfessions] = useState(all_professions.slice());
-    const [enable_run_button, updateRunButtonEnabled] = useState(true);
-    const [output_display, updateOutputDisplay] = useState('empty');
+const formDataReducer = (state, action) => {
+    switch (action.field) {
+        case 'item':
+            return { ...state, item: action.value };
+        case 'addon_data':
+            return { ...state, addon_data: action.value };
+        case 'required':
+            return { ...state, required: action.value };
+        case 'region':
+            return { ...state, region: action.value };
+        case 'realm':
+            return { ...state, realm: action.value };
+        case 'professions':
+            return { ...state, professions: action.value };
+        default:
+            throw new Error();
+    }
+}
+
+function RunCoordinator(props) {
+    const [apiState, setPayload] = useFetchCPCApi();
+    const [formData, dispatchFormUpdate] = useReducer(formDataReducer, {
+        item: 'Grim-Veiled Bracers',
+        addon_data: '',
+        required: 1,
+        region: 'US',
+        realm: 'Hyjal',
+        professions: all_professions.slice(),
+    })
+    const enable_run_button = !apiState.isLoading;
+    const output_display = apiState.isLoading ? `Analyzing ${formData.item}` : 'ready';
+    const raw_data = apiState.data;
+    
     const [show_raw_results, updateShowRawResults] = useState(false);
-    const [raw_data, updateRawData] = useState();
     const [run_type, updateRunType] = useState('advanced');
 
     const handleInputChange = (event) => {
@@ -24,64 +47,36 @@ function RunCoordinator(props) {
         const value = target.type === 'checkbox' ? target.checked : target.value;
         const name = target.name;
 
-        switch (name) {
-            case 'item':
-                updateItem(value);
-                break;
-            case 'addon_data':
-                updateAddonData(value);
-                break;
-            case 'required':
-                updateRequired(value);
-                break;
-            case 'region':
-                updateRegion(value);
-                break;
-            case 'realm':
-                updateRealm(value);
-                break;
-            default:
-                break;
-        }
+        dispatchFormUpdate({field:name, value:value});
     };
 
     const handleCheckbox = (event) => {
         const target = event.target;
         const name = target.name;
 
-        const index = professions.indexOf(name);
-        const new_profs = professions.slice();
+        const index = formData.professions.indexOf(name);
+        const new_profs = formData.professions.slice();
         if (index > -1) {
             new_profs.splice(index, 1);
         } else {
             new_profs.push(name);
         }
-        updateProfessions(new_profs);
+        dispatchFormUpdate({field:'professions', value: new_profs});
     };
 
     const handleSubmit = (event) => {
         event.preventDefault();
-        // Disable the run button
-        updateRunButtonEnabled(false);
-        updateOutputDisplay(`Analyzing ${item}`);
 
         const run_data = {
             type: run_type === 'advanced' ? 'custom' : 'json',
-            item_id: item,
-            addon_data: addon_data,
-            count: required,
-            region: region,
-            server: realm,
-            professions: JSON.stringify(professions),
+            item_id: formData.item,
+            addon_data: formData.addon_data,
+            count: formData.required,
+            region: formData.region,
+            server: formData.realm,
+            professions: JSON.stringify(formData.professions),
         };
-        apiRunCall(run_data, handleApiRun);
-        // Re-enable when done
-    };
-
-    const handleApiRun = (data) => {
-        updateOutputDisplay('ready');
-        updateRawData(data);
-        updateRunButtonEnabled(true);
+        setPayload(run_data);
     };
 
     const pickForm = (e) => {
@@ -116,20 +111,20 @@ function RunCoordinator(props) {
                 {(run_type === 'advanced') &&
                     <AdvancedRunFrom
                         handleInputChange={handleInputChange} handleSubmit={handleSubmit} handleCheckbox={handleCheckbox}
-                        item={item}
-                        addon_data={addon_data}
-                        required={required}
-                        region={region}
-                        realm={realm}
-                        professions={professions}
+                        item={formData.item}
+                        addon_data={formData.addon_data}
+                        required={formData.required}
+                        region={formData.region}
+                        realm={formData.realm}
+                        professions={formData.professions}
                         allProfessions={all_professions}
                         button_enabled={enable_run_button} />
                 }
                 {run_type === 'simple' &&
                     <SimpleRunFrom handleInputChange={handleInputChange} handleSubmit={handleSubmit}
-                        item={item}
-                        addon_data={addon_data}
-                        required={required}
+                        item={formData.item}
+                        addon_data={formData.addon_data}
+                        required={formData.required}
                         button_enabled={enable_run_button} />
                 }
             </div>
