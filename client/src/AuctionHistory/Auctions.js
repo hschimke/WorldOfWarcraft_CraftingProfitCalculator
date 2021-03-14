@@ -1,25 +1,23 @@
 import { useState } from 'react';
 import './Auctions.css';
-import { apiAuctionHistoryFetch } from '../Shared/ApiClient.js';
+import {  useFetchHistoryApi } from '../Shared/ApiClient.js';
 import { Chart } from "react-google-charts";
 import { GoldFormatter } from '../Shared/GoldFormatter.js';
 import { BonusListDropdown } from './BonusListDropdown.js';
-import {RegionSelector} from '../Shared/RegionSelector.js';
+import { RegionSelector } from '../Shared/RegionSelector.js';
 
 function Auctions(props) {
-    const [button_enabled, updateButtonEnabled] = useState(true);
+    const [apiState, sendPayload] = useFetchHistoryApi();
+
+    const button_enabled = (apiState.isLoading) ? false : true;
+    let chart_ready = false;
+    
     const [item_name, updateItemName] = useState('Grim-Veiled Bracers');
     const [realm_name, updateRealmName] = useState('Hyjal');
     const [region, updateRegion] = useState('US');
-    const [chart_ready, updateChartReady] = useState(false);
     const [ilevel, updateILevel] = useState('');
     const [quality, updateQuality] = useState('');
     const [sockets, updateSockets] = useState('');
-    const [raw_data, updateRawData] = useState();
-    const [bubble_chart_data, updateBubbleChartData] = useState();
-    const [bar_chart_data, updateBarChartData] = useState();
-    const [volume_chart_data, updateVolumeChartData] = useState();
-    const [latest, updateLatest] = useState();
 
     const handleChange = (event) => {
         const target = event.target;
@@ -58,52 +56,47 @@ function Auctions(props) {
 
     const handleSubmit = (event) => {
         event.preventDefault();
-        updateButtonEnabled(false);
         const send_data = {
             item: item_name,
             realm: realm_name,
             region: region,
             bonuses: [ilevel, sockets, quality],
         }
-        apiAuctionHistoryFetch(send_data, handleApiReturn);
+        sendPayload(send_data);
     };
 
-    const handleApiReturn = (data) => {
-        updateButtonEnabled(true);
-        updateRawData(data);
+    let bubble_chart_data;
+    let bar_chart_data;
+    let volume_chart_data;
+    if (!(apiState.isLoading || apiState.isError) && apiState.data !== undefined) {
+        const data = apiState.data;
+        if (!('ERROR' in data)) {
 
-        if ('ERROR' in data) {
-            return;
-        }
 
-        const latest = data.price_map[data.latest];
+            const latest = data.price_map[data.latest];
 
-        const bubble_chart = [['ID', 'Auctions', 'Price', 'Quantity']];
-        latest.data.forEach(element => {
-            bubble_chart.push(['', element.sales_at_price, element.price, element.quantity_at_price]);
-        });
-
-        const bar_chart = [['Fetch', 'High', 'Low', 'Average']];
-        Object.keys(data.price_map).forEach(key => {
-            const element = data.price_map[key];
-            bar_chart.push([new Date(Number(key)), element.max_value, element.min_value, element.avg_value]);
-        });
-
-        const sales_volume_chart = [['Date', 'Qauntity']];
-        Object.keys(data.price_map).forEach(key => {
-            let sales_by_key = 0;
-            data.price_map[key].data.forEach(element => {
-                sales_by_key += element.quantity_at_price;
+            bubble_chart_data = [['ID', 'Auctions', 'Price', 'Quantity']];
+            latest.data.forEach(element => {
+                bubble_chart_data.push(['', element.sales_at_price, element.price, element.quantity_at_price]);
             });
-            sales_volume_chart.push([new Date(Number(key)), sales_by_key]);
-        });
 
-        updateChartReady(true);
-        updateBubbleChartData(bubble_chart)
-        updateBarChartData(bar_chart);
-        updateVolumeChartData(sales_volume_chart);
-        updateLatest(latest);
-    };
+            bar_chart_data = [['Fetch', 'High', 'Low', 'Average']];
+            Object.keys(data.price_map).forEach(key => {
+                const element = data.price_map[key];
+                bar_chart_data.push([new Date(Number(key)), element.max_value, element.min_value, element.avg_value]);
+            });
+
+            volume_chart_data = [['Date', 'Qauntity']];
+            Object.keys(data.price_map).forEach(key => {
+                let sales_by_key = 0;
+                data.price_map[key].data.forEach(element => {
+                    sales_by_key += element.quantity_at_price;
+                });
+                volume_chart_data.push([new Date(Number(key)), sales_by_key]);
+            });
+            chart_ready = true;
+        }
+    }
 
     const handleSelectChange = (event) => {
         handleChange(event);
@@ -128,9 +121,9 @@ function Auctions(props) {
             {
                 (chart_ready === true) &&
                 <div className="DataReturnDisplay">
-                    <PriceSummary title="Current Spot" high={raw_data.price_map[raw_data.latest].max_value} low={raw_data.price_map[raw_data.latest].min_value} average={raw_data.price_map[raw_data.latest].avg_value} />
-                    <PriceSummary title="Historical" high={raw_data.max} low={raw_data.min} average={raw_data.avg} />
-                    <PriceChart title="Current Breakdown" rows={raw_data.price_map[raw_data.latest].data} />
+                    <PriceSummary title="Current Spot" high={apiState.data.price_map[apiState.data.latest].max_value} low={apiState.data.price_map[apiState.data.latest].min_value} average={apiState.data.price_map[apiState.data.latest].avg_value} />
+                    <PriceSummary title="Historical" high={apiState.data.max} low={apiState.data.min} average={apiState.data.avg} />
+                    <PriceChart title="Current Breakdown" rows={apiState.data.price_map[apiState.data.latest].data} />
                     <Chart
                         width={'500px'}
                         height={'300px'}
@@ -198,7 +191,7 @@ function Auctions(props) {
             }
             <div className="RawReturn">
                 <pre>
-                    {false && JSON.stringify(raw_data, undefined, 2)}
+                    {false && JSON.stringify(apiState.data, undefined, 2)}
                 </pre>
             </div>
         </div>
