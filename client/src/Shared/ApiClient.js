@@ -1,13 +1,5 @@
 import { useState, useEffect, useReducer } from 'react';
 
-function apiRunCall(run_data, cb) {
-    return apiCall('/json_output', run_data, cb);
-}
-
-function apiAuctionHistoryFetch(item_data, cb) {
-    return apiCall('/auction_history', item_data, cb);
-}
-
 function apiGetSeenBonuses(payload, cb) {
     if (payload.item !== undefined && payload.item.length > 0) {
         return apiCall('/seen_item_bonuses', payload, cb);
@@ -120,4 +112,4 @@ function parseJSON(response) {
     return response.json();
 }
 
-export { apiRunCall, apiAuctionHistoryFetch, apiGetSeenBonuses, useFetchHistoryApi, useFetchApi, useFetchCPCApi };
+export { apiGetSeenBonuses, useFetchHistoryApi, useFetchApi, useFetchCPCApi };
