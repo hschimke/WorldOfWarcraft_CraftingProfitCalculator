@@ -9,11 +9,19 @@ function apiAuctionHistoryFetch(item_data, cb) {
 }
 
 function apiGetSeenBonuses(payload, cb) {
-    return apiCall('/seen_item_bonuses', payload, cb);
+    if (payload.item !== undefined && payload.item.length > 0) {
+        return apiCall('/seen_item_bonuses', payload, cb);
+    } else {
+        return { 'ERROR': 'Empty' };
+    }
 }
 
 const useFetchHistoryApi = () => {
     return useFetchApi('/auction_history');
+};
+
+const useFetchCPCApi = () => {
+    return useFetchApi('/json_output');
 };
 
 const dataFetchReducer = (state, action) => {
@@ -112,4 +120,4 @@ function parseJSON(response) {
     return response.json();
 }
 
-export { apiRunCall, apiAuctionHistoryFetch, apiGetSeenBonuses, useFetchHistoryApi, useFetchApi };
+export { apiRunCall, apiAuctionHistoryFetch, apiGetSeenBonuses, useFetchHistoryApi, useFetchApi, useFetchCPCApi };

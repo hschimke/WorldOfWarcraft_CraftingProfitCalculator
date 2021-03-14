@@ -1,66 +1,83 @@
-import { useState } from 'react';
+import { useReducer } from 'react';
 import './Auctions.css';
-import {  useFetchHistoryApi } from '../Shared/ApiClient.js';
+import { useFetchHistoryApi } from '../Shared/ApiClient.js';
 import { Chart } from "react-google-charts";
 import { GoldFormatter } from '../Shared/GoldFormatter.js';
 import { BonusListDropdown } from './BonusListDropdown.js';
 import { RegionSelector } from '../Shared/RegionSelector.js';
 
+function formDataReducer(state, action) {
+    switch (action.fieldName) {
+        case 'item_name':
+            return {
+                ...state,
+                item_name: action.value
+            };
+        case 'realm_name':
+            return {
+                ...state,
+                realm_name: action.value
+            };
+        case 'region':
+            return {
+                ...state,
+                region: action.value
+            };
+        case 'ilevel':
+            return {
+                ...state,
+                ilevel: action.value
+            };
+        case 'quality':
+            return {
+                ...state,
+                quality: action.value
+            };
+        case 'sockets':
+            return {
+                ...state,
+                sockets: action.value
+            };
+        default:
+            throw new Error();
+    }
+}
+
 function Auctions(props) {
     const [apiState, sendPayload] = useFetchHistoryApi();
+    const [formState, dispatchFormUpdate] = useReducer(formDataReducer,{
+        item_name: 'Grim-Veiled Bracers',
+        realm_name: 'Hyjal',
+        region: 'US',
+        ilevel: '',
+        quality: '',
+        sockets: '',
+    });
 
     const button_enabled = (apiState.isLoading) ? false : true;
     let chart_ready = false;
-    
-    const [item_name, updateItemName] = useState('Grim-Veiled Bracers');
-    const [realm_name, updateRealmName] = useState('Hyjal');
-    const [region, updateRegion] = useState('US');
-    const [ilevel, updateILevel] = useState('');
-    const [quality, updateQuality] = useState('');
-    const [sockets, updateSockets] = useState('');
 
     const handleChange = (event) => {
         const target = event.target;
         const value = target.type === 'checkbox' ? target.checked : target.value;
         const name = target.name;
 
-        switch (name) {
-            case 'item_name':
-                updateItemName(value);
-                break;
-            case 'realm_name':
-                updateRealmName(value);
-                break;
-            case 'region':
-                updateRegion(value);
-                break;
-            case 'ilevel':
-                updateILevel(value);
-                break;
-            case 'quality':
-                updateQuality(value);
-                break;
-            case 'sockets':
-                updateSockets(value);
-                break;
-            default:
-                break;
-        }
+        dispatchFormUpdate({fieldName: name, value: value});
 
         if (name === 'item_name' || name === 'region' || name === 'realm_name') {
-            updateILevel('');
-            updateQuality('');
-            updateSockets('');
+            dispatchFormUpdate({fieldName: 'ilevel', value: ''});
+            dispatchFormUpdate({fieldName: 'quality', value: ''});
+            dispatchFormUpdate({fieldName: 'sockets', value: ''});
         }
     };
 
     const handleSubmit = (event) => {
         event.preventDefault();
         const send_data = {
-            item: item_name,
-            realm: realm_name,
-            region: region,
-            bonuses: [ilevel, sockets, quality],
+            item: formState.item_name,
+            realm: formState.realm_name,
+            region: formState.region,
+            bonuses: [formState.ilevel, formState.sockets, formState.quality],
         }
         sendPayload(send_data);
     };
@@ -108,14 +125,14 @@ function Auctions(props) {
             <form className="AuctionHistorySelector" onSubmit={handleSubmit}>
                 <label>
                     Item:
-                        <input type="text" name="item_name" value={item_name} onChange={handleChange} />
+                        <input type="text" name="item_name" value={formState.item_name} onChange={handleChange} />
                 </label>
                 <label>
                     Realm:
-                        <input type="text" name="realm_name" value={realm_name} onChange={handleChange} />
+                        <input type="text" name="realm_name" value={formState.realm_name} onChange={handleChange} />
                 </label>
-                <RegionSelector selected_region={region} onChange={handleChange} label="Region:" />
-                <BonusListDropdown item={item_name} region={region} ilevel={ilevel} quality={quality} sockets={sockets} handleSelect={handleSelectChange} />
+                <RegionSelector selected_region={formState.region} onChange={handleChange} label="Region:" />
+                <BonusListDropdown item={formState.item_name} region={formState.region} ilevel={formState.ilevel} quality={formState.quality} sockets={formState.sockets} handleSelect={handleSelectChange} />
                 <button type="submit" disabled={!button_enabled} value="Run">Run</button>
             </form>
             {
