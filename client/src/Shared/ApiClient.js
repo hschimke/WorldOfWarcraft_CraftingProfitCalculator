@@ -8,13 +8,13 @@ function apiGetSeenBonuses(payload, cb) {
     }
 }
 
-const useFetchHistoryApi = () => {
+function useFetchHistoryApi() {
     return useFetchApi('/auction_history');
-};
+}
 
-const useFetchCPCApi = () => {
+function useFetchCPCApi() {
     return useFetchApi('/json_output');
-};
+}
 
 const dataFetchReducer = (state, action) => {
     switch (action.type) {
@@ -42,7 +42,7 @@ const dataFetchReducer = (state, action) => {
     }
 };
 
-const useFetchApi = (endpoint) => {
+function useFetchApi(endpoint) {
     const [payload, setPayload] = useState();
     const [state, dispatch] = useReducer(dataFetchReducer, {
         isLoading: false,
@@ -83,6 +83,53 @@ const useFetchApi = (endpoint) => {
         };
     }, [payload, endpoint]);
     return [state, setPayload];
+}
+
+function useSeenBonusesApi(item, region, realm) {
+    const [state, dispatch] = useReducer(dataFetchReducer, {
+        isLoading: false,
+        isError: false,
+        data: undefined,
+    });
+
+    useEffect(() => {
+        let didCancel = false;
+        const payload = { item: item, region: region, realm: realm };
+
+        const fetchData = async () => {
+            dispatch({ type: 'FETCH_INIT' });
+
+            try {
+                const fetched_response = await fetch('/seen_item_bonuses', {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                const status_checked_response = checkStatus(fetched_response);
+                const json_data = await parseJSON(status_checked_response);
+
+                if (!didCancel) {
+                    dispatch({ type: 'FETCH_SUCCESS', payload: json_data });
+                }
+            } catch (error) {
+                if (!didCancel) {
+                    dispatch({ type: 'FETCH_FAILURE' });
+                }
+            }
+        };
+        const timer = setTimeout(() => {
+            if (payload !== undefined && payload.item.length > 0) {
+                fetchData();
+            }
+        }, 1000);
+        return () => {
+            clearTimeout(timer);
+            didCancel = true;
+        };
+    }, [item, region, realm]);
+    return [state];
 };
 
 function apiCall(end_point, data, cb) {
@@ -112,4 +159,4 @@ function parseJSON(response) {
     return response.json();
 }
 
-export { apiGetSeenBonuses, useFetchHistoryApi, useFetchApi, useFetchCPCApi };
+export { apiGetSeenBonuses, useFetchHistoryApi, useFetchApi, useFetchCPCApi, useSeenBonusesApi };

@@ -129,7 +129,7 @@ function Auctions(props) {
                         <input type="text" name="realm_name" value={formState.realm_name} onChange={handleChange} />
                     </label>
                     <RegionSelector selected_region={formState.region} onChange={handleChange} label="Region:" />
-                    <BonusListDropdown item={formState.item_name} region={formState.region} ilevel={formState.ilevel} quality={formState.quality} sockets={formState.sockets} />
+                    <BonusListDropdown item={formState.item_name} region={formState.region} realm={formState.realm} ilevel={formState.ilevel} quality={formState.quality} sockets={formState.sockets} />
                     <button type="submit" disabled={!button_enabled} value="Run">Run</button>
                 </form>
             </AuctionHistoryDispatch.Provider>

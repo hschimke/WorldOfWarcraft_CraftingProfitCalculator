@@ -1,40 +1,25 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { apiGetSeenBonuses } from '../Shared/ApiClient.js';
+import { useContext } from 'react';
+import { useSeenBonusesApi } from '../Shared/ApiClient.js';
 import { AuctionHistoryDispatch } from './Shared.js';
 import './BonusListDropdown.css';
 
 function BonusListDropdown(props) {
-    const [bonuses, setBonuses] = useState([]);
-    const [mapped, setMapped] = useState([]);
-    const [collected, setCollected] = useState({
+    const [apiState] = useSeenBonusesApi(props.item, props.region, props.realm);
+
+    const raw = apiState.data;
+    const mapped = raw !== undefined && !('ERROR' in raw) ? raw.mapped : [];
+    const collected = raw !== undefined && !('ERROR' in raw) ? raw.collected : {
         ilvl: [],
         socket: [],
         quality: [],
         unknown: [],
         empty: true,
-    });
-    const [raw, setRaw] = useState();
-
-    useEffect(() => {
-        const timer = setTimeout(apiGetSeenBonuses, 1000, { item: props.item, region: props.region }, handleApiReturn);
-        return () => { clearTimeout(timer) };
-    }, [props.item, props.region]);
-
-    const handleApiReturn = (data) => {
-        if ('ERROR' in data) {
-            return;
-        }
-
-        setCollected(data.collected);
-        setBonuses(data.bonuses);
-        setMapped(data.mapped);
-        setRaw(data);
     };
 
     const dispatch = useContext(AuctionHistoryDispatch);
 
     const handleChange = (event) => {
-        dispatch({ field: event.target.name, value: event.target.value });
+        dispatch({ fieldName: event.target.name, value: event.target.value });
     };
 
     return (

@@ -2,6 +2,13 @@ import { parentLogger } from './logging.js';
 
 const logger = parentLogger.child();
 
+function sqlToString(sql,values){
+    const value_str = values !== undefined ? values.map((val) => {
+        return `[value: ${val} type: ${typeof(val)}] `;
+    }) : '';
+    return `${sql} : ${value_str}`;
+}
+
 /**
  * Close the database within a promise.
  * @param db The database object to close.
@@ -49,6 +56,7 @@ function dbOpen(database_factory, file_name, params) {
  * @param {Array.<string>} values The paramaters for the query.
  */
 function dbGet(db, query, values) {
+    logger.silly(sqlToString(query,values));
     return new Promise((accept, reject) => {
         db.get(query, values, (err, row) => {
             if (err) {
@@ -67,6 +75,7 @@ function dbGet(db, query, values) {
  * @param {Array.<string>} The paramaters for the query.
  */
 function dbRun(db, query, values) {
+    logger.silly(sqlToString(query,values));
     return new Promise((accept, reject) => {
         db.run(query, values, (err) => {
             if (err) {
@@ -86,6 +95,7 @@ function dbRun(db, query, values) {
  * @param {Array.<string>} values The paramaters for the query.
  */
 function dbAll(db,query,values) {
+    logger.silly(sqlToString(query,values));
     return new Promise((accept, reject) => {
         db.all(query, values, (err, rows) => {
             if (err) {
@@ -108,6 +118,7 @@ function dbSerialize(db, queries, values) {
         db.serialize(() => {
             try {
                 for (let i = 0; i < queries.length; i++) {
+                    logger.silly(sqlToString(queries[i],values[i]));
                     db.run(queries[i], values[i], (err) => {
                         if (err) {
                             logger.error(`Issue running query '${queries[i]}' and values ${values[i]}`, err);
