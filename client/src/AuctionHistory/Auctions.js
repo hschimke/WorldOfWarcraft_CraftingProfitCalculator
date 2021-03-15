@@ -1,27 +1,37 @@
-import { useReducer } from 'react';
+import React, { useReducer } from 'react';
 import './Auctions.css';
 import { useFetchHistoryApi } from '../Shared/ApiClient.js';
 import { Chart } from "react-google-charts";
 import { GoldFormatter } from '../Shared/GoldFormatter.js';
 import { BonusListDropdown } from './BonusListDropdown.js';
 import { RegionSelector } from '../Shared/RegionSelector.js';
+import { AuctionHistoryDispatch } from './Shared.js';
 
 function formDataReducer(state, action) {
     switch (action.fieldName) {
         case 'item_name':
             return {
                 ...state,
-                item_name: action.value
+                item_name: action.value,
+                ilevel: '',
+                quality: '',
+                sockets: '',
             };
         case 'realm_name':
             return {
                 ...state,
-                realm_name: action.value
+                realm_name: action.value,
+                ilevel: '',
+                quality: '',
+                sockets: '',
             };
         case 'region':
             return {
                 ...state,
-                region: action.value
+                region: action.value,
+                ilevel: '',
+                quality: '',
+                sockets: '',
             };
         case 'ilevel':
             return {
@@ -45,7 +55,7 @@ function formDataReducer(state, action) {
 
 function Auctions(props) {
     const [apiState, sendPayload] = useFetchHistoryApi();
-    const [formState, dispatchFormUpdate] = useReducer(formDataReducer,{
+    const [formState, dispatchFormUpdate] = useReducer(formDataReducer, {
         item_name: 'Grim-Veiled Bracers',
         realm_name: 'Hyjal',
         region: 'US',
@@ -58,17 +68,7 @@ function Auctions(props) {
     let chart_ready = false;
 
     const handleChange = (event) => {
-        const target = event.target;
-        const value = target.type === 'checkbox' ? target.checked : target.value;
-        const name = target.name;
-
-        dispatchFormUpdate({fieldName: name, value: value});
-
-        if (name === 'item_name' || name === 'region' || name === 'realm_name') {
-            dispatchFormUpdate({fieldName: 'ilevel', value: ''});
-            dispatchFormUpdate({fieldName: 'quality', value: ''});
-            dispatchFormUpdate({fieldName: 'sockets', value: ''});
-        }
+        dispatchFormUpdate({ fieldName: event.target.name, value: event.target.value });
     };
 
     const handleSubmit = (event) => {
@@ -115,26 +115,24 @@ function Auctions(props) {
         }
     }
 
-    const handleSelectChange = (event) => {
-        handleChange(event);
-    };
-
     // https://react-google-charts.com/scatter-chart
     return (
         <div className="Auctions">
-            <form className="AuctionHistorySelector" onSubmit={handleSubmit}>
-                <label>
-                    Item:
+            <AuctionHistoryDispatch.Provider value={dispatchFormUpdate}>
+                <form className="AuctionHistorySelector" onSubmit={handleSubmit}>
+                    <label>
+                        Item:
                         <input type="text" name="item_name" value={formState.item_name} onChange={handleChange} />
-                </label>
-                <label>
-                    Realm:
+                    </label>
+                    <label>
+                        Realm:
                         <input type="text" name="realm_name" value={formState.realm_name} onChange={handleChange} />
-                </label>
-                <RegionSelector selected_region={formState.region} onChange={handleChange} label="Region:" />
-                <BonusListDropdown item={formState.item_name} region={formState.region} ilevel={formState.ilevel} quality={formState.quality} sockets={formState.sockets} handleSelect={handleSelectChange} />
-                <button type="submit" disabled={!button_enabled} value="Run">Run</button>
-            </form>
+                    </label>
+                    <RegionSelector selected_region={formState.region} onChange={handleChange} label="Region:" />
+                    <BonusListDropdown item={formState.item_name} region={formState.region} ilevel={formState.ilevel} quality={formState.quality} sockets={formState.sockets} />
+                    <button type="submit" disabled={!button_enabled} value="Run">Run</button>
+                </form>
+            </AuctionHistoryDispatch.Provider>
             {
                 (chart_ready === true) &&
                 <div className="DataReturnDisplay">

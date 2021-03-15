@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { apiGetSeenBonuses } from '../Shared/ApiClient.js';
+import { AuctionHistoryDispatch } from './Shared.js';
 import './BonusListDropdown.css';
 
 function BonusListDropdown(props) {
@@ -16,7 +17,7 @@ function BonusListDropdown(props) {
 
     useEffect(() => {
         const timer = setTimeout(apiGetSeenBonuses, 1000, { item: props.item, region: props.region }, handleApiReturn);
-        return () => {clearTimeout(timer)};
+        return () => { clearTimeout(timer) };
     }, [props.item, props.region]);
 
     const handleApiReturn = (data) => {
@@ -30,8 +31,10 @@ function BonusListDropdown(props) {
         setRaw(data);
     };
 
+    const dispatch = useContext(AuctionHistoryDispatch);
+
     const handleChange = (event) => {
-        props.handleSelect(event);
+        dispatch({ field: event.target.name, value: event.target.value });
     };
 
     return (

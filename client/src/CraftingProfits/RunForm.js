@@ -1,5 +1,28 @@
 import './RunForm.css';
-import {RegionSelector} from '../Shared/RegionSelector.js';
+import { CraftingProfitsDispatch } from './Shared.js';
+import { useContext } from 'react';
+import { RegionSelector } from '../Shared/RegionSelector.js';
+
+function RunForm(props) {
+    const dispatch = useContext(CraftingProfitsDispatch);
+
+    const handleInputChange = (event) => {
+        dispatch({ field: event.target.name, value: event.target.value });
+    };
+
+    const handleCheckbox = (event) => {
+        dispatch({ field: 'professions', value: event.target.name });
+    };
+
+    switch (props.form_type) {
+        case 'advanced':
+            return <AdvancedRunFrom {...props} handleInputChange={handleInputChange} handleCheckbox={handleCheckbox} />
+        case 'simple':
+            return <SimpleRunFrom {...props} handleInputChange={handleInputChange} />
+        default:
+            throw new Error();
+    }
+}
 
 function SimpleRunFrom(props) {
     return (
@@ -51,4 +74,4 @@ function AdvancedRunFrom(props) {
     );
 }
 
-export { SimpleRunFrom, AdvancedRunFrom };
+export { SimpleRunFrom, AdvancedRunFrom, RunForm };

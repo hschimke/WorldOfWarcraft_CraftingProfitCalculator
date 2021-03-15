@@ -1,10 +1,9 @@
 import { useState, useReducer } from 'react';
-import { AdvancedRunFrom, SimpleRunFrom } from './RunForm.js';
+import { RunForm } from './RunForm.js';
 import { useFetchCPCApi } from '../Shared/ApiClient.js';
 import RunResultDisplay from './RunResultDisplay.js';
+import { all_professions, CraftingProfitsDispatch } from './Shared.js';
 import './RunCoordinator.css';
-
-const all_professions = ['Jewelcrafting', 'Tailoring', 'Alchemy', 'Herbalism', 'Inscription', 'Enchanting', 'Blacksmithing', 'Mining', 'Engineering', 'Leatherworking', 'Skinning', 'Cooking'];
 
 const formDataReducer = (state, action) => {
     switch (action.field) {
@@ -19,7 +18,14 @@ const formDataReducer = (state, action) => {
         case 'realm':
             return { ...state, realm: action.value };
         case 'professions':
-            return { ...state, professions: action.value };
+            const index = state.professions.indexOf(action.value);
+            const new_profs = state.professions.slice();
+            if (index > -1) {
+                new_profs.splice(index, 1);
+            } else {
+                new_profs.push(action.value);
+            }
+            return { ...state, professions: new_profs };
         default:
             throw new Error();
     }
@@ -38,31 +44,9 @@ function RunCoordinator(props) {
     const enable_run_button = !apiState.isLoading;
     const output_display = apiState.isLoading ? `Analyzing ${formData.item}` : 'ready';
     const raw_data = apiState.data;
-    
+
     const [show_raw_results, updateShowRawResults] = useState(false);
     const [run_type, updateRunType] = useState('advanced');
-
-    const handleInputChange = (event) => {
-        const target = event.target;
-        const value = target.type === 'checkbox' ? target.checked : target.value;
-        const name = target.name;
-
-        dispatchFormUpdate({field:name, value:value});
-    };
-
-    const handleCheckbox = (event) => {
-        const target = event.target;
-        const name = target.name;
-
-        const index = formData.professions.indexOf(name);
-        const new_profs = formData.professions.slice();
-        if (index > -1) {
-            new_profs.splice(index, 1);
-        } else {
-            new_profs.push(name);
-        }
-        dispatchFormUpdate({field:'professions', value: new_profs});
-    };
 
     const handleSubmit = (event) => {
         event.preventDefault();
@@ -108,10 +92,9 @@ function RunCoordinator(props) {
                 </label>
             </form>
             <div>
-                {(run_type === 'advanced') &&
-                    <AdvancedRunFrom
-                        handleInputChange={handleInputChange} handleSubmit={handleSubmit} handleCheckbox={handleCheckbox}
-                        formDispatch={dispatchFormUpdate}
+                <CraftingProfitsDispatch.Provider value={dispatchFormUpdate}>
+                    <RunForm handleSubmit={handleSubmit}
+                        form_type={run_type}
                         item={formData.item}
                         addon_data={formData.addon_data}
                         required={formData.required}
@@ -120,15 +103,7 @@ function RunCoordinator(props) {
                         professions={formData.professions}
                         allProfessions={all_professions}
                         button_enabled={enable_run_button} />
-                }
-                {run_type === 'simple' &&
-                    <SimpleRunFrom handleInputChange={handleInputChange} handleSubmit={handleSubmit}
-                        formDispatch={dispatchFormUpdate}
-                        item={formData.item}
-                        addon_data={formData.addon_data}
-                        required={formData.required}
-                        button_enabled={enable_run_button} />
-                }
+                </CraftingProfitsDispatch.Provider>
             </div>
             <div>
                 <RunResultDisplay raw_run={raw_data} status={output_display} show_raw_result={show_raw_results} />
