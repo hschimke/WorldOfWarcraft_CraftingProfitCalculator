@@ -59,7 +59,7 @@ async function closeDB(db) {
     return dbClose(db);
 }
 
-async function ingest(region, connected_realm) {
+async function ingest(region, connected_realm, db_in) {
     // Get auction house
     const auction_house = await getAuctionHouse(connected_realm, region);
     const downloaded = Date.now();
@@ -99,7 +99,7 @@ async function ingest(region, connected_realm) {
         }
     }
 
-    const db = await openDB();
+    const db = db_in === undefined ? await openDB() : db_in;
 
     await dbRun(db, 'BEGIN TRANSACTION', []);
 
@@ -135,7 +135,9 @@ async function ingest(region, connected_realm) {
     }));
 
     await dbRun(db, 'COMMIT TRANSACTION', []);
-    await closeDB(db);
+    if (db_in === undefined) {
+        await closeDB(db);
+    }
 }
 
 async function getAllBonuses(item, region) {
@@ -170,7 +172,7 @@ async function getAllBonuses(item, region) {
     };
 }
 
-async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm, db) {
+async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm, db_in) {
     logger.debug(`getAuctions(${item}, ${realm}, ${region}, ${bonuses}, ${start_dtm}, ${end_dtm})`);
     const sql_build = 'SELECT * FROM auctions';
     const sql_archive_build = 'SELECT downloaded, summary FROM auction_archive';
@@ -273,11 +275,8 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm, db)
     const avg_dtm_sql = build_sql_with_addins(sql_build_avg, [...sql_addins, 'downloaded = ?']);
     const price_group_sql = build_sql_with_addins(sql_build_price_map, [...sql_addins, 'downloaded = ?']) + ' ' + sql_group_by_price_addin;
 
-    let opened_db = false;
-    if (db === undefined) {
-        db = await openDB();
-        opened_db = true;
-    }
+    const db = db_in === undefined ? await openDB() : db_in;
+
     const min_value = (await dbGet(db, min_sql, value_searches)).MIN_PRICE;
     const max_value = (await dbGet(db, max_sql, value_searches)).MAX_PRICE;
     const avg_value = (await dbGet(db, avg_sql, value_searches)).AVG_PRICE;
@@ -301,7 +300,7 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm, db)
     }
 
     logger.debug(`Found max: ${max_value}, min: ${min_value}, avg: ${avg_value}`);
-    if (opened_db) {
+    if (db_in === undefined) {
         await closeDB(db);
     }
 
@@ -327,41 +326,66 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm, db)
     }
 }
 
-async function archiveAuctions() {
+async function archiveAuctions(db_in) {
     const backstep_time_diff = 1.21e+9;
+    const day_diff = 8.64e+7;
     const backstep_time = Date.now() - backstep_time_diff;
 
     const sql_get_downloaded_range = 'SELECT DISTINCT downloaded FROM auctions WHERE downloaded < ?';
-    const sql_get_distinct_rows_from_downloaded = 'SELECT DISTINCT item_id, bonuses, connected_realm_id FROM auctions WHERE downloaded = ?';
+    const sql_get_downloaded_oldest = 'SELECT MIN(downloaded) AS oldest FROM auctions';
+    const sql_get_distinct_rows_from_downloaded = 'SELECT DISTINCT item_id, bonuses, connected_realm_id FROM auctions WHERE downloaded >= ? AND downloaded <= ?';
     const sql_delete_archived_auctions = 'DELETE FROM auctions WHERE item_id = ? AND bonuses = ? AND connected_realm_id = ? AND downloaded >= ? AND downloaded <= ?';
 
-    const db = await openDB();
+    const db = db_in === undefined ? await openDB() : db_in;
     await dbRun(db, 'BEGIN TRANSACTION', []);
 
-    // Get a list of all downloads before backstep_time
-    const archive_target_downloadeds = await dbAll(db, sql_get_downloaded_range, [backstep_time]);
-    for (const dtm of archive_target_downloadeds) {
-        const target = dtm.downloaded;
-        // Get a list of all distinct item/server combinations
-        const items = await dbAll(db, sql_get_distinct_rows_from_downloaded, [target]);
-        for (const item of items) {
-            // Run the getAuctions command for the combo
-            const summary_raw = await getAuctions(item.item_id, item.connected_realm_id, undefined, item.bonuses, target, target+8.64e+7, db);
-            const summary = summary_raw.price_map[summary_raw.latest];
-            const quantity = summary.data.reduce((acc, cur) => {
-                return acc + cur.quantity_at_price;
-            }, 0);
+    let running = true;
+    while (running) {
+        // Get oldest downloaded
+        const current_oldest = (await dbGet(db, sql_get_downloaded_oldest, [])).oldest;
+        // Check if oldest fits our criteria
+        if (current_oldest < backstep_time) {
+            // Pick the whole day
+            const start_ticks = current_oldest;
+            const end_ticks = current_oldest + day_diff;
+            // Run for that day
+            // Get a list of all distinct item/server combinations
+            const items = await dbAll(db, sql_get_distinct_rows_from_downloaded, [start_ticks, end_ticks]);
+            for (const item of items) {
+                const sql_price_map = 'SELECT price, count(price) AS sales_at_price, sum(quantity) AS quantity_at_price FROM auctions WHERE item_id=? AND bonuses=? AND connected_realm_id=? AND downloaded >= ? AND downloaded <= ? GROUP BY price';
+                const sql_min = 'SELECT MIN(price) AS MIN_PRICE FROM auctions WHERE item_id=? AND bonuses=? AND connected_realm_id=? AND downloaded >= ? AND downloaded <= ?';
+                const sql_max = 'SELECT MAX(price) AS MAX_PRICE FROM auctions WHERE item_id=? AND bonuses=? AND connected_realm_id=? AND downloaded >= ? AND downloaded <= ?';
+                const sql_avg = 'SELECT SUM(price*quantity)/SUM(quantity) AS AVG_PRICE FROM auctions WHERE item_id=? AND bonuses=? AND connected_realm_id=? AND downloaded >= ? AND downloaded <= ?';
 
-            // Add the archive
-            await dbRun(db, sql_insert_auction_archive, [item.item_id, quantity, JSON.stringify(summary), target, item.connected_realm_id, item.bonuses]);
+                const vals = [item._item_id, item.bonuses, item.connected_realm_id, start_ticks, end_ticks];
 
-            // Delete the archived data
-            await dbRun(db, sql_delete_archived_auctions, [item.item_id, item.bonuses, item.connected_realm_id, target, target+8.64e+7]);
+                // Run the getAuctions command for the combo
+                const summary = {};
+                summary.data = await dbAll(db, sql_price_map, vals);
+                summary.min_value = (await dbGet(db, sql_min, vals)).MIN_PRICE;
+                summary.max_value = (await dbGet(db, sql_max, vals)).MAX_PRICE;
+                summary.avg_value = (await dbGet(db, sql_avg, vals)).AVG_PRICE;
+
+                const quantity = summary.data.reduce((acc, cur) => {
+                    return acc + cur.quantity_at_price;
+                }, 0);
+
+                // Add the archive
+                await dbRun(db, sql_insert_auction_archive, [item.item_id, quantity, JSON.stringify(summary), start_ticks, item.connected_realm_id, item.bonuses]);
+
+                // Delete the archived data
+                await dbRun(db, sql_delete_archived_auctions, [item.item_id, item.bonuses, item.connected_realm_id, start_ticks, end_ticks]);
+            }
+            // Done
+        } else {
+            running = false;
         }
     }
 
     await dbRun(db, 'COMMIT TRANSACTION', []);
-    await closeDB(db);
+    if (db_in === undefined) {
+        await closeDB(db);
+    }
 }
 
 async function addRealmToScanList(realm_name, realm_region) {
@@ -388,4 +412,4 @@ async function scanRealms() {
     await closeDB(db);
 }
 
-export { scanRealms, addRealmToScanList, removeRealmFromScanList, getAuctions, getAllBonuses, archiveAuctions };
+export { scanRealms, addRealmToScanList, removeRealmFromScanList, getAuctions, getAllBonuses, archiveAuctions, openDB, closeDB };

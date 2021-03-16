@@ -1,4 +1,13 @@
-import { scanRealms, archiveAuctions } from './auction-history.js';
+import { scanRealms, archiveAuctions, openDB, closeDB } from './auction-history.js';
 
-await scanRealms();
-await archiveAuctions();
+const db = await openDB();
+
+await    scanRealms(db);
+ await   archiveAuctions(db);
+
+/*
+await Promise.all([
+    scanRealms(db),
+    archiveAuctions(db)
+]);*/
+await closeDB(db);
