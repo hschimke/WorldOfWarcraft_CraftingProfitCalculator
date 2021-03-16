@@ -14,6 +14,8 @@ const sql_create_auctions_index = 'CREATE INDEX IF NOT EXISTS auctions_index ON 
 const sql_create_items_table = 'CREATE TABLE IF NOT EXISTS items (item_id INTEGER, region TEXT, name TEXT, craftable INTEGER, PRIMARY KEY (item_id,region))';
 const sql_create_realms_table = 'CREATE TABLE IF NOT EXISTS realms (connected_realm_id INTEGER, name TEXT, region TEXT, PRIMARY KEY (connected_realm_id,region))';
 const sql_create_realm_scan_table = 'CREATE TABLE IF NOT EXISTS realm_scan_list (connected_realm_id INTEGER, region TEXT, PRIMARY KEY (connected_realm_id,region))';
+const sql_create_archive_table = 'CREATE TABLE IF NOT EXISTS auction_archive (item_id INTEGER, bonuses TEXT, quantity INTEGER, summary TEXT, downloaded INTEGER, connected_realm_id INTEGER)';
+const sql_create_auction_archive_index = 'CREATE INDEX IF NOT EXISTS auction_archive_index ON auction_archive (item_id, bonuses, quantity, summary, downloaded, connected_realm_id)';
 
 const sql_run_at_open = [
     'PRAGMA synchronous = normal',
@@ -23,6 +25,8 @@ const sql_run_at_open = [
     sql_create_realms_table,
     sql_create_realm_scan_table,
     sql_create_auctions_index,
+    sql_create_archive_table,
+    sql_create_auction_archive_index,
 ];
 
 const sql_run_at_close = [
@@ -30,6 +34,7 @@ const sql_run_at_close = [
 ];
 
 const sql_insert_auction = 'INSERT INTO auctions(item_id, quantity, price, downloaded, connected_realm_id, bonuses) VALUES(?,?,?,?,?,?)';
+const sql_insert_auction_archive = 'INSERT INTO auction_archive(item_id, quantity, summary, downloaded, connected_realm_id, bonuses) VALUES(?,?,?,?,?,?)';
 const sql_insert_item = 'INSERT INTO items(item_id, region, name, craftable) VALUES(?,?,?,?)';
 const sql_insert_realm = 'INSERT INTO realms(connected_realm_id, name, region) VALUES(?,?,?)';
 
@@ -157,7 +162,7 @@ async function getAllBonuses(item, region) {
 
     const item_details = await getItemDetails(item_id, region);
 
-    closeDB(db);
+    await closeDB(db);
 
     return {
         bonuses: bonuses,
@@ -165,9 +170,10 @@ async function getAllBonuses(item, region) {
     };
 }
 
-async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
+async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm, db) {
     logger.debug(`getAuctions(${item}, ${realm}, ${region}, ${bonuses}, ${start_dtm}, ${end_dtm})`);
     const sql_build = 'SELECT * FROM auctions';
+    const sql_archive_build = 'SELECT downloaded, summary FROM auction_archive';
     const sql_build_distinct_dtm = 'SELECT DISTINCT downloaded FROM auctions';
     const sql_build_price_map = 'SELECT price, count(price) AS sales_at_price, sum(quantity) AS quantity_at_price FROM auctions';
     const sql_group_by_price_addin = 'GROUP BY price';
@@ -222,13 +228,21 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
     }
     if (bonuses !== undefined) {
         // Get only with specific bonuses
-        bonuses.forEach(b => {
-            if (b !== null && b !== '') {
-                logger.debug(`Add bonus ${b} in (select json_each.value from json_each(bonuses))`);
-                sql_addins.push('? IN (SELECT json_each.value FROM json_each(bonuses))');
-                value_searches.push(Number(b));
-            }
-        })
+        if (bonuses === null) {
+            sql_addins.push('bonuses IS NULL');
+        }
+        else if (typeof bonuses !== typeof []) {
+            sql_addins.push('bonuses = ?');
+            value_searches.push(bonuses);
+        } else {
+            bonuses.forEach(b => {
+                if (b !== null && b !== '') {
+                    logger.debug(`Add bonus ${b} in (select json_each.value from json_each(bonuses))`);
+                    sql_addins.push('? IN (SELECT json_each.value FROM json_each(bonuses))');
+                    value_searches.push(Number(b));
+                }
+            });
+        }
     } else {
         // any bonuses or none
     }
@@ -259,17 +273,15 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
     const avg_dtm_sql = build_sql_with_addins(sql_build_avg, [...sql_addins, 'downloaded = ?']);
     const price_group_sql = build_sql_with_addins(sql_build_price_map, [...sql_addins, 'downloaded = ?']) + ' ' + sql_group_by_price_addin;
 
-    let db = await openDB();
-    //console.log(run_sql);
+    let opened_db = false;
+    if (db === undefined) {
+        db = await openDB();
+        opened_db = true;
+    }
     const min_value = (await dbGet(db, min_sql, value_searches)).MIN_PRICE;
     const max_value = (await dbGet(db, max_sql, value_searches)).MAX_PRICE;
     const avg_value = (await dbGet(db, avg_sql, value_searches)).AVG_PRICE;
     const latest_dl_value = (await dbGet(db, latest_dl_sql, value_searches)).LATEST_DOWNLOAD
-
-    //logger.debug(max_sql);
-    //logger.debug(value_searches.map(v=>{
-    //    return `${typeof(v)}: ${v}`
-    //}));
 
     const price_data_by_download = {};
     for (const row of (await dbAll(db, distinct_download_sql, value_searches))) {
@@ -280,8 +292,18 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
         price_data_by_download[row.downloaded].avg_value = (await dbGet(db, avg_dtm_sql, [...value_searches, row.downloaded])).AVG_PRICE;
     }
 
+    // Get archives if they exist
+    const archive_fetch_sql = build_sql_with_addins(sql_archive_build, sql_addins);
+    const archives = await dbAll(db, archive_fetch_sql, value_searches);
+    logger.debug(`Found ${archives.length} archive rows.`);
+    for (const archive of archives) {
+        price_data_by_download[archive.downloaded] = JSON.parse(archive.summary);
+    }
+
     logger.debug(`Found max: ${max_value}, min: ${min_value}, avg: ${avg_value}`);
-    closeDB(db);
+    if (opened_db) {
+        await closeDB(db);
+    }
 
     return {
         min: min_value,
@@ -303,6 +325,43 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
         }
         return construct_sql;
     }
+}
+
+async function archiveAuctions() {
+    const backstep_time_diff = 1.21e+9;
+    const backstep_time = Date.now() - backstep_time_diff;
+
+    const sql_get_downloaded_range = 'SELECT DISTINCT downloaded FROM auctions WHERE downloaded < ?';
+    const sql_get_distinct_rows_from_downloaded = 'SELECT DISTINCT item_id, bonuses, connected_realm_id FROM auctions WHERE downloaded = ?';
+    const sql_delete_archived_auctions = 'DELETE FROM auctions WHERE item_id = ? AND bonuses = ? AND connected_realm_id = ? AND downloaded >= ? AND downloaded <= ?';
+
+    const db = await openDB();
+    await dbRun(db, 'BEGIN TRANSACTION', []);
+
+    // Get a list of all downloads before backstep_time
+    const archive_target_downloadeds = await dbAll(db, sql_get_downloaded_range, [backstep_time]);
+    for (const dtm of archive_target_downloadeds) {
+        const target = dtm.downloaded;
+        // Get a list of all distinct item/server combinations
+        const items = await dbAll(db, sql_get_distinct_rows_from_downloaded, [target]);
+        for (const item of items) {
+            // Run the getAuctions command for the combo
+            const summary_raw = await getAuctions(item.item_id, item.connected_realm_id, undefined, item.bonuses, target, target+8.64e+7, db);
+            const summary = summary_raw.price_map[summary_raw.latest];
+            const quantity = summary.data.reduce((acc, cur) => {
+                return acc + cur.quantity_at_price;
+            }, 0);
+
+            // Add the archive
+            await dbRun(db, sql_insert_auction_archive, [item.item_id, quantity, JSON.stringify(summary), target, item.connected_realm_id, item.bonuses]);
+
+            // Delete the archived data
+            await dbRun(db, sql_delete_archived_auctions, [item.item_id, item.bonuses, item.connected_realm_id, target, target+8.64e+7]);
+        }
+    }
+
+    await dbRun(db, 'COMMIT TRANSACTION', []);
+    await closeDB(db);
 }
 
 async function addRealmToScanList(realm_name, realm_region) {
@@ -329,25 +388,4 @@ async function scanRealms() {
     await closeDB(db);
 }
 
-async function init() { }
-
-await init();
-
-/*await main('US', 'Hyjal');
-await getAuctions();
-await getAuctions(1);
-await getAuctions(1, 2);
-await getAuctions(1, 2, 3);
-await getAuctions(1, 2, 3, 4);
-await getAuctions(undefined, 2, 'US', 4);
-await getAuctions(1, undefined, 3, 4);
-await getAuctions(1, 2, undefined, 4);
-await getAuctions(undefined, undefined, 'US', 4);
-await getAuctions(1, undefined, undefined, 4);
-await getAuctions(1, 2, undefined, 4);
-await getAuctions(undefined, 2, undefined, 4);
-await getAuctions(undefined, undefined, undefined, 4);
-await getAuctions(undefined, undefined, 'US', undefined);
-*/
-
-export { scanRealms, addRealmToScanList, removeRealmFromScanList, getAuctions, getAllBonuses };
+export { scanRealms, addRealmToScanList, removeRealmFromScanList, getAuctions, getAllBonuses, archiveAuctions };

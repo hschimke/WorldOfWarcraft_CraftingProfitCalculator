@@ -1,6 +1,13 @@
 import { parentLogger } from './logging.js';
 
 const logger = parentLogger.child();
+/*
+import winston from 'winston';
+logger.add(new winston.transports.Console({
+    format: winston.format.simple(),
+    level: 'silly',
+}));
+*/
 
 function sqlToString(sql,values){
     const value_str = values !== undefined ? values.map((val) => {

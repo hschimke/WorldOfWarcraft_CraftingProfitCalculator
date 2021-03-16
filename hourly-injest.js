@@ -1,3 +1,4 @@
-import { scanRealms } from './auction-history.js';
+import { scanRealms, archiveAuctions } from './auction-history.js';
 
-scanRealms();
+await scanRealms();
+await archiveAuctions();
