@@ -297,6 +297,7 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm, db_
     logger.debug(`Found ${archives.length} archive rows.`);
     for (const archive of archives) {
         price_data_by_download[archive.downloaded] = JSON.parse(archive.summary);
+        price_data_by_download[archive.downloaded].type = 'archive';
     }
 
     logger.debug(`Found max: ${max_value}, min: ${min_value}, avg: ${avg_value}`);
