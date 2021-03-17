@@ -7,8 +7,12 @@ To install the program clone the repository, install dependencies, and acquire a
     git clone https://github.com/hschimke/WorldOfWarcraft_CraftingProfitCalculator
     cd WorldOfWarcraft_CraftingProfitCalculator
     npm install
+    cd client
+    npm install
 
 The battle.net Client ID and Client Secret must be placed in the environment for the application. The two required environment variables are `CLIENT_ID` and `CLIENT_SECRET`.
+
+An installation script is available in scripts. This requires root access and a SystemD based operating system. Once installed the program will run on port 8080 (by default). `CLIENT_ID` and `CLIENT_SECRET` are still required in the environment. This does not install a historical auctions scan list, which must be done separately.
 
 ### Priming the Cache
 The application relies on caching large amounts of information from Blizzard. The initial run of the application will take a long time for this reason. Once installation is complete the cache can be primed with `npm run fill-cache`. This fills the cache by performing a very simple run using the basic (and uncraftable) item Simple Wood.
@@ -30,7 +34,7 @@ The AddOn also collection region, realm, and profession data for all scanned cha
 In order to include the contents of a character's bank and reagent bank the above slash commands must be run while the character's bank is open.
 
 ## Browser
-To launch the server version of the program run `npm run server`. The default port is 3000, so the server can be connected to with http://localhost:3000 for the json only form and http://localhost:3000/custom for the version where all paramaters can be specified. The server can be terminted by pressing `Ctrl-C` in the terminal window where it is running.
+To launch the server version of the program run `npm run client-server`. The default port is 3000, so the server can be connected to with http://localhost:3000. The server can be terminted by pressing `Ctrl-C` in the terminal window where it is running. In order to use the client you must run `npm run build` in the client directory and then `mv ./build ../html` to copy the build output to the server directory. This is not required if using the installation script mentioned above, as the step is handled separately.
 
 ## JSON Endpoint
 To get the JSON version of the profit calculation and shopping list, send a post command to `http://localhost:3000/json_output`. The post must contain, at a minimum: a payload containg the item name or id as `item_id`, the number requested as `needed`, a json config json file as `addon_data`, and a run type of `type` set to `json`. Optionally, more detailed custom runs can be performed by setting `type` to `custom` and including: `professions` for a JSON formatted array of professions, `server`, and `region`. The `custom` type corresponds to the CLI default behaviour and ignores the professions and server data set int he AddOn payload.
