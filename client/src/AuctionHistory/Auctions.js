@@ -119,7 +119,7 @@ function Auctions(props) {
                     archive_row.data.forEach(element => {
                         sales_by_key += element.quantity_at_price;
                     });
-                    volume_chart_data.push([new Date(Number(archive_row.timestamp)), sales_by_key]);
+                    volume_chart_data.push([new Date(Number(archive_row.timestamp)), (sales_by_key / 24)]);
                 }
             }
 

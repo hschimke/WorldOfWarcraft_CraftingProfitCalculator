@@ -76,22 +76,75 @@ function dbGet(db, query, values) {
 }
 
 function dbPrepare(db, sql, values) {
-    logger.silly(sqlToString(query, values));
+    logger.silly(sqlToString(sql, values));
+    return new Promise((accept, reject) => {
+        let statement;
+        const callback = (err) => {
+            if (err) {
+                logger.error(`Issue preparing query '${sql}' and values ${values}`, err);
+                reject(err);
+            } else {
+                accept(statement);
+            }
+        };
+        if (values === undefined) {
+            statement = db.prepare(sql, callback);
+        } else {
+            statement = db.prepare(sql, values, callback);
+        }
+    });
+}
+
+function statementRun(statement, values) {
     return new Promise((accept, reject) => {
         const callback = (err) => {
             if (err) {
-                logger.error(`Issue running query '${query}' and values ${values}`, err);
+                logger.error(`Issue running statement '${statement}' and values ${values}`, err);
                 reject();
             } else {
                 accept();
             }
         };
         if (values === undefined) {
-            db.prepare(sql, callback);
+            statement.run(callback);
         } else {
-            db.prepare(sql, values, callback);
+            statement.run(values, callback);
         }
-    })
+    });
+}
+
+function statementGet(statement, values) {
+    return new Promise((accept, reject) => {
+        const callback = (err, row) => {
+            if (err) {
+                logger.error(`Issue running statement '${statement}' and values ${values}`, err);
+                reject(err);
+            }
+            accept(row);
+        };
+        if (values === undefined) {
+            statement.get(callback);
+        } else {
+            statement.get(values, callback);
+        }
+    });
+}
+
+function statementAll(statement, values) {
+    return new Promise((accept, reject) => {
+        const callback = (err, rows) => {
+            if (err) {
+                logger.error(`Issue running statement '${statement}' and values ${values}`, err);
+                reject();
+            }
+            accept(rows);
+        };
+        if (values === undefined) {
+            statement.all(callback);
+        } else {
+            statement.all(values, callback);
+        }
+    });
 }
 
 /**
@@ -161,4 +214,4 @@ function dbSerialize(db, queries, values) {
     });
 }
 
-export { dbOpen, dbClose, dbRun, dbGet, dbAll, dbSerialize, dbPrepare };
+export { dbOpen, dbClose, dbRun, dbGet, dbAll, dbSerialize, dbPrepare, statementRun, statementGet, statementAll };
