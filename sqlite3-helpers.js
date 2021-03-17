@@ -9,9 +9,9 @@ logger.add(new winston.transports.Console({
 }));
 */
 
-function sqlToString(sql,values){
+function sqlToString(sql, values) {
     const value_str = values !== undefined ? values.map((val) => {
-        return `[value: ${val} type: ${typeof(val)}] `;
+        return `[value: ${val} type: ${typeof (val)}] `;
     }) : '';
     return `${sql} : ${value_str}`;
 }
@@ -63,7 +63,7 @@ function dbOpen(database_factory, file_name, params) {
  * @param {Array.<string>} values The paramaters for the query.
  */
 function dbGet(db, query, values) {
-    logger.silly(sqlToString(query,values));
+    logger.silly(sqlToString(query, values));
     return new Promise((accept, reject) => {
         db.get(query, values, (err, row) => {
             if (err) {
@@ -75,6 +75,25 @@ function dbGet(db, query, values) {
     });
 }
 
+function dbPrepare(db, sql, values) {
+    logger.silly(sqlToString(query, values));
+    return new Promise((accept, reject) => {
+        const callback = (err) => {
+            if (err) {
+                logger.error(`Issue running query '${query}' and values ${values}`, err);
+                reject();
+            } else {
+                accept();
+            }
+        };
+        if (values === undefined) {
+            db.prepare(sql, callback);
+        } else {
+            db.prepare(sql, values, callback);
+        }
+    })
+}
+
 /**
  * Run a query against a database, ignoring the result.
  * @param {Object} db The database to query against.
@@ -82,7 +101,7 @@ function dbGet(db, query, values) {
  * @param {Array.<string>} The paramaters for the query.
  */
 function dbRun(db, query, values) {
-    logger.silly(sqlToString(query,values));
+    logger.silly(sqlToString(query, values));
     return new Promise((accept, reject) => {
         db.run(query, values, (err) => {
             if (err) {
@@ -101,8 +120,8 @@ function dbRun(db, query, values) {
  * @param {string} query The query to run.
  * @param {Array.<string>} values The paramaters for the query.
  */
-function dbAll(db,query,values) {
-    logger.silly(sqlToString(query,values));
+function dbAll(db, query, values) {
+    logger.silly(sqlToString(query, values));
     return new Promise((accept, reject) => {
         db.all(query, values, (err, rows) => {
             if (err) {
@@ -125,7 +144,7 @@ function dbSerialize(db, queries, values) {
         db.serialize(() => {
             try {
                 for (let i = 0; i < queries.length; i++) {
-                    logger.silly(sqlToString(queries[i],values[i]));
+                    logger.silly(sqlToString(queries[i], values[i]));
                     db.run(queries[i], values[i], (err) => {
                         if (err) {
                             logger.error(`Issue running query '${queries[i]}' and values ${values[i]}`, err);
@@ -142,4 +161,4 @@ function dbSerialize(db, queries, values) {
     });
 }
 
-export {dbOpen, dbClose, dbRun, dbGet, dbAll, dbSerialize};
+export { dbOpen, dbClose, dbRun, dbGet, dbAll, dbSerialize, dbPrepare };

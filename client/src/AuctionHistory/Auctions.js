@@ -89,7 +89,6 @@ function Auctions(props) {
         const data = apiState.data;
         if (!('ERROR' in data)) {
 
-
             const latest = data.price_map[data.latest];
 
             bubble_chart_data = [['ID', 'Auctions', 'Price', 'Quantity']];
@@ -111,6 +110,19 @@ function Auctions(props) {
                 });
                 volume_chart_data.push([new Date(Number(key)), sales_by_key]);
             });
+
+            // Handle Archives
+            for (const archive_row of data.archives) {
+                bar_chart_data.push([new Date(Number(archive_row.timestamp)), archive_row.max_value, archive_row.min_value, archive_row.avg_value])
+                {
+                    let sales_by_key = 0;
+                    archive_row.data.forEach(element => {
+                        sales_by_key += element.quantity_at_price;
+                    });
+                    volume_chart_data.push([new Date(Number(archive_row.timestamp)), sales_by_key]);
+                }
+            }
+
             chart_ready = true;
         }
     }
@@ -206,7 +218,7 @@ function Auctions(props) {
             }
             <div className="RawReturn">
                 <pre>
-                    {false && JSON.stringify(apiState.data, undefined, 2)}
+                    {true && JSON.stringify(apiState.data, undefined, 2)}
                 </pre>
             </div>
         </div>

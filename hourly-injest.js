@@ -2,12 +2,10 @@ import { scanRealms, archiveAuctions, openDB, closeDB } from './auction-history.
 
 const db = await openDB();
 
-await    scanRealms(db);
- await   archiveAuctions(db);
+await scanRealms(db);
 
-/*
-await Promise.all([
-    scanRealms(db),
-    archiveAuctions(db)
-]);*/
+if ((new Date()).getHours() === 0) {
+    await archiveAuctions(db);
+}
+
 await closeDB(db);
