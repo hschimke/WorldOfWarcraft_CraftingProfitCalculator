@@ -218,7 +218,7 @@ function Auctions(props) {
             }
             <div className="RawReturn">
                 <pre>
-                    {true && JSON.stringify(apiState.data, undefined, 2)}
+                    {false && JSON.stringify(apiState.data, undefined, 2)}
                 </pre>
             </div>
         </div>

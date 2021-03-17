@@ -382,8 +382,8 @@ async function archiveAuctions(db_in) {
     const backstep_time = Date.now() - backstep_time_diff;
 
     const sql_get_downloaded_oldest = 'SELECT MIN(downloaded) AS oldest FROM auctions';
-    const sql_get_distinct_rows_from_downloaded = 'SELECT DISTINCT item_id, bonuses, connected_realm_id FROM auctions WHERE downloaded >= ? AND downloaded <= ?';
-    const sql_delete_archived_auctions = 'DELETE FROM auctions WHERE downloaded >= ? AND downloaded <= ?';
+    const sql_get_distinct_rows_from_downloaded = 'SELECT DISTINCT item_id, bonuses, connected_realm_id FROM auctions WHERE downloaded BETWEEN ? AND ?';
+    const sql_delete_archived_auctions = 'DELETE FROM auctions WHERE downloaded BETWEEN ? AND ?';
 
     const sql_price_map = 'SELECT price, count(price) AS sales_at_price, sum(quantity) AS quantity_at_price FROM auctions WHERE item_id=? AND bonuses=? AND connected_realm_id=? AND downloaded BETWEEN ? AND ? GROUP BY price';
     const sql_min = 'SELECT MIN(price) AS MIN_PRICE FROM auctions WHERE item_id=? AND bonuses=? AND connected_realm_id=? AND downloaded BETWEEN ? AND ?';
