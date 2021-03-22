@@ -1,14 +1,10 @@
 import fs from 'fs/promises';
 import { parentLogger } from './logging.js';
-//import sqlite3 from 'sqlite3';
 import got from 'got';
-//import {dbOpen, dbClose, dbRun, dbGet, dbSerialize} from './sqlite3-helpers.js';
 import { getDb } from './database.js';
 
 const logger = parentLogger.child();
-let db;
-
-const database_fn = './cache/cache.db';
+const db = getDb('cache');
 
 const bonuses_cache_fn = './cache/bonuses.json';
 const rank_mappings_cache_fn = './cache/rank-mappings.json';
@@ -33,9 +29,6 @@ async function saveCache() {
  * Initialize the cache provider.
  */
 async function loadCache() {
-    //db = await dbOpen(sqlite3, database_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE);
-    db = getDb('cache');
-
     const data_sources = JSON.parse(await fs.readFile(new URL(data_sources_fn, import.meta.url)));
 
     // static files
@@ -62,12 +55,6 @@ async function loadCache() {
             exclusions: [],
         };
     }
-
-    // db open
-    const table_create_string = 'CREATE TABLE IF NOT EXISTS key_values (namespace TEXT, key TEXT, value TEXT, cached INTEGER, PRIMARY KEY (namespace,key))';
-    await db.run(table_create_string);
-    await db.run('PRAGMA journal_mode=WAL');
-    await db.run('PRAGMA synchronous = normal');
 }
 
 /**
