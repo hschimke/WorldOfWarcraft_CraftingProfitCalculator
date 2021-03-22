@@ -1,8 +1,9 @@
 import fs from 'fs/promises';
 import { parentLogger } from './logging.js';
-import sqlite3 from 'sqlite3';
+//import sqlite3 from 'sqlite3';
 import got from 'got';
-import {dbOpen, dbClose, dbRun, dbGet, dbSerialize} from './sqlite3-helpers.js';
+//import {dbOpen, dbClose, dbRun, dbGet, dbSerialize} from './sqlite3-helpers.js';
+import { getDb } from './database.js';
 
 const logger = parentLogger.child();
 let db;
@@ -23,8 +24,7 @@ let shopping_recipe_exclusion_list;
  */
 async function saveCache() {
 
-    await dbRun(db, 'PRAGMA optimize');
-    await dbClose(db);
+    await db.run('PRAGMA optimize');
 
     logger.info('Cache saved');
 }
@@ -33,7 +33,8 @@ async function saveCache() {
  * Initialize the cache provider.
  */
 async function loadCache() {
-    db = await dbOpen(sqlite3, database_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE);
+    //db = await dbOpen(sqlite3, database_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE);
+    db = getDb('cache');
 
     const data_sources = JSON.parse(await fs.readFile(new URL(data_sources_fn, import.meta.url)));
 
@@ -64,9 +65,9 @@ async function loadCache() {
 
     // db open
     const table_create_string = 'CREATE TABLE IF NOT EXISTS key_values (namespace TEXT, key TEXT, value TEXT, cached INTEGER, PRIMARY KEY (namespace,key))';
-    await dbRun(db, table_create_string);
-    await dbRun(db, 'PRAGMA journal_mode=WAL');
-    await dbRun(db, 'PRAGMA synchronous = normal');
+    await db.run(table_create_string);
+    await db.run('PRAGMA journal_mode=WAL');
+    await db.run('PRAGMA synchronous = normal');
 }
 
 /**
@@ -86,7 +87,7 @@ async function cacheCheck(namespace, key, expiration_period) {
     const query = (expiration_period !== undefined) ? query_with_expiration : query_no_expiration;
     const values = (expiration_period !== undefined) ? expiration_values : no_expiration_values;
 
-    const result = await dbGet(db, query, values);
+    const result = await db.get(query, values);
 
     let found = false;
     if (result.how_many > 0) {
@@ -104,7 +105,7 @@ async function cacheCheck(namespace, key, expiration_period) {
 async function cacheGet(namespace, key) {
     //logger.profile(`cacheGet: ${namespace} -> ${key}`);
     const query = 'SELECT value FROM key_values WHERE namespace = ? AND key = ?';
-    const result = await dbGet(db, query, [namespace, key]);
+    const result = await db.get(query, [namespace, key]);
     const json_data = JSON.parse(result.value);
     //logger.profile(`cacheGet: ${namespace} -> ${key}`);
     return json_data;
@@ -128,7 +129,7 @@ async function cacheSet(namespace, key, data) {
         const query_delete = 'DELETE FROM key_values WHERE namespace = ? AND key = ?';
         const query_insert = 'INSERT INTO key_values(namespace, key, value, cached) VALUES(?,?,?,?)';
 
-        await dbSerialize(db,
+        await db.serialize(
             ['BEGIN TRANSACTION', query_delete, query_insert, 'COMMIT TRANSACTION'],
             [[], [namespace, key], [namespace, key, JSON.stringify(data), cached], []]);
     } catch (e) {
