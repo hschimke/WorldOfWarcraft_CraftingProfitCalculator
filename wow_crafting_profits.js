@@ -203,7 +203,7 @@ async function performProfitAnalysis(region, server, character_professions, item
 
     // Get NON AH price
     if (!item_craftable.craftable) {
-        price_obj.vendor_price = await findNoneAHPrice(item_id);
+        price_obj.vendor_price = await findNoneAHPrice(item_id, region);
     } else {
         price_obj.vendor_price = -1;
     }
