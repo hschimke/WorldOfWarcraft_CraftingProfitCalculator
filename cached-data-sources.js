@@ -19,9 +19,6 @@ let shopping_recipe_exclusion_list;
  * Cleanly shutdown the cache provider.
  */
 async function saveCache() {
-
-    await db.run('PRAGMA optimize');
-
     logger.info('Cache saved');
 }
 
@@ -66,9 +63,9 @@ async function loadCache() {
 async function cacheCheck(namespace, key, expiration_period) {
     //logger.profile('cacheGet');
     //const query = 'select namespace, key, value, cached from key_values where namespace = ? and key = ?';
-    const query_no_expiration = 'SELECT COUNT(*) AS how_many FROM key_values WHERE namespace = ? AND key = ?';
+    const query_no_expiration = 'SELECT COUNT(*) AS how_many FROM key_values WHERE namespace = $1 AND key = $2';
     const no_expiration_values = [namespace, key];
-    const query_with_expiration = 'SELECT COUNT(*) AS how_many FROM key_values WHERE namespace = ? AND key = ? AND (cached + ?) > ?';
+    const query_with_expiration = 'SELECT COUNT(*) AS how_many FROM key_values WHERE namespace = $1 AND key = $2 AND (cached + $3) > $4';
     const expiration_values = [namespace, key, expiration_period, Date.now()];
 
     const query = (expiration_period !== undefined) ? query_with_expiration : query_no_expiration;
@@ -91,11 +88,11 @@ async function cacheCheck(namespace, key, expiration_period) {
  */
 async function cacheGet(namespace, key) {
     //logger.profile(`cacheGet: ${namespace} -> ${key}`);
-    const query = 'SELECT value FROM key_values WHERE namespace = ? AND key = ?';
+    const query = 'SELECT value FROM key_values WHERE namespace = $1 AND key = $2';
     const result = await db.get(query, [namespace, key]);
-    const json_data = JSON.parse(result.value);
+    //const json_data = JSON.parse(result.value);
     //logger.profile(`cacheGet: ${namespace} -> ${key}`);
-    return json_data;
+    return result.value;
 }
 
 /**
@@ -113,12 +110,12 @@ async function cacheSet(namespace, key, data) {
 
     //logger.profile('cacheSet');
     try {
-        const query_delete = 'DELETE FROM key_values WHERE namespace = ? AND key = ?';
-        const query_insert = 'INSERT INTO key_values(namespace, key, value, cached) VALUES(?,?,?,?)';
+        const query_delete = 'DELETE FROM key_values WHERE namespace = $1 AND key = $2';
+        const query_insert = 'INSERT INTO key_values(namespace, key, value, cached) VALUES($1,$2,$3,$4)';
 
         await db.serialize(
             ['BEGIN TRANSACTION', query_delete, query_insert, 'COMMIT TRANSACTION'],
-            [[], [namespace, key], [namespace, key, JSON.stringify(data), cached], []]);
+            [[], [namespace, key], [namespace, key, data, cached], []]);
     } catch (e) {
         logger.error('Failed to set up cache value', e);
         success = false;

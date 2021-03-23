@@ -56,10 +56,12 @@ async function ingest(region, connected_realm) {
         }
     }
 
-    await db.run('BEGIN TRANSACTION', []);
+    const client = await db.getClient();
+
+    await client.query('BEGIN TRANSACTION', []);
 
     for (const item of item_set) {
-        const result = await db.get(sql_check_item, [item, region]);
+        const result = await client.query(sql_check_item, [item, region]);
 
         let found = false;
         if (result.how_many > 0) {
@@ -69,11 +71,11 @@ async function ingest(region, connected_realm) {
         if (!found) {
             const item_detail = { name: '' }; //await getItemDetails(item, region);
             const craftable = false; //(await checkIsCrafting(item, ALL_PROFESSIONS, region)).craftable;
-            await db.run(sql_insert_item, [item, region, item_detail.name, craftable]);
+            await client.query(sql_insert_item, [item, region, item_detail.name, craftable]);
         }
     }
 
-    const result = await db.get(sql_check_realm, [connected_realm, region]);
+    const result = await client.query(sql_check_realm, [connected_realm, region]);
 
     let found = false;
     if (result.how_many > 0) {
@@ -82,19 +84,20 @@ async function ingest(region, connected_realm) {
 
     if (!found) {
         const realm_detail = { name: '' }; //await getItemDetails(item, region);
-        await db.run(sql_insert_realm, [connected_realm, realm_detail.name, region]);
+        await client.query(sql_insert_realm, [connected_realm, realm_detail.name, region]);
     }
 
     await Promise.all(insert_values_array.map((values) => {
-        return db.run(sql_insert_auction, values);
+        return client.query(sql_insert_auction, values);
     }));
 
-    await db.run('COMMIT TRANSACTION', []);
+    await client.query('COMMIT TRANSACTION', []);
+    await client.release();
 }
 
 async function getAllBonuses(item, region) {
     logger.debug(`Fetching bonuses for ${item}`);
-    const sql = 'SELECT DISTINCT bonuses FROM auctions WHERE item_id = ?';
+    const sql = 'SELECT DISTINCT bonuses FROM auctions WHERE item_id = $1';
 
     let item_id = 0;
     if (Number.isFinite(Number(item))) {
@@ -327,13 +330,13 @@ async function archiveAuctions() {
     const backstep_time = Date.now() - backstep_time_diff;
 
     const sql_get_downloaded_oldest = 'SELECT MIN(downloaded) AS oldest FROM auctions';
-    const sql_get_distinct_rows_from_downloaded = 'SELECT DISTINCT item_id, bonuses, connected_realm_id FROM auctions WHERE downloaded BETWEEN ? AND ?';
-    const sql_delete_archived_auctions = 'DELETE FROM auctions WHERE downloaded BETWEEN ? AND ?';
+    const sql_get_distinct_rows_from_downloaded = 'SELECT DISTINCT item_id, bonuses, connected_realm_id FROM auctions WHERE downloaded BETWEEN $1 AND $2';
+    const sql_delete_archived_auctions = 'DELETE FROM auctions WHERE downloaded BETWEEN $1 AND $2';
 
-    const sql_price_map = 'SELECT price, count(price) AS sales_at_price, sum(quantity) AS quantity_at_price FROM auctions WHERE item_id=? AND bonuses=? AND connected_realm_id=? AND downloaded BETWEEN ? AND ? GROUP BY price';
-    const sql_min = 'SELECT MIN(price) AS MIN_PRICE FROM auctions WHERE item_id=? AND bonuses=? AND connected_realm_id=? AND downloaded BETWEEN ? AND ?';
-    const sql_max = 'SELECT MAX(price) AS MAX_PRICE FROM auctions WHERE item_id=? AND bonuses=? AND connected_realm_id=? AND downloaded BETWEEN ? AND ?';
-    const sql_avg = 'SELECT SUM(price*quantity)/SUM(quantity) AS AVG_PRICE FROM auctions WHERE item_id=? AND bonuses=? AND connected_realm_id=? AND downloaded BETWEEN ? AND ?';
+    const sql_price_map = 'SELECT price, count(price) AS sales_at_price, sum(quantity) AS quantity_at_price FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5 GROUP BY price';
+    const sql_min = 'SELECT MIN(price) AS MIN_PRICE FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5';
+    const sql_max = 'SELECT MAX(price) AS MAX_PRICE FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5';
+    const sql_avg = 'SELECT SUM(price*quantity)/SUM(quantity) AS AVG_PRICE FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5';
 
     await db.run('BEGIN TRANSACTION', []);
 
@@ -379,12 +382,12 @@ async function archiveAuctions() {
 }
 
 async function addRealmToScanList(realm_name, realm_region) {
-    const sql = 'INSERT INTO realm_scan_list(connected_realm_id,region) VALUES(?,?)';
+    const sql = 'INSERT INTO realm_scan_list(connected_realm_id,region) VALUES($1,$2)';
     await db.run(sql, [await getConnectedRealmId(realm_name, realm_region), realm_region]);
 }
 
 async function removeRealmFromScanList(realm_name, realm_region) {
-    const sql = 'DELETE FROM realm_scan_list WHERE connected_realm_id = ? AND region = ?';
+    const sql = 'DELETE FROM realm_scan_list WHERE connected_realm_id = $1 AND region = $2';
     await db.run( sql, [await getConnectedRealmId(realm_name, realm_region), realm_region]);
 }
 
