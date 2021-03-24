@@ -12,18 +12,18 @@ import winston from 'winston';
 logger.add(new winston.transports.Console({
     format: winston.format.simple(),
     level: 'silly',
-}));
-*/
+}));*/
+
 
 const pragma_sync = 'PRAGMA synchronous = normal';
 const pragma_journal = 'PRAGMA journal_mode=WAL';
 
-const sql_create_item_table = 'CREATE TABLE IF NOT EXISTS auctions (item_id NUMERIC, bonuses JSON, quantity INTEGER, price INTEGER, downloaded NUMERIC, connected_realm_id INTEGER)';
+const sql_create_item_table = 'CREATE TABLE IF NOT EXISTS auctions (item_id NUMERIC, bonuses TEXT, quantity NUMERIC, price NUMERIC, downloaded NUMERIC, connected_realm_id NUMERIC)';
 const sql_create_auctions_index = 'CREATE INDEX IF NOT EXISTS auctions_index ON auctions (item_id, bonuses, quantity, price, downloaded, connected_realm_id)';
-const sql_create_items_table = 'CREATE TABLE IF NOT EXISTS items (item_id NUMERIC, region TEXT, name TEXT, craftable INTEGER, PRIMARY KEY (item_id,region))';
+const sql_create_items_table = 'CREATE TABLE IF NOT EXISTS items (item_id NUMERIC, region TEXT, name TEXT, craftable BOOLEAN, PRIMARY KEY (item_id,region))';
 const sql_create_realms_table = 'CREATE TABLE IF NOT EXISTS realms (connected_realm_id NUMERIC, name TEXT, region TEXT, PRIMARY KEY (connected_realm_id,region))';
-const sql_create_realm_scan_table = 'CREATE TABLE IF NOT EXISTS realm_scan_list (connected_realm_id INTEGER, region TEXT, PRIMARY KEY (connected_realm_id,region))';
-const sql_create_archive_table = 'CREATE TABLE IF NOT EXISTS auction_archive (item_id NUMERIC, bonuses JSON, quantity INTEGER, summary JSON, downloaded NUMERIC, connected_realm_id INTEGER)';
+const sql_create_realm_scan_table = 'CREATE TABLE IF NOT EXISTS realm_scan_list (connected_realm_id NUMERIC, region TEXT, PRIMARY KEY (connected_realm_id,region))';
+const sql_create_archive_table = 'CREATE TABLE IF NOT EXISTS auction_archive (item_id NUMERIC, bonuses TEXT, quantity NUMERIC, summary JSON, downloaded NUMERIC, connected_realm_id NUMERIC)';
 const sql_create_auction_archive_index = 'CREATE INDEX IF NOT EXISTS auction_archive_index ON auction_archive (item_id, bonuses, downloaded, connected_realm_id)';
 
 const history_sql_run_at_open = [
@@ -32,8 +32,8 @@ const history_sql_run_at_open = [
     sql_create_realms_table,
     sql_create_realm_scan_table,
     sql_create_archive_table,
-    //sql_create_auctions_index,
-    //sql_create_auction_archive_index,
+    sql_create_auctions_index,
+    sql_create_auction_archive_index,
 ];
 
 const sql_create_cache_table = 'CREATE TABLE IF NOT EXISTS key_values (namespace TEXT, key TEXT, value JSON, cached NUMERIC, PRIMARY KEY (namespace,key))';
@@ -62,8 +62,11 @@ async function start() {
 }
 
 function shutdown() {
-    l_pool.end();
+    logger.info('Closing DB connection');
     dbs_open = false;
+    l_pool.end().then(()=>{
+        logger.info('Database connection closed');
+    });
 }
 
 function getDb(db_name) {
@@ -78,7 +81,7 @@ function getDb(db_name) {
         client.release();
     };
     context.getClient = async function () {
-        const client = await pool.connect();
+        const client = await this.pool.connect();
         return client;
     };
     context.query = async function (query, values) {
@@ -106,6 +109,12 @@ process.on('beforeExit', () => {
 });
 
 process.on('SIGTERM', () => {
+    if (dbs_open) {
+        shutdown();
+    }
+});
+
+process.on('SIGINT', () => {
     if (dbs_open) {
         shutdown();
     }

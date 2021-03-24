@@ -4,13 +4,13 @@ import { getDb } from './database.js';
 
 const logger = parentLogger.child();
 
-const sql_insert_auction = 'INSERT INTO auctions(item_id, quantity, price, downloaded, connected_realm_id, bonuses) VALUES(?,?,?,?,?,?)';
-const sql_insert_auction_archive = 'INSERT INTO auction_archive(item_id, quantity, summary, downloaded, connected_realm_id, bonuses) VALUES(?,?,?,?,?,?)';
-const sql_insert_item = 'INSERT INTO items(item_id, region, name, craftable) VALUES(?,?,?,?)';
-const sql_insert_realm = 'INSERT INTO realms(connected_realm_id, name, region) VALUES(?,?,?)';
+const sql_insert_auction = 'INSERT INTO auctions(item_id, quantity, price, downloaded, connected_realm_id, bonuses) VALUES($1,$2,$3,$4,$5,$6)';
+const sql_insert_auction_archive = 'INSERT INTO auction_archive(item_id, quantity, summary, downloaded, connected_realm_id, bonuses) VALUES($1,$2,$3,$4,$5,$6)';
+const sql_insert_item = 'INSERT INTO items(item_id, region, name, craftable) VALUES($1,$2,$3,$4)';
+const sql_insert_realm = 'INSERT INTO realms(connected_realm_id, name, region) VALUES($1,$2,$3)';
 
-const sql_check_item = 'SELECT COUNT(*) AS how_many FROM items WHERE item_id = ? AND region = ?';
-const sql_check_realm = 'SELECT COUNT(*) AS how_many FROM realms WHERE connected_realm_id = ? AND region = ?';
+const sql_check_item = 'SELECT COUNT(*) AS how_many FROM items WHERE item_id = $1 AND region = $2';
+const sql_check_realm = 'SELECT COUNT(*) AS how_many FROM realms WHERE connected_realm_id = $1 AND region = $2';
 
 const ALL_PROFESSIONS = ['Jewelcrafting', 'Tailoring', 'Alchemy', 'Herbalism', 'Inscription', 'Enchanting', 'Blacksmithing', 'Mining', 'Engineering', 'Leatherworking', 'Skinning', 'Cooking'];
 
@@ -58,10 +58,10 @@ async function ingest(region, connected_realm) {
 
     const client = await db.getClient();
 
-    await client.query('BEGIN TRANSACTION', []);
+    await client.query('BEGIN TRANSACTION');
 
     for (const item of item_set) {
-        const result = await client.query(sql_check_item, [item, region]);
+        const result = (await client.query(sql_check_item, [item, region])).rows[0];
 
         let found = false;
         if (result.how_many > 0) {
@@ -75,7 +75,7 @@ async function ingest(region, connected_realm) {
         }
     }
 
-    const result = await client.query(sql_check_realm, [connected_realm, region]);
+    const result = (await client.query(sql_check_realm, [connected_realm, region.toUpperCase()])).rows[0];
 
     let found = false;
     if (result.how_many > 0) {
@@ -84,14 +84,23 @@ async function ingest(region, connected_realm) {
 
     if (!found) {
         const realm_detail = { name: '' }; //await getItemDetails(item, region);
-        await client.query(sql_insert_realm, [connected_realm, realm_detail.name, region]);
+        await client.query(sql_insert_realm, [connected_realm, realm_detail.name, region.toUpperCase()]);
     }
 
     await Promise.all(insert_values_array.map((values) => {
         return client.query(sql_insert_auction, values);
     }));
+    /*for( const q of insert_values_array ){
+        try{
+        await client.query(sql_insert_auction, q); 
+        }catch(e){
+            console.log(q);
+            console.log(e);
+            throw e;
+        }
+    }*/
 
-    await client.query('COMMIT TRANSACTION', []);
+    await client.query('COMMIT TRANSACTION');
     await client.release();
 }
 
@@ -149,7 +158,7 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
             }
             logger.info(`Found ${item_id} for ${item}`);
         }
-        sql_addins.push('item_id = ?');
+        sql_addins.push(`item_id = ${get_place_marker()}`);
         value_searches.push(item_id);
     } else {
         // All items
@@ -167,14 +176,14 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
             logger.info(`Found ${server_id} for ${realm}`);
         }
         // Get specific realm
-        sql_addins.push('connected_realm_id = ?');
+        sql_addins.push(`connected_realm_id = ${get_place_marker()}`);
         value_searches.push(server_id);
     } else {
         // All realms
     }
     if (region !== undefined) {
         // Get specific region
-        sql_addins.push('connected_realm_id IN (SELECT connected_realm_id FROM realms WHERE region = ?)');
+        sql_addins.push(`connected_realm_id IN (SELECT connected_realm_id FROM realms WHERE region = ${get_place_marker()})`);
         value_searches.push(region);
     } else {
         // All regions
@@ -185,13 +194,13 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
             sql_addins.push('bonuses IS NULL');
         }
         else if (typeof bonuses !== typeof []) {
-            sql_addins.push('bonuses = ?');
+            sql_addins.push(`bonuses = ${get_place_marker()}`);
             value_searches.push(bonuses);
         } else {
             bonuses.forEach(b => {
                 if (b !== null && b !== '') {
                     logger.debug(`Add bonus ${b} in (select json_each.value from json_each(bonuses))`);
-                    sql_addins.push('? IN (SELECT json_each.value FROM json_each(bonuses))');
+                    sql_addins.push(`${get_place_marker()} IN (SELECT json_array_elements_text(bonuses::json)::numeric)`);
                     value_searches.push(Number(b));
                 }
             });
@@ -201,14 +210,14 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
     }
     if (start_dtm !== undefined) {
         // Include oldest fetch date time
-        sql_addins.push('downloaded >= ?');
+        sql_addins.push(`downloaded >= ${get_place_marker()}`);
         value_searches.push(start_dtm);
     } else {
         // No start fetched date time limit
     }
     if (end_dtm !== undefined) {
         // Include newest fetch date time
-        sql_addins.push('downloaded <= ?');
+        sql_addins.push(`downloaded <= ${get_place_marker()}`);
         value_searches.push(end_dtm);
     } else {
         // No latest fetched date time
@@ -221,28 +230,31 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
     const latest_dl_sql = build_sql_with_addins(sql_build_latest_dtm, sql_addins);
     const distinct_download_sql = build_sql_with_addins(sql_build_distinct_dtm, sql_addins);
 
-    const min_dtm_sql = build_sql_with_addins(sql_build_min, [...sql_addins, 'downloaded = ?']);
-    const max_dtm_sql = build_sql_with_addins(sql_build_max, [...sql_addins, 'downloaded = ?']);
-    const avg_dtm_sql = build_sql_with_addins(sql_build_avg, [...sql_addins, 'downloaded = ?']);
-    const price_group_sql = build_sql_with_addins(sql_build_price_map, [...sql_addins, 'downloaded = ?']) + ' ' + sql_group_by_price_addin;
+    const min_dtm_sql = build_sql_with_addins(sql_build_min, [...sql_addins, `downloaded = ${get_place_marker()}`]);
+    const max_dtm_sql = build_sql_with_addins(sql_build_max, [...sql_addins, `downloaded = ${get_place_marker()}`]);
+    const avg_dtm_sql = build_sql_with_addins(sql_build_avg, [...sql_addins, `downloaded = ${get_place_marker()}`]);
+    const price_group_sql = build_sql_with_addins(sql_build_price_map, [...sql_addins, `downloaded = ${get_place_marker()}`]) + ' ' + sql_group_by_price_addin;
 
-    const min_value = (await db.get(min_sql, value_searches)).MIN_PRICE;
-    const max_value = (await db.get( max_sql, value_searches)).MAX_PRICE;
-    const avg_value = (await db.get(avg_sql, value_searches)).AVG_PRICE;
-    const latest_dl_value = (await db.get(latest_dl_sql, value_searches)).LATEST_DOWNLOAD
+    //const client = await db.getClient();
+
+    const min_value = (await db.get(min_sql, value_searches)).min_price;
+    const max_value = (await db.get( max_sql, value_searches)).max_price;
+    const avg_value = (await db.get(avg_sql, value_searches)).avg_price;
+    const latest_dl_value = (await db.get(latest_dl_sql, value_searches)).latest_download;
 
     const price_data_by_download = {};
     for (const row of (await db.all(distinct_download_sql, value_searches))) {
         price_data_by_download[row.downloaded] = {};
         price_data_by_download[row.downloaded].data = await db.all(price_group_sql, [...value_searches, row.downloaded]);
-        price_data_by_download[row.downloaded].min_value = (await db.get(min_dtm_sql, [...value_searches, row.downloaded])).MIN_PRICE;
-        price_data_by_download[row.downloaded].max_value = (await db.get(max_dtm_sql, [...value_searches, row.downloaded])).MAX_PRICE;
-        price_data_by_download[row.downloaded].avg_value = (await db.get(avg_dtm_sql, [...value_searches, row.downloaded])).AVG_PRICE;
+        price_data_by_download[row.downloaded].min_value = (await db.get(min_dtm_sql, [...value_searches, row.downloaded])).min_price;
+        price_data_by_download[row.downloaded].max_value = (await db.get(max_dtm_sql, [...value_searches, row.downloaded])).max_price;
+        price_data_by_download[row.downloaded].avg_value = (await db.get(avg_dtm_sql, [...value_searches, row.downloaded])).avg_price;
     }
 
     // Get archives if they exist
     const archive_fetch_sql = build_sql_with_addins(sql_archive_build, sql_addins);
     const archives = await db.all(archive_fetch_sql, value_searches);
+
     const archived_results = {};
     logger.debug(`Found ${archives.length} archive rows.`);
     for (const archive of archives) {
@@ -320,7 +332,11 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
             construct_sql = construct_sql.slice(0, construct_sql.length - 4);
         }
         return construct_sql;
-    }
+    };
+
+    function get_place_marker(){
+        return `$${value_searches.length + 1}`;
+    };
 }
 
 async function archiveAuctions() {
@@ -337,6 +353,8 @@ async function archiveAuctions() {
     const sql_min = 'SELECT MIN(price) AS MIN_PRICE FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5';
     const sql_max = 'SELECT MAX(price) AS MAX_PRICE FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5';
     const sql_avg = 'SELECT SUM(price*quantity)/SUM(quantity) AS AVG_PRICE FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5';
+
+    const client = await db.getClient();
 
     await db.run('BEGIN TRANSACTION', []);
 
@@ -368,7 +386,7 @@ async function archiveAuctions() {
                 }, 0);
 
                 // Add the archive
-                await db.run(sql_insert_auction_archive, [item.item_id, quantity, JSON.stringify(summary), start_ticks, item.connected_realm_id, item.bonuses]);
+                await db.run(sql_insert_auction_archive, [item.item_id, quantity, summary, start_ticks, item.connected_realm_id, item.bonuses]);
             }
             // Delete the archived data
             await db.run(sql_delete_archived_auctions, [start_ticks, end_ticks]);
@@ -379,16 +397,17 @@ async function archiveAuctions() {
     }
 
     await db.run('COMMIT TRANSACTION', []);
+    client.release();
 }
 
 async function addRealmToScanList(realm_name, realm_region) {
     const sql = 'INSERT INTO realm_scan_list(connected_realm_id,region) VALUES($1,$2)';
-    await db.run(sql, [await getConnectedRealmId(realm_name, realm_region), realm_region]);
+    await db.run(sql, [await getConnectedRealmId(realm_name, realm_region), realm_region.toUpperCase()]);
 }
 
 async function removeRealmFromScanList(realm_name, realm_region) {
     const sql = 'DELETE FROM realm_scan_list WHERE connected_realm_id = $1 AND region = $2';
-    await db.run( sql, [await getConnectedRealmId(realm_name, realm_region), realm_region]);
+    await db.run( sql, [await getConnectedRealmId(realm_name, realm_region), realm_region.toUpperCase()]);
 }
 
 async function scanRealms() {
