@@ -4,6 +4,6 @@ import { scanRealms, archiveAuctions, addRealmToScanList } from './auction-histo
 
 await scanRealms();
 
-if ((new Date()).getHours() === 0) {
+//if ((new Date()).getHours() === 0) {
     await archiveAuctions();
-}
+//}

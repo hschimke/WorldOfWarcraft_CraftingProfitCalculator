@@ -261,7 +261,7 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
         if (!(archive.downloaded in archived_results)) {
             archived_results[archive.downloaded] = [];
         }
-        archived_results[archive.downloaded].push(JSON.parse(archive.summary));
+        archived_results[archive.downloaded].push(archive.summary);
     }
 
     const archive_build = [];
@@ -361,7 +361,7 @@ async function archiveAuctions() {
     let running = true;
     while (running) {
         // Get oldest downloaded
-        const current_oldest = (await db.get(sql_get_downloaded_oldest, [])).oldest;
+        const current_oldest = Number((await db.get(sql_get_downloaded_oldest, [])).oldest);
         // Check if oldest fits our criteria
         if (current_oldest < backstep_time) {
             // Pick the whole day
@@ -377,9 +377,9 @@ async function archiveAuctions() {
                 // Run the getAuctions command for the combo
                 const summary = {};
                 summary.data = await db.all(sql_price_map, vals);
-                summary.min_value = (await db.get(sql_min, vals)).MIN_PRICE;
-                summary.max_value = (await db.get(sql_max, vals)).MAX_PRICE;
-                summary.avg_value = (await db.get(sql_avg, vals)).AVG_PRICE;
+                summary.min_value = (await db.get(sql_min, vals)).min_price;
+                summary.max_value = (await db.get(sql_max, vals)).max_price;
+                summary.avg_value = (await db.get(sql_avg, vals)).avg_price;
 
                 const quantity = summary.data.reduce((acc, cur) => {
                     return acc + cur.quantity_at_price;
