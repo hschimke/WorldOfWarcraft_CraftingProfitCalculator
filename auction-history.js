@@ -71,7 +71,7 @@ async function ingest(region, connected_realm) {
         if (!found) {
             //const item_detail = { name: null }; //await getItemDetails(item, region);
             //const craftable = false; //(await checkIsCrafting(item, ALL_PROFESSIONS, region)).craftable;
-            await db.run(sql_insert_item, [item, region, null, false]);
+            await client.query(sql_insert_item, [item, region, null, false]);
         }
     }
 
@@ -88,21 +88,12 @@ async function ingest(region, connected_realm) {
             return acc += `/${cur.name}`;
         },'');
         
-        await db.run(sql_insert_realm, [connected_realm, name.slice(1), region.toUpperCase()]);
+        await client.query(sql_insert_realm, [connected_realm, name.slice(1), region.toUpperCase()]);
     }
 
     await Promise.all(insert_values_array.map((values) => {
         return client.query(sql_insert_auction, values);
     }));
-    /*for( const q of insert_values_array ){
-        try{
-        await client.query(sql_insert_auction, q); 
-        }catch(e){
-            console.log(q);
-            console.log(e);
-            throw e;
-        }
-    }*/
 
     await client.query('COMMIT TRANSACTION');
     await client.release();
@@ -138,17 +129,19 @@ async function getAllBonuses(item, region) {
 
 async function fillNItems(fill_count=5){
     logger.info(`Filling ${fill_count} items with details.`);
-    const select_sql = 'SELECT item_id, region FROM items WHERE name ISNULL LIMIT ?';
-    const update_sql = 'UPDATE items SET name = ?, craftable = ? WHERE item_id = ? AND region = ?';
-    const rows = await db.all(select_sql, [fill_count]);
-    await db.run('BEGIN TRANSACTION');
+    const select_sql = 'SELECT item_id, region FROM items WHERE name ISNULL LIMIT $1';
+    const update_sql = 'UPDATE items SET name = $1, craftable = $2 WHERE item_id = $3 AND region = $4';
+    const client = await db.getClient();
+    const rows = (await client.query(select_sql, [fill_count])).rows;
+    await client.query('BEGIN TRANSACTION');
     for(const item of rows){
         const fetched_item = await getItemDetails(item.item_id,item.region);
         const is_craftable = await checkIsCrafting(item.item_id,ALL_PROFESSIONS,item.region);
-        await db.run(update_sql, [fetched_item.name,is_craftable.craftable, item.item_id, item.region]);
+        await client.query(update_sql, [fetched_item.name,is_craftable.craftable, item.item_id, item.region]);
         logger.debug(`Updated item: ${item.item_id}:${item.region} with name: '${fetched_item.name}' and craftable: ${is_craftable.craftable}`);
     }
-    await db.run('COMMIT TRANSACTION');
+    await client.query('COMMIT TRANSACTION');
+    client.release();
 }
 
 
