@@ -372,7 +372,7 @@ async function archiveAuctions() {
 
     const client = await db.getClient();
 
-    await db.run('BEGIN TRANSACTION', []);
+    await client.query('BEGIN TRANSACTION', []);
 
     let running = true;
     while (running) {
@@ -386,33 +386,33 @@ async function archiveAuctions() {
             logger.debug(`Scan between ${start_ticks} and ${end_ticks}`);
             // Run for that day
             // Get a list of all distinct item/server combinations
-            const items = await db.all(sql_get_distinct_rows_from_downloaded, [start_ticks, end_ticks]);
+            const items = await client.query(sql_get_distinct_rows_from_downloaded, [start_ticks, end_ticks]).rows;
             for (const item of items) {
                 const vals = [item.item_id, item.bonuses, item.connected_realm_id, start_ticks, end_ticks];
 
                 // Run the getAuctions command for the combo
                 const summary = {};
-                summary.data = await db.all(sql_price_map, vals);
-                summary.min_value = (await db.get(sql_min, vals)).min_price;
-                summary.max_value = (await db.get(sql_max, vals)).max_price;
-                summary.avg_value = (await db.get(sql_avg, vals)).avg_price;
+                summary.data = await client.query(sql_price_map, vals).rows;
+                summary.min_value = (await client.query(sql_min, vals)).rows[0].min_price;
+                summary.max_value = (await client.query(sql_max, vals)).rows[0].max_price;
+                summary.avg_value = (await client.query(sql_avg, vals)).rows[0].avg_price;
 
                 const quantity = summary.data.reduce((acc, cur) => {
                     return acc + cur.quantity_at_price;
                 }, 0);
 
                 // Add the archive
-                await db.run(sql_insert_auction_archive, [item.item_id, quantity, (db_type === 'pg' ? summary : JSON.stringify(summary)), start_ticks, item.connected_realm_id, item.bonuses]);
+                await client.query(sql_insert_auction_archive, [item.item_id, quantity, (db_type === 'pg' ? summary : JSON.stringify(summary)), start_ticks, item.connected_realm_id, item.bonuses]);
             }
             // Delete the archived data
-            await db.run(sql_delete_archived_auctions, [start_ticks, end_ticks]);
+            await client.query(sql_delete_archived_auctions, [start_ticks, end_ticks]);
             // Done
         } else {
             running = false;
         }
     }
 
-    await db.run('COMMIT TRANSACTION', []);
+    await client.query('COMMIT TRANSACTION', []);
     client.release();
 }
 
