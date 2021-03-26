@@ -4,7 +4,7 @@ Description=WoW CPC Backend and Frontend server
 [Service]
 type=simple
 WorkingDirectory=/opt/wow_cpc
-Environment='NODE_ENV=production' 'SERVER_PORT=8080' 'LOG_LEVEL=info'
+Environment='NODE_ENV=production' 'SERVER_PORT=8080' 'LOG_LEVEL=info'  'STANDALONE_CONTAINER=normal'
 ExecStart=/usr/bin/npm run server
 User=WOW_CPC
 RestartSec=35
