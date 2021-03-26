@@ -20,7 +20,7 @@ async function job() {
         await archiveAuctions();
     }
 
-    await fillNItems();
+    await fillNItems(20);
 
     //await Promise.all(run_list);
     logger.info('Finished hourly injest job.');
