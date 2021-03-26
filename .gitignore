@@ -114,10 +114,7 @@ data-cache.json
 !cache/rank-mappings.json
 !cache/data-sources.json
 !cache/shopping-recipe-exclusion-list.json
-cache/*.db
-cache/*.db-shm
-cache/*.db-wal
-historical_auctions.db*
+databases/*.db*
 
 # Output data
 output.json

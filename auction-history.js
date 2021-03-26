@@ -356,7 +356,7 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
 }
 
 async function archiveAuctions() {
-    const backstep_time_diff = 6.048e+8; // One Week
+    const backstep_time_diff = (6.048e+8); // One Week
     //const backstep_time_diff = 1.21e+9; // Two weeks
     const day_diff = 8.64e+7;
     const backstep_time = Date.now() - backstep_time_diff;
@@ -386,13 +386,13 @@ async function archiveAuctions() {
             logger.debug(`Scan between ${start_ticks} and ${end_ticks}`);
             // Run for that day
             // Get a list of all distinct item/server combinations
-            const items = await client.query(sql_get_distinct_rows_from_downloaded, [start_ticks, end_ticks]).rows;
+            const items = (await client.query(sql_get_distinct_rows_from_downloaded, [start_ticks, end_ticks])).rows;
             for (const item of items) {
                 const vals = [item.item_id, item.bonuses, item.connected_realm_id, start_ticks, end_ticks];
 
                 // Run the getAuctions command for the combo
                 const summary = {};
-                summary.data = await client.query(sql_price_map, vals).rows;
+                summary.data = (await client.query(sql_price_map, vals)).rows;
                 summary.min_value = (await client.query(sql_min, vals)).rows[0].min_price;
                 summary.max_value = (await client.query(sql_max, vals)).rows[0].max_price;
                 summary.avg_value = (await client.query(sql_avg, vals)).rows[0].avg_price;

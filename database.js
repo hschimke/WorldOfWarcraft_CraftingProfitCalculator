@@ -199,7 +199,7 @@ function getDb(db_name) {
             f.release = async function () { };
             f.query = async function (query, values) {
                 const result = await context.all(query, values);
-                return { rows: result };
+                return { rows: [...result] };
             };
             return f;
         };
