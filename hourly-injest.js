@@ -11,18 +11,18 @@ let standalone_container_abc = undefined;
 
 async function job() {
     logger.info('Starting hourly injest job.');
-    const run_list = [];
+    //const run_list = [];
 
-    run_list.push(scanRealms());
+    await scanRealms();
 
     if ((new Date()).getHours() === 0) {
         logger.info('Performing daily archive.');
-        run_list.push(archiveAuctions());
+        await archiveAuctions();
     }
 
-    run_list.push(fillNItems());
+    await fillNItems();
 
-    await Promise.all(run_list);
+    //await Promise.all(run_list);
     logger.info('Finished hourly injest job.');
 }
 
