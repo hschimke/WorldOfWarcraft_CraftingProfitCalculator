@@ -5,6 +5,7 @@ import { RunConfiguration } from './RunConfiguration.js';
 import { parentLogger } from './logging.js';
 import { getAuctions, getAllBonuses } from './auction-history.js';
 import { bonuses_cache } from './cached-data-sources.js';
+import './hourly-injest.js';
 
 const logger = parentLogger.child();
 
@@ -113,7 +114,7 @@ app.post('/seen_item_bonuses', (req, res) => {
 
     logger.debug(`Getting seen bonus lists for ${item} in ${region}`);
 
-    if(item === ''){
+    if (item === '') {
         res.json({ ERROR: 'empty item' });
     }
 
@@ -149,13 +150,13 @@ app.post('/seen_item_bonuses', (req, res) => {
                             found = true;
                             quality_adjusts.add(cur);
                         }
-                        if(!found){
+                        if (!found) {
                             unknown_adjusts.add(cur);
                         }
                     }
                     return value;
                 }, '');
-            }else{
+            } else {
                 found_empty_bonuses = true;
             }
             return v;
@@ -166,9 +167,9 @@ app.post('/seen_item_bonuses', (req, res) => {
             //item: bonuses.item,
             mapped: b_array,
             collected: {
-                ilvl: Array.from(ilvl_adjusts).map(i=>{return {id: i, level: bonuses_cache[i].level + bonuses.item.level}}),
-                socket: Array.from(socket_adjusts).map(i=>{return {id: i, sockets: bonuses_cache[i].socket}}),
-                quality: Array.from(quality_adjusts).map(i=>{return {id: i, quality: bonuses_cache[i].quality}}),
+                ilvl: Array.from(ilvl_adjusts).map(i => { return { id: i, level: bonuses_cache[i].level + bonuses.item.level } }),
+                socket: Array.from(socket_adjusts).map(i => { return { id: i, sockets: bonuses_cache[i].socket } }),
+                quality: Array.from(quality_adjusts).map(i => { return { id: i, quality: bonuses_cache[i].quality } }),
                 unknown: Array.from(unknown_adjusts),
                 empty: found_empty_bonuses,
             },

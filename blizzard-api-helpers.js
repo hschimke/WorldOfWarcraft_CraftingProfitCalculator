@@ -18,6 +18,7 @@ const CRAFTABLE_BY_SINGLE_PROFESSION_CACHE = 'craftable_by_profession';
 const AUCTION_DATA_CACHE = 'fetched_auctions_data';
 const PROFESSION_DETAIL_CACHE = 'profession_detail_data';
 const PROFESSION_LIST_CACHE = 'regional_profession_list';
+const COMPOSITE_REALM_NAME_CACHE = 'connected_realm_detail';
 
 /**
  * Search through the item database for a string, returning the item id of the item.
@@ -245,6 +246,24 @@ async function getBlizProfessionDetail(profession_id, region) {
         profession_detail_uri);
 
     cacheSet(PROFESSION_DETAIL_CACHE, key, result);
+    return result;
+}
+
+async function getBlizConnectedRealmDetail(connected_realm_id, region) {
+    const key = `${region}::${connected_realm_id}`;
+
+    if (await cacheCheck(COMPOSITE_REALM_NAME_CACHE, key)) {
+        return cacheGet(COMPOSITE_REALM_NAME_CACHE, key);
+    }
+
+    const connected_realm_detail_uri = `/data/wow/connected-realm/${connected_realm_id}`; // skill_tiers.name skill_tiers.id
+    const result = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+        'namespace': 'dynamic-us',
+        'locale': 'en_US'
+    },
+    connected_realm_detail_uri);
+
+    cacheSet(COMPOSITE_REALM_NAME_CACHE, key, result);
     return result;
 }
 
@@ -514,4 +533,6 @@ async function getAuctionHouse(server_id, server_region) {
     return ah;
 }
 
-export { getItemId, getConnectedRealmId, getItemDetails, getBlizProfessionsList, getBlizProfessionDetail, getBlizSkillTierDetail, getBlizRecipeDetail, checkIsCrafting, getCraftingRecipe, getAuctionHouse };
+export { getItemId, getConnectedRealmId, getItemDetails, getBlizProfessionsList, getBlizProfessionDetail,
+    getBlizSkillTierDetail, getBlizRecipeDetail, checkIsCrafting, getCraftingRecipe, getAuctionHouse,
+    getBlizConnectedRealmDetail };

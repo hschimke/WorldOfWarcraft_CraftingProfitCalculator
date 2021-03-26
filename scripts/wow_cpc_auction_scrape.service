@@ -4,7 +4,7 @@ Description=CPC auction scrape
 [Service]
 Type=oneshot
 WorkingDirectory=/opt/wow_cpc
-Environment='NODE_ENV=production' 'LOG_LEVEL=info'
+Environment='NODE_ENV=production' 'LOG_LEVEL=info' 'STANDALONE_CONTAINER=hourly'
 ExecStart=/usr/bin/node -r dotenv/config ./hourly-injest.js
 User=WOW_CPC
 
