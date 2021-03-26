@@ -15,10 +15,10 @@ async function job() {
 
     await scanRealms();
 
-    if ((new Date()).getHours() === 0) {
+    //if ((new Date()).getHours() === 0) {
         logger.info('Performing daily archive.');
         await archiveAuctions();
-    }
+    //}
 
     await fillNItems();
 

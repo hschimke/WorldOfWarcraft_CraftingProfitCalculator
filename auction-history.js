@@ -14,6 +14,8 @@ const sql_check_realm = 'SELECT COUNT(*) AS how_many FROM realms WHERE connected
 
 const ALL_PROFESSIONS = ['Jewelcrafting', 'Tailoring', 'Alchemy', 'Herbalism', 'Inscription', 'Enchanting', 'Blacksmithing', 'Mining', 'Engineering', 'Leatherworking', 'Skinning', 'Cooking'];
 
+const db_type = process.env.DATABASE_TYPE;
+
 const db = getDb('history');
 
 async function ingest(region, connected_realm) {
@@ -84,10 +86,10 @@ async function ingest(region, connected_realm) {
 
     if (!found) {
         const realm_detail = await getBlizConnectedRealmDetail(connected_realm, region);
-        const name = realm_detail.realms.reduce((acc,cur)=>{
+        const name = realm_detail.realms.reduce((acc, cur) => {
             return acc += `/${cur.name}`;
-        },'');
-        
+        }, '');
+
         await client.query(sql_insert_realm, [connected_realm, name.slice(1), region.toUpperCase()]);
     }
 
@@ -127,17 +129,17 @@ async function getAllBonuses(item, region) {
     };
 }
 
-async function fillNItems(fill_count=5){
+async function fillNItems(fill_count = 5) {
     logger.info(`Filling ${fill_count} items with details.`);
     const select_sql = 'SELECT item_id, region FROM items WHERE name ISNULL LIMIT $1';
     const update_sql = 'UPDATE items SET name = $1, craftable = $2 WHERE item_id = $3 AND region = $4';
     const client = await db.getClient();
     const rows = (await client.query(select_sql, [fill_count])).rows;
     await client.query('BEGIN TRANSACTION');
-    for(const item of rows){
-        const fetched_item = await getItemDetails(item.item_id,item.region);
-        const is_craftable = await checkIsCrafting(item.item_id,ALL_PROFESSIONS,item.region);
-        await client.query(update_sql, [fetched_item.name,is_craftable.craftable, item.item_id, item.region]);
+    for (const item of rows) {
+        const fetched_item = await getItemDetails(item.item_id, item.region);
+        const is_craftable = await checkIsCrafting(item.item_id, ALL_PROFESSIONS, item.region);
+        await client.query(update_sql, [fetched_item.name, is_craftable.craftable, item.item_id, item.region]);
         logger.debug(`Updated item: ${item.item_id}:${item.region} with name: '${fetched_item.name}' and craftable: ${is_craftable.craftable}`);
     }
     await client.query('COMMIT TRANSACTION');
@@ -152,10 +154,10 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
     const sql_build_distinct_dtm = 'SELECT DISTINCT downloaded FROM auctions';
     const sql_build_price_map = 'SELECT price, count(price) AS sales_at_price, sum(quantity) AS quantity_at_price FROM auctions';
     const sql_group_by_price_addin = 'GROUP BY price';
-    const sql_build_min = 'SELECT MIN(price) AS MIN_PRICE FROM auctions';
-    const sql_build_max = 'SELECT MAX(price) AS MAX_PRICE FROM auctions';
-    const sql_build_avg = 'SELECT SUM(price*quantity)/SUM(quantity) AS AVG_PRICE FROM auctions';
-    const sql_build_latest_dtm = 'SELECT MAX(downloaded) AS LATEST_DOWNLOAD FROM auctions';
+    const sql_build_min = 'SELECT MIN(price) AS min_price FROM auctions';
+    const sql_build_max = 'SELECT MAX(price) AS max_price FROM auctions';
+    const sql_build_avg = 'SELECT SUM(price*quantity)/SUM(quantity) AS avg_price FROM auctions';
+    const sql_build_latest_dtm = 'SELECT MAX(downloaded) AS latest_download FROM auctions';
     const sql_addins = [];
     const value_searches = [];
     if (item !== undefined) {
@@ -213,7 +215,8 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
             bonuses.forEach(b => {
                 if (b !== null && b !== '') {
                     logger.debug(`Add bonus ${b} in (select json_each.value from json_each(bonuses))`);
-                    sql_addins.push(`${get_place_marker()} IN (SELECT json_array_elements_text(bonuses::json)::numeric)`);
+                    const json_query = db_type === 'sqlite3' ? `${get_place_marker()} IN (SELECT json_each.value FROM json_each(bonuses))` : `${get_place_marker()} IN (SELECT json_array_elements_text(bonuses::json)::numeric)`
+                    sql_addins.push(json_query);
                     value_searches.push(Number(b));
                 }
             });
@@ -251,7 +254,7 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
     //const client = await db.getClient();
 
     const min_value = (await db.get(min_sql, value_searches)).min_price;
-    const max_value = (await db.get( max_sql, value_searches)).max_price;
+    const max_value = (await db.get(max_sql, value_searches)).max_price;
     const avg_value = (await db.get(avg_sql, value_searches)).avg_price;
     const latest_dl_value = (await db.get(latest_dl_sql, value_searches)).latest_download;
 
@@ -274,7 +277,7 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
         if (!(archive.downloaded in archived_results)) {
             archived_results[archive.downloaded] = [];
         }
-        archived_results[archive.downloaded].push(archive.summary);
+        archived_results[archive.downloaded].push((db_type === 'pg' ? archive.summary : JSON.parse(archive.summary)));
     }
 
     const archive_build = [];
@@ -347,7 +350,7 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
         return construct_sql;
     };
 
-    function get_place_marker(){
+    function get_place_marker() {
         return `$${value_searches.length + 1}`;
     };
 }
@@ -363,9 +366,9 @@ async function archiveAuctions() {
     const sql_delete_archived_auctions = 'DELETE FROM auctions WHERE downloaded BETWEEN $1 AND $2';
 
     const sql_price_map = 'SELECT price, count(price) AS sales_at_price, sum(quantity) AS quantity_at_price FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5 GROUP BY price';
-    const sql_min = 'SELECT MIN(price) AS MIN_PRICE FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5';
-    const sql_max = 'SELECT MAX(price) AS MAX_PRICE FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5';
-    const sql_avg = 'SELECT SUM(price*quantity)/SUM(quantity) AS AVG_PRICE FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5';
+    const sql_min = 'SELECT MIN(price) AS min_price FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5';
+    const sql_max = 'SELECT MAX(price) AS max_price FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5';
+    const sql_avg = 'SELECT SUM(price*quantity)/SUM(quantity) AS avg_price FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5';
 
     const client = await db.getClient();
 
@@ -399,7 +402,7 @@ async function archiveAuctions() {
                 }, 0);
 
                 // Add the archive
-                await db.run(sql_insert_auction_archive, [item.item_id, quantity, summary, start_ticks, item.connected_realm_id, item.bonuses]);
+                await db.run(sql_insert_auction_archive, [item.item_id, quantity, (db_type === 'pg' ? summary : JSON.stringify(summary)), start_ticks, item.connected_realm_id, item.bonuses]);
             }
             // Delete the archived data
             await db.run(sql_delete_archived_auctions, [start_ticks, end_ticks]);
@@ -420,12 +423,12 @@ async function addRealmToScanList(realm_name, realm_region) {
 
 async function removeRealmFromScanList(realm_name, realm_region) {
     const sql = 'DELETE FROM realm_scan_list WHERE connected_realm_id = $1 AND region = $2';
-    await db.run( sql, [await getConnectedRealmId(realm_name, realm_region), realm_region.toUpperCase()]);
+    await db.run(sql, [await getConnectedRealmId(realm_name, realm_region), realm_region.toUpperCase()]);
 }
 
 async function scanRealms() {
     const getScannableRealms = 'SELECT connected_realm_id, region FROM realm_scan_list';
-    const realm_scan_list = await db.all( getScannableRealms, []);
+    const realm_scan_list = await db.all(getScannableRealms, []);
     await Promise.all(realm_scan_list.map((realm) => {
         return ingest(realm.region, realm.connected_realm_id);
     }));
