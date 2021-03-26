@@ -69,7 +69,7 @@ async function ingest(region, connected_realm) {
         if (!found) {
             //const item_detail = { name: null }; //await getItemDetails(item, region);
             //const craftable = false; //(await checkIsCrafting(item, ALL_PROFESSIONS, region)).craftable;
-            await client.query(sql_insert_item, [item, region, null, false]);
+            await db.run(sql_insert_item, [item, region, null, false]);
         }
     }
 
@@ -86,7 +86,7 @@ async function ingest(region, connected_realm) {
             return acc += `/${cur.name}`;
         },'');
         
-        await client.query(sql_insert_realm, [connected_realm, name.slice(1), region.toUpperCase()]);
+        await db.run(sql_insert_realm, [connected_realm, name.slice(1), region.toUpperCase()]);
     }
 
     await Promise.all(insert_values_array.map((values) => {
