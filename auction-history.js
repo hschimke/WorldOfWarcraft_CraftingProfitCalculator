@@ -128,7 +128,6 @@ async function fillNItems(fill_count=5){
     logger.info(`Filling ${fill_count} items with details.`);
     const select_sql = 'SELECT item_id, region FROM items WHERE name ISNULL LIMIT ?';
     const update_sql = 'UPDATE items SET name = ?, craftable = ? WHERE item_id = ? AND region = ?';
-    //const client = await db.getClient();
     const rows = await db.all(select_sql, [fill_count]);
     await db.run('BEGIN TRANSACTION');
     for(const item of rows){
@@ -138,7 +137,6 @@ async function fillNItems(fill_count=5){
         logger.debug(`Updated item: ${item.item_id}:${item.region} with name: '${fetched_item.name}' and craftable: ${is_craftable.craftable}`);
     }
     await db.run('COMMIT TRANSACTION');
-    //client.release();
 }
 
 
