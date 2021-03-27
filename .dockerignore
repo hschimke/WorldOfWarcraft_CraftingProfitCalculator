@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log
+
+client/node_modules
+
+.env
+
+formatted_output
+intermediate_output.json
+raw_output.json
+
+databases
