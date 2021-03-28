@@ -211,7 +211,7 @@ function getDb(db_name) {
                 logger.silly(sqlToString(queries[i], value_sets[i]));
                 await client.query(queries[i], value_sets[i]);
             }
-            client.release();
+            await client.release();
         };
         context.getClient = async function () {
             const client = await this.pool.connect();
