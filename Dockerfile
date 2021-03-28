@@ -3,37 +3,35 @@ FROM node:15
 # Create app directory
 WORKDIR /usr/src/wow_cpc
 
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# where available (npm@5+)
-COPY package*.json ./
-
-RUN npm install
-# If you are building your code for production
-# RUN npm ci --only=production
+COPY --chown=node:node package*.json ./
 
 WORKDIR /usr/src/wow_cpc/client
 
-COPY client/package*.json ./
-
-RUN npm install
+COPY --chown=node:node client/package*.json ./
 
 WORKDIR /usr/src/wow_cpc
 
-COPY . .
+RUN npm install && cd client && npm install
 
-RUN chown -R node ./
+WORKDIR /usr/src/wow_cpc
 
-ENV LOG_LEVEL=debug
-ENV SERVER_PORT=3001
-ENV CACHE_DB_FN=./databases/cache.db
-ENV HISTORY_DB_FN=./databases/historical_auctions.db
-ENV DATABASE_TYPE=sqlite3
+COPY --chown=node:node . .
+
+WORKDIR /usr/src/wow_cpc/client
+RUN npm run build && mv ./build ../html
+
+WORKDIR /usr/src/wow_cpc
+
+#RUN chown -R node ./
+
+ENV LOG_LEVEL=debug SERVER_PORT=8080 CACHE_DB_FN="./databases/cache.db" HISTORY_DB_FN="./databases/historical_auctions.db" DATABASE_TYPE=sqlit3 STANDALONE_CONTAINER=standalone
+
+RUN mkdir databases
+RUN chown -R node ./databases
+VOLUME ./databases
+
+EXPOSE 8080
 
 USER node
-
-RUN npm run fill-cache
-
-ENV STANDALONE_CONTAINER=standalone
 
 CMD ["node","server.js"]
