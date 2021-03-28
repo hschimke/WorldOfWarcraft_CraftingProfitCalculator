@@ -28,7 +28,7 @@ ENV LOG_LEVEL=debug SERVER_PORT=8080 CACHE_DB_FN="./databases/cache.db" HISTORY_
 
 RUN mkdir databases
 RUN chown -R node ./databases
-VOLUME ./databases
+VOLUME /usr/src/wow_cpc/databases
 
 EXPOSE 8080
 
