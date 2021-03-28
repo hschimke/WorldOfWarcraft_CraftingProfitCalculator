@@ -122,7 +122,6 @@ async function cacheSet(namespace, key, data) {
             [[], [namespace, key], [namespace, key, save_data, cached], []]);
     } catch (e) {
         logger.error('Failed to set up cache value', e);
-        success = false;
     }
     //logger.profile('cacheSet');
 }
