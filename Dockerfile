@@ -1,6 +1,6 @@
 FROM node:15
 
-ENV LOG_LEVEL=debug SERVER_PORT=8080 CACHE_DB_FN="./databases/cache.db" HISTORY_DB_FN="./databases/historical_auctions.db" DATABASE_TYPE=sqlit3 STANDALONE_CONTAINER=standalone
+ENV LOG_LEVEL=debug SERVER_PORT=8080 CACHE_DB_FN="./databases/cache.db" HISTORY_DB_FN="./databases/historical_auctions.db" DATABASE_TYPE=sqlit3 STANDALONE_CONTAINER=standalone DOCKERIZED=true
 
 # Create app directory
 WORKDIR /usr/src/wow_cpc

@@ -27,4 +27,11 @@ if (process.env.NODE_ENV !== 'production') {
     }));
 }
 
+if (process.env.DOCKERIZED === 'true') {
+    parentLogger.add(new winston.transports.Console({
+        format: winston.format.simple(),
+        level: lowest_level_to_report,
+    }));
+}
+
 export { parentLogger };
