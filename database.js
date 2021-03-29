@@ -85,7 +85,7 @@ function sqlToString(sql, values) {
     return `${sql} : ${value_str}`;
 }
 
-async function checkDBVersoin(){
+async function checkDBVersion(){
 
 }
 

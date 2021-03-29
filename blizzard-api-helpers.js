@@ -78,13 +78,13 @@ async function getItemId(region, item_name) {
         }
     } else {
         // We didn't get any results, that's an error
-        cacheSet(ITEM_SEARCH_CACHE, item_name, -1);
+        await cacheSet(ITEM_SEARCH_CACHE, item_name, -1);
         logger.error(`No items match search ${item_name}`);
         throw (new Error('No Results'));
     }
 
     //if (item_id > 0) {
-    cacheSet(ITEM_SEARCH_CACHE, item_name, item_id);
+    await cacheSet(ITEM_SEARCH_CACHE, item_name, item_id);
     //}
 
     return item_id;
@@ -173,7 +173,7 @@ async function getConnectedRealmId(server_name, server_region) {
         }
     }
 
-    cacheSet(CONNECTED_REALM_ID_CACHE, connected_realm_key, realm_id);
+    await cacheSet(CONNECTED_REALM_ID_CACHE, connected_realm_key, realm_id);
     logger.info(`Found Connected Realm ID: ${realm_id} for ${server_region} ${server_name}`);
 
     // Return that connected realm ID
@@ -200,7 +200,7 @@ async function getItemDetails(item_id, region) {
     },
         profession_item_detail_uri);
 
-    cacheSet(ITEM_DATA_CACHE, key, result);
+    await cacheSet(ITEM_DATA_CACHE, key, result);
     return result;
 }
 
@@ -221,7 +221,7 @@ async function getBlizProfessionsList(region) {
         'locale': 'en_US'
     }, profession_list_uri);
 
-    cacheSet(PROFESSION_LIST_CACHE, key, result);
+    await cacheSet(PROFESSION_LIST_CACHE, key, result);
 
     return result;
 }
@@ -245,7 +245,7 @@ async function getBlizProfessionDetail(profession_id, region) {
     },
         profession_detail_uri);
 
-    cacheSet(PROFESSION_DETAIL_CACHE, key, result);
+    await cacheSet(PROFESSION_DETAIL_CACHE, key, result);
     return result;
 }
 
@@ -263,7 +263,7 @@ async function getBlizConnectedRealmDetail(connected_realm_id, region) {
     },
         connected_realm_detail_uri);
 
-    cacheSet(COMPOSITE_REALM_NAME_CACHE, key, result);
+    await cacheSet(COMPOSITE_REALM_NAME_CACHE, key, result);
     return result;
 }
 
@@ -289,7 +289,7 @@ async function getBlizSkillTierDetail(profession_id, skillTier_id, region) {
     },
         profession_skill_tier_detail_uri);
 
-    cacheSet(PROFESSION_SKILL_TIER_DETAILS_CACHE, key, result);
+    await cacheSet(PROFESSION_SKILL_TIER_DETAILS_CACHE, key, result);
 
     return result;
 }
@@ -316,7 +316,7 @@ async function getBlizRecipeDetail(recipe_id, region) {
     },
         profession_recipe_uri);
 
-    cacheSet(PROFESSION_RECIPE_DETAIL_CACHE, key, result);
+    await cacheSet(PROFESSION_RECIPE_DETAIL_CACHE, key, result);
 
     return result;
 }
@@ -348,7 +348,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
     if ('description' in item_detail) {
         if (item_detail.description.includes('vendor')) {
             logger.debug('Skipping vendor recipe');
-            cacheSet(CRAFTABLE_BY_PROFESSION_SET_CACHE, key, recipe_options);
+            await cacheSet(CRAFTABLE_BY_PROFESSION_SET_CACHE, key, recipe_options);
             return recipe_options;
         }
     }
@@ -380,7 +380,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
         recipe_options.craftable = recipe_options.craftable || profession_crafting_check.craftable;
     }
 
-    cacheSet(CRAFTABLE_BY_PROFESSION_SET_CACHE, key, recipe_options);
+    await cacheSet(CRAFTABLE_BY_PROFESSION_SET_CACHE, key, recipe_options);
     //{craftable: found_craftable, recipe_id: found_recipe_id, crafting_profession: found_profession};
     return recipe_options;
 }
@@ -424,7 +424,7 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
         return checkProfessionTierCrafting(tier, region);
     }));
 
-    cacheSet(CRAFTABLE_BY_SINGLE_PROFESSION_CACHE, cache_key, profession_recipe_options);
+    await cacheSet(CRAFTABLE_BY_SINGLE_PROFESSION_CACHE, cache_key, profession_recipe_options);
 
     return profession_recipe_options;
 
@@ -476,16 +476,16 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
                                 logger.debug(`Checking if uncraftable item ${item_detail.id} is craftable with a synthetic item-recipe connection.`);
                                 const slot = getSlotName(cat);
                                 const synthetic_item_name = `Enchant ${slot} - ${rec.name}`;
-                                logger.debug(`Generated synthetic item name ${synthetic_item_name}.`);
+                                logger.silly(`Generated synthetic item name ${synthetic_item_name}.`);
                                 const synthetic_item_id = await getItemId(region, synthetic_item_name);
-                                logger.debug(`Synthetic item ${synthetic_item_name} has id ${synthetic_item_id}`);
+                                logger.silly(`Synthetic item ${synthetic_item_name} has id ${synthetic_item_id}`);
                                 if (synthetic_item_id === item_id) {
                                     crafty = true;
                                     logger.debug(`Synthetic item ${synthetic_item_name} match for ${item_detail.name}.`);
                                 }
                             }
                             else {
-                                logger.debug(`Skipping synthetic for ${crafty} (${!crafty}) ${skill_tier.name} (${skill_tier.name.includes('Enchanting')}) ${cat.name} (${cat.name.includes('Enchantments')}) ${rec.name}`);
+                                logger.silly(`Skipping synthetic for ${crafty} (${!crafty}) ${skill_tier.name} (${skill_tier.name.includes('Enchanting')}) ${cat.name} (${cat.name.includes('Enchantments')}) ${rec.name}`);
                             }
 
                             if (crafty) {
@@ -573,7 +573,7 @@ async function getAuctionHouse(server_id, server_region) {
         },
         auction_house_fetch_uri);
 
-    cacheSet(AUCTION_DATA_CACHE, server_id, ah);
+    await cacheSet(AUCTION_DATA_CACHE, server_id, ah);
 
     return ah;
 }
