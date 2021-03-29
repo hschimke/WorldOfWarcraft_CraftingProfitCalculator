@@ -84,7 +84,7 @@ async function getItemId(region, item_name) {
     }
 
     //if (item_id > 0) {
-        cacheSet(ITEM_SEARCH_CACHE, item_name, item_id);
+    cacheSet(ITEM_SEARCH_CACHE, item_name, item_id);
     //}
 
     return item_id;
@@ -114,14 +114,14 @@ async function getItemId(region, item_name) {
  * @param {string} region Region to return list of connected realms.
  * @param {object} token An OATH access token to use for the request.
  */
-async function getAllConnectedRealms(region, token){
+async function getAllConnectedRealms(region, token) {
     const list_connected_realms_api = '/data/wow/connected-realm/index';
     const list_connected_realms_form = {
         'namespace': 'dynamic-us',
         'locale': 'en_US'
     };
 
-    return  getBlizzardAPIResponse(
+    return getBlizzardAPIResponse(
         region,
         token,
         list_connected_realms_form,
@@ -261,7 +261,7 @@ async function getBlizConnectedRealmDetail(connected_realm_id, region) {
         'namespace': 'dynamic-us',
         'locale': 'en_US'
     },
-    connected_realm_detail_uri);
+        connected_realm_detail_uri);
 
     cacheSet(COMPOSITE_REALM_NAME_CACHE, key, result);
     return result;
@@ -420,7 +420,9 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
     logger.debug(`Scanning profession: ${profession_detail.name}`);
 
     // checkProfessionTierCrafting on each crafting level, concurrently.
-    await Promise.all(crafting_levels.map(checkProfessionTierCrafting));
+    await Promise.all(crafting_levels.map((tier) => {
+        return checkProfessionTierCrafting(tier, region);
+    }));
 
     cacheSet(CRAFTABLE_BY_SINGLE_PROFESSION_CACHE, cache_key, profession_recipe_options);
 
@@ -430,7 +432,7 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
      * Scan a tier of a given profession to see if it can craft an item.
      * @param skill_tier The tier level to check.
      */
-    async function checkProfessionTierCrafting(skill_tier) {
+    async function checkProfessionTierCrafting(skill_tier, region) {
         let check_scan_tier = skill_tier.name.includes('Shadowlands');
         if (!exclude_before_shadowlands) {
             check_scan_tier = true;
@@ -451,7 +453,7 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
                     for (let rec of cat.recipes) {
                         const recipe = await getBlizRecipeDetail(rec.id, region);
                         recipes_checked++;
-                        //logger.debug(`Check recipe ${recipe.name}`);
+                        logger.silly(`Check recipe ${recipe.name}`);
                         if (!(recipe.name.includes('Prospect') || recipe.name.includes('Mill'))) {
                             let crafty = false;
                             if ('alliance_crafted_item' in recipe) {
@@ -469,6 +471,23 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
                                     crafty = true;
                                 }
                             }
+
+                            if (!crafty && skill_tier.name.includes('Enchanting') && (cat.name.includes('Enchantments') || cat.name.includes('Echantments'))) {
+                                logger.debug(`Checking if uncraftable item ${item_detail.id} is craftable with a synthetic item-recipe connection.`);
+                                const slot = getSlotName(cat);
+                                const synthetic_item_name = `Enchant ${slot} - ${rec.name}`;
+                                logger.debug(`Generated synthetic item name ${synthetic_item_name}.`);
+                                const synthetic_item_id = await getItemId(region, synthetic_item_name);
+                                logger.debug(`Synthetic item ${synthetic_item_name} has id ${synthetic_item_id}`);
+                                if (synthetic_item_id === item_id) {
+                                    crafty = true;
+                                    logger.debug(`Synthetic item ${synthetic_item_name} match for ${item_detail.name}.`);
+                                }
+                            }
+                            else {
+                                logger.debug(`Skipping synthetic for ${crafty} (${!crafty}) ${skill_tier.name} (${skill_tier.name.includes('Enchanting')}) ${cat.name} (${cat.name.includes('Enchantments')}) ${rec.name}`);
+                            }
+
                             if (crafty) {
                                 logger.info(`Found recipe (${recipe.id}): ${recipe.name} for (${item_detail.id}) ${item_detail.name}`);
 
@@ -482,7 +501,7 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
                                 profession_recipe_options.craftable = true;
                             }
                         } else {
-                            //logger.debug(`Skipping Recipe: (${recipe.id}) "${recipe.name}"`);
+                            logger.silly(`Skipping Recipe: (${recipe.id}) "${recipe.name}"`);
                         }
                     }
                 }
@@ -491,6 +510,32 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
             }
             logger.debug(`Checked ${recipes_checked} recipes in ${checked_categories} categories for ${item_id} in ${skill_tier.name}`);
         }
+    }
+}
+
+function getSlotName(category) {
+    const name = category.name;
+
+    let raw_slot_name = name;
+
+    if(name.includes('Enchantments')){
+        raw_slot_name = name.slice(0, name.lastIndexOf('Enchantments') - 1);
+    }else if(name.includes('Echantments')){
+        raw_slot_name = name.slice(0, name.lastIndexOf('Echantments') - 1);
+    }
+
+    switch (raw_slot_name) {
+        case 'Boot':
+            return 'Boots';
+        case 'Glove':
+            return 'Gloves';
+        case 'Chest':
+        case 'Cloak':
+        case 'Bracer':
+        case 'Ring':
+        case 'Weapon':
+        default:
+            return raw_slot_name;
     }
 }
 
@@ -533,6 +578,8 @@ async function getAuctionHouse(server_id, server_region) {
     return ah;
 }
 
-export { getItemId, getConnectedRealmId, getItemDetails, getBlizProfessionsList, getBlizProfessionDetail,
+export {
+    getItemId, getConnectedRealmId, getItemDetails, getBlizProfessionsList, getBlizProfessionDetail,
     getBlizSkillTierDetail, getBlizRecipeDetail, checkIsCrafting, getCraftingRecipe, getAuctionHouse,
-    getBlizConnectedRealmDetail };
+    getBlizConnectedRealmDetail
+};
