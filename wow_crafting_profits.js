@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import { bonuses_cache, cacheCheck, cacheGet, cacheSet, rank_mappings_cache, saveCache, shopping_recipe_exclusion_list } from './cached-data-sources.js';
 import { parentLogger } from './logging.js';
-import { getItemId, getConnectedRealmId, getItemDetails, getBlizRecipeDetail, checkIsCrafting, getCraftingRecipe, getAuctionHouse } from './blizzard-api-helpers.js';
+import { getItemId, getConnectedRealmId, getItemDetails, getBlizRecipeDetail, checkIsCrafting, getCraftingRecipe, getAuctionHouse, buildCyclicRecipeList } from './blizzard-api-helpers.js';
 import { shutdownApiManager } from './blizzard-api-call.js';
 import { textFriendlyOutputFormat } from './client/src/Shared/text-output-helpers.mjs';
 import { getAuthorizationToken } from './blizz_oath.js';
@@ -603,6 +603,7 @@ async function run(region, server, professions, item, json_config, count) {
     let formatted_data = 'NO DATA';
 
     try {
+        //console.log( await(buildCyclicRecipeList(region)));
         price_data = await performProfitAnalysis(region, server, professions, item, count);
         intermediate_data = await generateOutputFormat(price_data, region);
         intermediate_data.shopping_lists = constructShoppingList(intermediate_data, json_config);

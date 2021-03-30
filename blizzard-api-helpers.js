@@ -2,6 +2,7 @@ import { getBlizzardAPIResponse, getBlizzardRawUriResponse } from './blizzard-ap
 import { getAuthorizationToken } from './blizz_oath.js';
 import { parentLogger } from './logging.js';
 import { cacheCheck, cacheGet, cacheSet, saveCache } from './cached-data-sources.js';
+import { ALL_PROFESSIONS } from './shared-constants.js';
 
 const logger = parentLogger.child();
 
@@ -518,9 +519,9 @@ function getSlotName(category) {
 
     let raw_slot_name = name;
 
-    if(name.includes('Enchantments')){
+    if (name.includes('Enchantments')) {
         raw_slot_name = name.slice(0, name.lastIndexOf('Enchantments') - 1);
-    }else if(name.includes('Echantments')){
+    } else if (name.includes('Echantments')) {
         raw_slot_name = name.slice(0, name.lastIndexOf('Echantments') - 1);
     }
 
@@ -536,6 +537,54 @@ function getSlotName(category) {
         case 'Weapon':
         default:
             return raw_slot_name;
+    }
+}
+
+async function buildCyclicRecipeList(region) {
+
+    const profession_list = await getBlizProfessionsList(region);
+
+    const link = [];
+
+    for (const prof of profession_list.professions) {
+        const profession = await getBlizProfessionDetail(prof.id, region);
+        const checked_set = new Set();
+        for (const skill_tier of profession.skill_tiers) {
+            const skill_tier_detail = await getBlizSkillTierDetail(profession.id, skill_tier.id, region);
+            for (const sk_category of skill_tier_detail.categories) {
+                for (const sk_recipe of sk_category.recipes) {
+                    const recipe = await getBlizRecipeDetail(sk_recipe.id, region);
+                    if (!checked_set.has(recipe.id)) {
+                        checked_set.add(recipe.id);
+                        if (('reagents' in recipe) && recipe.reagents.length === 1) {
+                            // Go through them all again
+                            for (const sk_recheck_category of skill_tier_detail.categories) {
+                                for (const sk_recheck_recipe of sk_recheck_category.recipes) {
+                                    const recheck_recipe = await getBlizRecipeDetail(sk_recheck_recipe.id, region);
+                                    if (('reagents' in recheck_recipe) && recheck_recipe.reagents.length === 1 && !checked_set.has(recheck_recipe.id)) {
+                                        if (recipe.id == recheck_recipe.reagents[0].id) {
+                                            if (recipe.reagents[0].id == recheck_recipe.id) {
+                                                logger.debug(`Found cyclic link for ${recipe.name} (${recipe.id}) and ${recheck_recipe.name} (${recheck_recipe.id})`)
+                                                links.push([recipe.id, recheck_recipe.id]);
+                                                checked_set.add(recheck_recipe.id);
+                                            }
+                                        }
+                                    }else{
+                                        checked_set.add(recheck_recipe.id);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return links;
+
+    async function buildProfessionCyclicList(profession) {
+
     }
 }
 
@@ -581,5 +630,5 @@ async function getAuctionHouse(server_id, server_region) {
 export {
     getItemId, getConnectedRealmId, getItemDetails, getBlizProfessionsList, getBlizProfessionDetail,
     getBlizSkillTierDetail, getBlizRecipeDetail, checkIsCrafting, getCraftingRecipe, getAuctionHouse,
-    getBlizConnectedRealmDetail
+    getBlizConnectedRealmDetail, buildCyclicRecipeList
 };

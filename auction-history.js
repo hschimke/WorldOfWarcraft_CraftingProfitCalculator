@@ -1,6 +1,7 @@
 import { getAuctionHouse, getConnectedRealmId, checkIsCrafting, getItemId, getItemDetails, getBlizConnectedRealmDetail } from './blizzard-api-helpers.js';
 import { parentLogger } from './logging.js';
 import { getDb } from './database.js';
+import { ALL_PROFESSIONS } from './shared-constants.js';
 
 const logger = parentLogger.child();
 
@@ -11,8 +12,6 @@ const sql_insert_realm = 'INSERT INTO realms(connected_realm_id, name, region) V
 
 const sql_check_item = 'SELECT COUNT(*) AS how_many FROM items WHERE item_id = $1 AND region = $2';
 const sql_check_realm = 'SELECT COUNT(*) AS how_many FROM realms WHERE connected_realm_id = $1 AND region = $2';
-
-const ALL_PROFESSIONS = ['Jewelcrafting', 'Tailoring', 'Alchemy', 'Herbalism', 'Inscription', 'Enchanting', 'Blacksmithing', 'Mining', 'Engineering', 'Leatherworking', 'Skinning', 'Cooking'];
 
 const db_type = process.env.DATABASE_TYPE;
 
