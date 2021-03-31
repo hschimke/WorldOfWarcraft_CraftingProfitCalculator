@@ -85,13 +85,13 @@ function sqlToString(sql, values) {
     return `${sql} : ${value_str}`;
 }
 
-async function checkDBVersion() {
+/*async function checkDBVersion() {
 
 }
 
 async function performDBMigration() {
 
-}
+}*/
 
 async function start() {
     if (!dbs_open) {
@@ -137,6 +137,9 @@ function shutdown() {
             logger.info(`Close DB ${key}`);
             value.run('PRAGMA optimize', (err) => {
                 value.close();
+                if(err){
+                    logger.error(err);
+                }
             });
         }
     } else if (db_type === 'pg') {
@@ -245,7 +248,7 @@ async function getDb(db_name) {
             const result = await this.query(query, values);
             return result.rows;
         }
-        context.run = context.query.bind(context);;
+        context.run = context.query.bind(context);
     }
 
     return context;
