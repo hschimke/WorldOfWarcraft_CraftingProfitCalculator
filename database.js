@@ -85,46 +85,48 @@ function sqlToString(sql, values) {
     return `${sql} : ${value_str}`;
 }
 
-async function checkDBVersion(){
+async function checkDBVersion() {
 
 }
 
-async function performDBMigration(){
-    
+async function performDBMigration() {
+
 }
 
 async function start() {
-    if (db_type === 'sqlite3') {
-        const cache_fn = process.env.CACHE_DB_FN;
-        const history_fn = process.env.HISTORY_DB_FN;
-        dbs.set('cache', new sqlite3.Database(cache_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE));
-        dbs.set('history', new sqlite3.Database(history_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE));
+    if (!dbs_open) {
+        if (db_type === 'sqlite3') {
+            const cache_fn = process.env.CACHE_DB_FN;
+            const history_fn = process.env.HISTORY_DB_FN;
+            dbs.set('cache', new sqlite3.Database(cache_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE));
+            dbs.set('history', new sqlite3.Database(history_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE));
 
-        dbs.get('history').serialize(() => {
-            for (const query of history_sql_run_at_open_sq3) {
-                dbs.get('history').run(query);
+            dbs.get('history').serialize(() => {
+                for (const query of history_sql_run_at_open_sq3) {
+                    dbs.get('history').run(query);
+                }
+            });
+
+            dbs.get('cache').serialize(() => {
+                for (const query of cache_sql_run_at_open_sq3) {
+                    dbs.get('cache').run(query);
+                }
+            });
+        } else if (db_type === 'pg') {
+            l_pool = new Pool();
+            const client = await l_pool.connect();
+
+            for (const query of history_sql_run_at_open_pg) {
+                await client.query(query);
             }
-        });
-
-        dbs.get('cache').serialize(() => {
-            for (const query of cache_sql_run_at_open_sq3) {
-                dbs.get('cache').run(query);
+            for (const query of cache_sql_run_at_open_pg) {
+                await client.query(query);
             }
-        });
-    } else if (db_type === 'pg') {
-        l_pool = new Pool();
-        const client = await l_pool.connect();
+            await client.release();
+        }
 
-        for (const query of history_sql_run_at_open_pg) {
-            await client.query(query);
-        }
-        for (const query of cache_sql_run_at_open_pg) {
-            await client.query(query);
-        }
-        await client.release();
+        dbs_open = true;
     }
-
-    dbs_open = true;
 }
 
 function shutdown() {
@@ -144,7 +146,8 @@ function shutdown() {
     }
 }
 
-function getDb(db_name) {
+async function getDb(db_name) {
+    await start();
     const context = function () { };
     if (db_type === 'sqlite3') {
         context.db = dbs.get(db_name);
@@ -265,7 +268,5 @@ process.on('SIGINT', () => {
         shutdown();
     }
 });
-
-await start();
 
 export { getDb };

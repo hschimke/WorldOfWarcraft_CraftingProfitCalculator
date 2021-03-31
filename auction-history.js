@@ -15,9 +15,8 @@ const sql_check_realm = 'SELECT COUNT(*) AS how_many FROM realms WHERE connected
 
 const db_type = process.env.DATABASE_TYPE;
 
-const db = getDb('history');
-
 async function ingest(region, connected_realm) {
+    const db = await getDb('history');
     // Get auction house
     const auction_house = await getAuctionHouse(connected_realm, region);
     const downloaded = Date.now();
@@ -101,6 +100,7 @@ async function ingest(region, connected_realm) {
 }
 
 async function getAllBonuses(item, region) {
+    const db = await getDb('history');
     logger.debug(`Fetching bonuses for ${item}`);
     const sql = 'SELECT DISTINCT bonuses FROM auctions WHERE item_id = $1';
 
@@ -129,6 +129,7 @@ async function getAllBonuses(item, region) {
 }
 
 async function fillNItems(fill_count = 5) {
+    const db = await getDb('history');
     logger.info(`Filling ${fill_count} items with details.`);
     const select_sql = 'SELECT item_id, region FROM items WHERE name ISNULL LIMIT $1';
     const update_sql = 'UPDATE items SET name = $1, craftable = $2 WHERE item_id = $3 AND region = $4';
@@ -147,6 +148,7 @@ async function fillNItems(fill_count = 5) {
 
 
 async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
+    const db = await getDb('history');
     logger.debug(`getAuctions(${item}, ${realm}, ${region}, ${bonuses}, ${start_dtm}, ${end_dtm})`);
     const sql_build = 'SELECT * FROM auctions';
     const sql_archive_build = 'SELECT downloaded, summary FROM auction_archive';
@@ -355,6 +357,7 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
 }
 
 async function archiveAuctions() {
+    const db = await getDb('history');
     const backstep_time_diff = (6.048e+8); // One Week
     //const backstep_time_diff = 1.21e+9; // Two weeks
     const day_diff = 8.64e+7;
@@ -416,16 +419,19 @@ async function archiveAuctions() {
 }
 
 async function addRealmToScanList(realm_name, realm_region) {
+    const db = await getDb('history');
     const sql = 'INSERT INTO realm_scan_list(connected_realm_id,region) VALUES($1,$2)';
     await db.run(sql, [await getConnectedRealmId(realm_name, realm_region), realm_region.toUpperCase()]);
 }
 
 async function removeRealmFromScanList(realm_name, realm_region) {
+    const db = await getDb('history');
     const sql = 'DELETE FROM realm_scan_list WHERE connected_realm_id = $1 AND region = $2';
     await db.run(sql, [await getConnectedRealmId(realm_name, realm_region), realm_region.toUpperCase()]);
 }
 
 async function scanRealms() {
+    const db = await getDb('history');
     const getScannableRealms = 'SELECT connected_realm_id, region FROM realm_scan_list';
     const realm_scan_list = await db.all(getScannableRealms, []);
     await Promise.all(realm_scan_list.map((realm) => {

@@ -1,4 +1,4 @@
-import fs from 'fs/promises';
+import {promises as fs} from 'fs';
 import { bonuses_cache, cacheCheck, cacheGet, cacheSet, rank_mappings_cache, saveCache, shopping_recipe_exclusion_list } from './cached-data-sources.js';
 import { parentLogger } from './logging.js';
 import { getItemId, getConnectedRealmId, getItemDetails, getBlizRecipeDetail, checkIsCrafting, getCraftingRecipe, getAuctionHouse, buildCyclicRecipeList } from './blizzard-api-helpers.js';
