@@ -1,4 +1,4 @@
-import { scanRealms, archiveAuctions, addRealmToScanList, fillNItems } from './auction-history.js';
+import { scanRealms, archiveAuctions, fillNItems } from './auction-history.js';
 import { parentLogger } from './logging.js';
 
 const logger = parentLogger.child();
@@ -29,7 +29,7 @@ async function job() {
 switch (server_mode) {
     case 'hourly':
         logger.info('Started in default mode. Running job and exiting.');
-        await job();
+        job();
         break;
     case 'standalone':
         logger.info('Started in standalone container mode. Scheduling hourly job.');

@@ -107,7 +107,7 @@ async function getItemId(region, item_name) {
             }
         }
         return found_item_id;
-    };
+    }
 }
 
 /**

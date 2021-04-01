@@ -150,7 +150,7 @@ async function fillNItems(fill_count = 5) {
 async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
     const db = await getDb('history');
     logger.debug(`getAuctions(${item}, ${realm}, ${region}, ${bonuses}, ${start_dtm}, ${end_dtm})`);
-    const sql_build = 'SELECT * FROM auctions';
+    //const sql_build = 'SELECT * FROM auctions';
     const sql_archive_build = 'SELECT downloaded, summary FROM auction_archive';
     const sql_build_distinct_dtm = 'SELECT DISTINCT downloaded FROM auctions';
     const sql_build_price_map = 'SELECT price, count(price) AS sales_at_price, sum(quantity) AS quantity_at_price FROM auctions';
@@ -240,7 +240,7 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
         // No latest fetched date time
     }
 
-    const run_sql = build_sql_with_addins(sql_build, sql_addins);
+    //const run_sql = build_sql_with_addins(sql_build, sql_addins);
     const min_sql = build_sql_with_addins(sql_build_min, sql_addins);
     const max_sql = build_sql_with_addins(sql_build_max, sql_addins);
     const avg_sql = build_sql_with_addins(sql_build_avg, sql_addins);
@@ -349,11 +349,11 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
             construct_sql = construct_sql.slice(0, construct_sql.length - 4);
         }
         return construct_sql;
-    };
+    }
 
     function get_place_marker() {
         return `$${value_searches.length + 1}`;
-    };
+    }
 }
 
 async function archiveAuctions() {
