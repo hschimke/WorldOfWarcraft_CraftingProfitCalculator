@@ -4,7 +4,7 @@ import { runWithJSONConfig, shutdown } from './wow_crafting_profits.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { parentLogger } from './logging.js';
 import { getAuctions, getAllBonuses } from './auction-history.js';
-import { bonuses_cache } from './cached-data-sources.js';
+import { static_sources } from './cached-data-sources.js';
 import './hourly-injest.js';
 
 const logger = parentLogger.child();
@@ -119,69 +119,76 @@ app.post('/seen_item_bonuses', (req, res) => {
     }
 
     getAllBonuses(item, region).then(bonuses => {
-        logger.debug(`Regurning bonus lists for ${item}`);
+        static_sources().then(cache => {
+            const bonuses_cache = cache.bonuses_cache;
+            logger.debug(`Regurning bonus lists for ${item}`);
 
-        const ilvl_adjusts = new Set();
-        const socket_adjusts = new Set();
-        const quality_adjusts = new Set();
-        const unknown_adjusts = new Set();
-        let found_empty_bonuses = false;
+            const ilvl_adjusts = new Set();
+            const socket_adjusts = new Set();
+            const quality_adjusts = new Set();
+            const unknown_adjusts = new Set();
+            let found_empty_bonuses = false;
 
-        const b_array = bonuses.bonuses.map(e => {
-            const v = { text: e.bonuses };
-            v.parsed = JSON.parse(e.bonuses);
-            if (v.parsed !== null) {
-                v.reduced = v.parsed.reduce((acc, cur) => {
-                    let value = acc;
-                    if (cur in bonuses_cache) {
-                        let found = false;
-                        if ('level' in bonuses_cache[cur]) {
-                            value += `ilevel ${bonuses.item.level + bonuses_cache[cur].level} `;
-                            found = true;
-                            ilvl_adjusts.add(cur);
+            const b_array = bonuses.bonuses.map(e => {
+                const v = { text: e.bonuses };
+                v.parsed = JSON.parse(e.bonuses);
+                if (v.parsed !== null) {
+                    v.reduced = v.parsed.reduce((acc, cur) => {
+                        let value = acc;
+                        if (cur in bonuses_cache) {
+                            let found = false;
+                            if ('level' in bonuses_cache[cur]) {
+                                value += `ilevel ${bonuses.item.level + bonuses_cache[cur].level} `;
+                                found = true;
+                                ilvl_adjusts.add(cur);
+                            }
+                            if ('socket' in bonuses_cache[cur]) {
+                                value += `socketed `;
+                                found = true;
+                                socket_adjusts.add(cur);
+                            }
+                            if ('quality' in bonuses_cache[cur]) {
+                                value += `quality: ${bonuses_cache[cur].quality} `;
+                                found = true;
+                                quality_adjusts.add(cur);
+                            }
+                            if (!found) {
+                                unknown_adjusts.add(cur);
+                            }
                         }
-                        if ('socket' in bonuses_cache[cur]) {
-                            value += `socketed `;
-                            found = true;
-                            socket_adjusts.add(cur);
-                        }
-                        if ('quality' in bonuses_cache[cur]) {
-                            value += `quality: ${bonuses_cache[cur].quality} `;
-                            found = true;
-                            quality_adjusts.add(cur);
-                        }
-                        if (!found) {
-                            unknown_adjusts.add(cur);
-                        }
-                    }
-                    return value;
-                }, '');
-            } else {
-                found_empty_bonuses = true;
-            }
-            return v;
+                        return value;
+                    }, '');
+                } else {
+                    found_empty_bonuses = true;
+                }
+                return v;
+            });
+
+            res.json({
+                bonuses: bonuses.bonuses,
+                //item: bonuses.item,
+                mapped: b_array,
+                collected: {
+                    ilvl: Array.from(ilvl_adjusts).map(i => { return { id: i, level: bonuses_cache[i].level + bonuses.item.level } }),
+                    socket: Array.from(socket_adjusts).map(i => { return { id: i, sockets: bonuses_cache[i].socket } }),
+                    quality: Array.from(quality_adjusts).map(i => { return { id: i, quality: bonuses_cache[i].quality } }),
+                    unknown: Array.from(unknown_adjusts),
+                    empty: found_empty_bonuses,
+                },
+            });
+        }).catch(error => {
+            logger.error("Issue getting bonuses", error);
+            res.json({ ERROR: error });
         });
-
-        res.json({
-            bonuses: bonuses.bonuses,
-            //item: bonuses.item,
-            mapped: b_array,
-            collected: {
-                ilvl: Array.from(ilvl_adjusts).map(i => { return { id: i, level: bonuses_cache[i].level + bonuses.item.level } }),
-                socket: Array.from(socket_adjusts).map(i => { return { id: i, sockets: bonuses_cache[i].socket } }),
-                quality: Array.from(quality_adjusts).map(i => { return { id: i, quality: bonuses_cache[i].quality } }),
-                unknown: Array.from(unknown_adjusts),
-                empty: found_empty_bonuses,
-            },
-        });
-    }).catch(error => {
-        logger.error("Issue getting bonuses", error);
-        res.json({ ERROR: error });
     });
 });
 
 app.post('/bonus_mappings', (req, res) => {
-    res.json(bonuses_cache);
+    static_sources().then(
+        cache => {
+            res.json(cache.bonuses_cache);
+        }
+    )
 })
 
 const server = app.listen(port, () => {

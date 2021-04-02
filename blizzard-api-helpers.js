@@ -571,22 +571,44 @@ async function buildCyclicRecipeList(region) {
 
     const links = [];
 
-    const id = await getProfessionId(profession_list, 'Enchanting');
-    const profz = [await getBlizProfessionDetail(id, region)];
+    //const id = await getProfessionId(profession_list, 'Enchanting');
+    //const profz = [await getBlizProfessionDetail(id, region)];
+    let counter = 0;
+    let profession_counter = 0;
 
-    //for (const prof of profession_list.professions) {
-    for (const prof of profz) {
+    for (const prof of profession_list.professions) {
+        //for (const prof of profz) {
+        const last_count = counter;
         logger.debug(`Scanning profession: ${prof.name} for cyclic relationships.`);
         const profession = await getBlizProfessionDetail(prof.id, region);
+        if (profession.skill_tiers !== undefined) {
+            const st_scan_jobs = profession.skill_tiers.map((st) => {
+                return buildCyclicLinkforSkillTier(st, profession);
+            });
+            (await Promise.all(st_scan_jobs)).forEach(r => {
+                links.push(...r);
+            });
+        }
+        logger.debug(`Scanned ${counter - last_count} new recipes.`);
+        profession_counter++;
+    }
+
+    logger.debug(`Scanned ${counter} recipes in ${profession_counter} professions`)
+
+    return links;
+
+    async function buildCyclicLinkforSkillTier(skill_tier, profession) {
+        logger.debug(`Scanning st: ${skill_tier.name}`);
         const checked_set = new Set();
-        for (const skill_tier of profession.skill_tiers) {
-            logger.debug(`Scanning st: ${skill_tier.name}`);
-            const skill_tier_detail = await getBlizSkillTierDetail(profession.id, skill_tier.id, region);
+        const found_links = [];
+        const skill_tier_detail = await getBlizSkillTierDetail(profession.id, skill_tier.id, region);
+        if (skill_tier_detail.categories !== undefined) {
             for (const sk_category of skill_tier_detail.categories) {
                 for (const sk_recipe of sk_category.recipes) {
                     const recipe = await getBlizRecipeDetail(sk_recipe.id, region);
                     if (!checked_set.has(recipe.id)) {
                         checked_set.add(recipe.id);
+                        counter++;
                         if (('reagents' in recipe) && recipe.reagents.length === 1) {
                             // Go through them all again
                             for (const sk_recheck_category of skill_tier_detail.categories) {
@@ -596,7 +618,17 @@ async function buildCyclicRecipeList(region) {
                                         if (getRecipeCraftedItemID(recipe).has(recheck_recipe.reagents[0].reagent.id)) {
                                             if (getRecipeCraftedItemID(recheck_recipe).has(recipe.reagents[0].reagent.id)) {
                                                 logger.debug(`Found cyclic link for ${recipe.name} (${recipe.id}) and ${recheck_recipe.name} (${recheck_recipe.id})`)
-                                                links.push([{ id: recipe.id, quantity: recheck_recipe.reagents[0].quantity }, { id: recheck_recipe.id, quantity: recipe.reagents[0].quantity }]);
+                                                found_links.push(
+                                                    [
+                                                        {
+                                                            id: [...getRecipeCraftedItemID(recipe)],
+                                                            quantity: recheck_recipe.reagents[0].quantity
+                                                        },
+                                                        {
+                                                            id: [...getRecipeCraftedItemID(recheck_recipe)],
+                                                            quantity: recipe.reagents[0].quantity
+                                                        }
+                                                    ]);
                                                 checked_set.add(recheck_recipe.id);
                                             }
                                         }
@@ -610,12 +642,7 @@ async function buildCyclicRecipeList(region) {
                 }
             }
         }
-    }
-
-    return links;
-
-    async function buildProfessionCyclicList(profession) {
-
+        return found_links;
     }
 }
 

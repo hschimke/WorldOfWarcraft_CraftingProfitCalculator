@@ -13,7 +13,7 @@ COPY --chown=node:node client/package*.json ./
 
 WORKDIR /usr/src/wow_cpc
 
-RUN npm install && cd client && npm install
+RUN npm ci && cd client && npm ci
 
 WORKDIR /usr/src/wow_cpc
 
