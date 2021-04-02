@@ -1,8 +1,7 @@
 import { getBlizzardAPIResponse, getBlizzardRawUriResponse } from './blizzard-api-call.js';
 import { getAuthorizationToken } from './blizz_oath.js';
 import { parentLogger } from './logging.js';
-import { cacheCheck, cacheGet, cacheSet, saveCache } from './cached-data-sources.js';
-import { ALL_PROFESSIONS } from './shared-constants.js';
+import { cacheCheck, cacheGet, cacheSet } from './cached-data-sources.js';
 
 const logger = parentLogger.child();
 
@@ -544,7 +543,7 @@ async function buildCyclicRecipeList(region) {
 
     const profession_list = await getBlizProfessionsList(region);
 
-    const link = [];
+    const links = [];
 
     for (const prof of profession_list.professions) {
         const profession = await getBlizProfessionDetail(prof.id, region);

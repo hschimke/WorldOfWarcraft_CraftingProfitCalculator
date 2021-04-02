@@ -4,7 +4,6 @@ import got from 'got';
 import { getDb } from './database.js';
 
 const logger = parentLogger.child();
-let db;
 let cache_loaded = false;
 
 const bonuses_cache_fn = './cache/bonuses.json';
@@ -31,7 +30,6 @@ async function saveCache() {
  */
 async function loadCache() {
     if (!cache_loaded) {
-        db = await getDb('cache');
         const data_sources = JSON.parse(await fs.readFile(new URL(data_sources_fn, import.meta.url)));
 
         // static files
@@ -69,7 +67,7 @@ async function loadCache() {
  * @param {?number} expiration_period Optionally check if the key has expired.
  */
 async function cacheCheck(namespace, key, expiration_period) {
-    await loadCache();
+    const db = await getDb('cache');
     //logger.profile('cacheGet');
     //const query = 'select namespace, key, value, cached from key_values where namespace = ? and key = ?';
     const query_no_expiration = 'SELECT COUNT(*) AS how_many FROM key_values WHERE namespace = $1 AND key = $2';
@@ -96,7 +94,7 @@ async function cacheCheck(namespace, key, expiration_period) {
  * @param {string} key The key to retrieve.
  */
 async function cacheGet(namespace, key) {
-    await loadCache();
+    const db = await getDb('cache');
     //logger.profile(`cacheGet: ${namespace} -> ${key}`);
     const query = 'SELECT value FROM key_values WHERE namespace = $1 AND key = $2';
     const result = await db.get(query, [namespace, key]);
@@ -112,7 +110,7 @@ async function cacheGet(namespace, key) {
  * @param {!any} data The value to set the key to.
  */
 async function cacheSet(namespace, key, data) {
-    await loadCache();
+    const db = await getDb('cache');
     if (data === undefined) {
         logger.error(`cannot cache undefined to ${namespace} -> ${key}`);
         throw new Error('Cannot cache undefined');
@@ -135,7 +133,18 @@ async function cacheSet(namespace, key, data) {
     //logger.profile('cacheSet');
 }
 
+async function static_sources(init){
+    await loadCache(init);
+    const context = function() {};
+
+    context.bonuses_cache = bonuses_cache;
+    context.rank_mappings_cache = rank_mappings_cache;
+    context.shopping_recipe_exclusion_list = shopping_recipe_exclusion_list;
+
+    return context;
+}
+
 export {
-    saveCache, bonuses_cache, rank_mappings_cache, shopping_recipe_exclusion_list,
-    cacheCheck, cacheGet, cacheSet
+    static_sources,
+    saveCache, cacheCheck, cacheGet, cacheSet
 }

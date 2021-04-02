@@ -51,7 +51,7 @@ app.post('/show_output', (req, res) => {
     }
 
     runWithJSONConfig(config).then((data) => {
-        const { price, intermediate, formatted } = data;
+        const { formatted } = data;
         res.send(`
         <html>
             <head></head>
@@ -85,7 +85,7 @@ app.post('/json_output', (req, res) => {
     }
 
     runWithJSONConfig(config).then((data) => {
-        const { price, intermediate, formatted } = data;
+        const { intermediate } = data;
         res.json(intermediate);
     });
 });

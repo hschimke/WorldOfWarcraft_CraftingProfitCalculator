@@ -1,16 +1,16 @@
-import {promises as fs} from 'fs';
-import { bonuses_cache, cacheCheck, cacheGet, cacheSet, rank_mappings_cache, saveCache, shopping_recipe_exclusion_list } from './cached-data-sources.js';
+import { promises as fs } from 'fs';
+import { static_sources, saveCache, } from './cached-data-sources.js';
 import { parentLogger } from './logging.js';
-import { getItemId, getConnectedRealmId, getItemDetails, getBlizRecipeDetail, checkIsCrafting, getCraftingRecipe, getAuctionHouse, buildCyclicRecipeList } from './blizzard-api-helpers.js';
+import { getItemId, getConnectedRealmId, getItemDetails, getBlizRecipeDetail, checkIsCrafting, getCraftingRecipe, getAuctionHouse } from './blizzard-api-helpers.js';
 import { shutdownApiManager } from './blizzard-api-call.js';
 import { textFriendlyOutputFormat } from './client/src/Shared/text-output-helpers.mjs';
 import { getAuthorizationToken } from './blizz_oath.js';
 
 const logger = parentLogger.child();
 
-const raidbots_bonus_lists = bonuses_cache;
-const rankings = rank_mappings_cache;
-const shopping_recipe_exclusions = shopping_recipe_exclusion_list;
+let raidbots_bonus_lists;
+let rankings;
+let shopping_recipe_exclusions;
 
 /**
  * Find the value of an item on the auction house.
@@ -601,6 +601,11 @@ async function run(region, server, professions, item, json_config, count) {
     let intermediate_data = {};
     let price_data = {};
     let formatted_data = 'NO DATA';
+
+    const cached_static_resources = await static_sources();
+    raidbots_bonus_lists = cached_static_resources.bonuses_cache;
+    rankings = cached_static_resources.rank_mappings_cache;
+    shopping_recipe_exclusions = cached_static_resources.shopping_recipe_exclusion_list;
 
     try {
         //console.log( await(buildCyclicRecipeList(region)));
