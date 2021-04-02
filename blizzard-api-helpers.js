@@ -456,6 +456,10 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
                         logger.silly(`Check recipe ${recipe.name}`);
                         if (!(recipe.name.includes('Prospect') || recipe.name.includes('Mill'))) {
                             let crafty = false;
+                            if (getRecipeCraftedItemID(recipe).has(item_id)) {
+                                crafty = true;
+                            }
+                            /*
                             if ('alliance_crafted_item' in recipe) {
                                 if (recipe.alliance_crafted_item.id == item_id) {
                                     crafty = true;
@@ -470,7 +474,7 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
                                 if (recipe.crafted_item.id == item_id) {
                                     crafty = true;
                                 }
-                            }
+                            }*/
 
                             if (!crafty && skill_tier.name.includes('Enchanting') && (cat.name.includes('Enchantments') || cat.name.includes('Echantments'))) {
                                 logger.debug(`Checking if uncraftable item ${item_detail.id} is craftable with a synthetic item-recipe connection.`);
@@ -513,6 +517,28 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
     }
 }
 
+function getRecipeCraftedItemID(recipe) {
+    let item_ids = new Set();
+    let found = false;
+    if ('alliance_crafted_item' in recipe) {
+        item_ids.add(recipe.alliance_crafted_item.id);
+        found = true;
+    }
+    if ('horde_crafted_item' in recipe) {
+        item_ids.add(recipe.horde_crafted_item.id);
+        found = true;
+    }
+    if ('crafted_item' in recipe) {
+        item_ids.add(recipe.crafted_item.id);
+        found = true;
+    }
+    if (!found) {
+        logger.silly(`No crafted id for ${recipe.id}`);
+    }
+
+    return item_ids;
+}
+
 function getSlotName(category) {
     const name = category.name;
 
@@ -545,10 +571,16 @@ async function buildCyclicRecipeList(region) {
 
     const links = [];
 
-    for (const prof of profession_list.professions) {
+    const id = await getProfessionId(profession_list, 'Enchanting');
+    const profz = [await getBlizProfessionDetail(id, region)];
+
+    //for (const prof of profession_list.professions) {
+    for (const prof of profz) {
+        logger.debug(`Scanning profession: ${prof.name} for cyclic relationships.`);
         const profession = await getBlizProfessionDetail(prof.id, region);
         const checked_set = new Set();
         for (const skill_tier of profession.skill_tiers) {
+            logger.debug(`Scanning st: ${skill_tier.name}`);
             const skill_tier_detail = await getBlizSkillTierDetail(profession.id, skill_tier.id, region);
             for (const sk_category of skill_tier_detail.categories) {
                 for (const sk_recipe of sk_category.recipes) {
@@ -561,14 +593,14 @@ async function buildCyclicRecipeList(region) {
                                 for (const sk_recheck_recipe of sk_recheck_category.recipes) {
                                     const recheck_recipe = await getBlizRecipeDetail(sk_recheck_recipe.id, region);
                                     if (('reagents' in recheck_recipe) && recheck_recipe.reagents.length === 1 && !checked_set.has(recheck_recipe.id)) {
-                                        if (recipe.id == recheck_recipe.reagents[0].id) {
-                                            if (recipe.reagents[0].id == recheck_recipe.id) {
+                                        if (getRecipeCraftedItemID(recipe).has(recheck_recipe.reagents[0].reagent.id)) {
+                                            if (getRecipeCraftedItemID(recheck_recipe).has(recipe.reagents[0].reagent.id)) {
                                                 logger.debug(`Found cyclic link for ${recipe.name} (${recipe.id}) and ${recheck_recipe.name} (${recheck_recipe.id})`)
-                                                links.push([recipe.id, recheck_recipe.id]);
+                                                links.push([{ id: recipe.id, quantity: recheck_recipe.reagents[0].quantity }, { id: recheck_recipe.id, quantity: recipe.reagents[0].quantity }]);
                                                 checked_set.add(recheck_recipe.id);
                                             }
                                         }
-                                    }else{
+                                    } else {
                                         checked_set.add(recheck_recipe.id);
                                     }
                                 }
