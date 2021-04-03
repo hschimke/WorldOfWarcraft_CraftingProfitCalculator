@@ -19,6 +19,7 @@ const AUCTION_DATA_CACHE = 'fetched_auctions_data';
 const PROFESSION_DETAIL_CACHE = 'profession_detail_data';
 const PROFESSION_LIST_CACHE = 'regional_profession_list';
 const COMPOSITE_REALM_NAME_CACHE = 'connected_realm_detail';
+const CYCLIC_LINK_CACHE = 'cyclic_links';
 
 /**
  * Search through the item database for a string, returning the item id of the item.
@@ -598,6 +599,10 @@ async function buildCyclicRecipeList(region) {
     return links;
 
     async function buildCyclicLinkforSkillTier(skill_tier, profession) {
+        const cache_key = `${region}::${skill_tier.name}::${profession.id}`;
+        if (await cacheCheck(CYCLIC_LINK_CACHE, cache_key)) {
+            return cacheGet(CYCLIC_LINK_CACHE, cache_key);
+        }
         logger.debug(`Scanning st: ${skill_tier.name}`);
         const checked_set = new Set();
         const found_links = [];
@@ -642,6 +647,7 @@ async function buildCyclicRecipeList(region) {
                 }
             }
         }
+        cacheSet(CYCLIC_LINK_CACHE, cache_key, found_links);
         return found_links;
     }
 }

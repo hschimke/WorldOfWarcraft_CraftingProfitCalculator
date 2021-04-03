@@ -608,7 +608,8 @@ async function run(region, server, professions, item, json_config, count) {
     shopping_recipe_exclusions = cached_static_resources.shopping_recipe_exclusion_list;
 
     try {
-        console.log(JSON.stringify(await (buildCyclicRecipeList(region)),undefined,2));
+        // Cyclic count run
+        //console.log(JSON.stringify(await (buildCyclicRecipeList(region)),undefined,2));
         price_data = await performProfitAnalysis(region, server, professions, item, count);
         intermediate_data = await generateOutputFormat(price_data, region);
         intermediate_data.shopping_lists = constructShoppingList(intermediate_data, json_config);
