@@ -122,11 +122,9 @@ async function cacheSet(namespace, key, data) {
         const query_delete = 'DELETE FROM key_values WHERE namespace = $1 AND key = $2';
         const query_insert = 'INSERT INTO key_values(namespace, key, value, cached) VALUES($1,$2,$3,$4)';
 
-        const save_data = db_type === 'pg' ? data : JSON.stringify(data);
-
         await db.serialize(
             ['BEGIN TRANSACTION', query_delete, query_insert, 'COMMIT TRANSACTION'],
-            [[], [namespace, key], [namespace, key, save_data, cached], []]);
+            [[], [namespace, key], [namespace, key, JSON.stringify(data), cached], []]);
     } catch (e) {
         logger.error('Failed to set up cache value', e);
     }

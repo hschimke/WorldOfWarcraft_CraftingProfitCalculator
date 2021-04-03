@@ -181,6 +181,8 @@ async function performProfitAnalysis(region, server, character_professions, item
 
     const base_ilvl = item_detail.level;
 
+    const craftable_item_swaps = await buildCyclicRecipeList(region);
+
     let price_obj = {
         item_id: item_id,
         item_name: item_detail.name
@@ -231,9 +233,19 @@ async function performProfitAnalysis(region, server, character_professions, item
 
     if (item_craftable.craftable) {
         logger.debug(`Item ${item_detail.name} (${item_id}) has ${item_craftable.recipes.length} recipes.`);
-        for (let recipe of item_craftable.recipes) {
+        for (const recipe of item_craftable.recipes) {
             // Get Reagents
             const item_bom = await getCraftingRecipe(recipe.recipe_id, region);
+
+            // Find alternates for reagents
+            //console.log(craftable_item_swaps);
+            for (const reagent of item_bom.reagents) {
+                    //console.log(reagent);
+                    //console.log(reagent.reagent.id);
+                    if (craftable_item_swaps[reagent.reagent.id] !== undefined) {
+                        //console.log('FOUNDFOUNDFOUND');
+                    }
+            }
 
             // Get prices for BOM
             const bom_prices = [];
@@ -608,8 +620,6 @@ async function run(region, server, professions, item, json_config, count) {
     shopping_recipe_exclusions = cached_static_resources.shopping_recipe_exclusion_list;
 
     try {
-        // Cyclic count run
-        //console.log(JSON.stringify(await (buildCyclicRecipeList(region)),undefined,2));
         price_data = await performProfitAnalysis(region, server, professions, item, count);
         intermediate_data = await generateOutputFormat(price_data, region);
         intermediate_data.shopping_lists = constructShoppingList(intermediate_data, json_config);

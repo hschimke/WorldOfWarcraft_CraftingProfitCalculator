@@ -14,3 +14,7 @@ databases
 scripts
 
 test_data
+
+*.log
+
+notes

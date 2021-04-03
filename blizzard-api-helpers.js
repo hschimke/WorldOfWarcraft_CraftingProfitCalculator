@@ -460,22 +460,6 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
                             if (getRecipeCraftedItemID(recipe).has(item_id)) {
                                 crafty = true;
                             }
-                            /*
-                            if ('alliance_crafted_item' in recipe) {
-                                if (recipe.alliance_crafted_item.id == item_id) {
-                                    crafty = true;
-                                }
-                            }
-                            if ('horde_crafted_item' in recipe) {
-                                if (recipe.horde_crafted_item.id == item_id) {
-                                    crafty = true;
-                                }
-                            }
-                            if ('crafted_item' in recipe) {
-                                if (recipe.crafted_item.id == item_id) {
-                                    crafty = true;
-                                }
-                            }*/
 
                             if (!crafty && skill_tier.name.includes('Enchanting') && (cat.name.includes('Enchantments') || cat.name.includes('Echantments'))) {
                                 logger.debug(`Checking if uncraftable item ${item_detail.id} is craftable with a synthetic item-recipe connection.`);
@@ -572,13 +556,13 @@ async function buildCyclicRecipeList(region) {
 
     const links = [];
 
-    //const id = await getProfessionId(profession_list, 'Enchanting');
-    //const profz = [await getBlizProfessionDetail(id, region)];
+    const id = await getProfessionId(profession_list, 'Enchanting');
+    const profz = [await getBlizProfessionDetail(id, region)];
     let counter = 0;
     let profession_counter = 0;
 
-    for (const prof of profession_list.professions) {
-        //for (const prof of profz) {
+    //for (const prof of profession_list.professions) {
+        for (const prof of profz) {
         const last_count = counter;
         logger.debug(`Scanning profession: ${prof.name} for cyclic relationships.`);
         const profession = await getBlizProfessionDetail(prof.id, region);
@@ -596,7 +580,46 @@ async function buildCyclicRecipeList(region) {
 
     logger.debug(`Scanned ${counter} recipes in ${profession_counter} professions`)
 
-    return links;
+    const link_lookup = {};
+
+    for (const link of links) {
+        const item_1 = link[0];
+        const item_2 = link[1];
+
+        // Item 1 links
+        for(const id_1 of item_1.id){
+            if(link_lookup[id_1] === undefined){
+                link_lookup[id_1] = [];
+            }
+            for(const id_2 of item_2.id){
+                if(id_1 !== id_2){
+                    link_lookup[id_1].push({
+                        id: id_2,
+                        takes: item_2.quantity,
+                        makes: item_1.quantity
+                    });
+                }
+            }
+        }
+
+        // Item 2 links
+        for(const id_2 of item_2.id){
+            if(link_lookup[id_2] === undefined){
+                link_lookup[id_2] = [];
+            }
+            for(const id_1 of item_1.id){
+                if(id_2 !== id_1){
+                    link_lookup[id_2].push({
+                        id: id_1,
+                        takes: item_1.quantity,
+                        makes: item_2.quantity
+                    });
+                }
+            }
+        }
+    }
+
+    return link_lookup;
 
     async function buildCyclicLinkforSkillTier(skill_tier, profession) {
         const cache_key = `${region}::${skill_tier.name}::${profession.id}`;
@@ -614,12 +637,12 @@ async function buildCyclicRecipeList(region) {
                     if (!checked_set.has(recipe.id)) {
                         checked_set.add(recipe.id);
                         counter++;
-                        if (('reagents' in recipe) && recipe.reagents.length === 1) {
+                        if (recipe.reagents !== undefined && recipe.reagents.length === 1) {
                             // Go through them all again
                             for (const sk_recheck_category of skill_tier_detail.categories) {
                                 for (const sk_recheck_recipe of sk_recheck_category.recipes) {
                                     const recheck_recipe = await getBlizRecipeDetail(sk_recheck_recipe.id, region);
-                                    if (('reagents' in recheck_recipe) && recheck_recipe.reagents.length === 1 && !checked_set.has(recheck_recipe.id)) {
+                                    if (recheck_recipe.reagents !== undefined && recheck_recipe.reagents.length === 1 && !checked_set.has(recheck_recipe.id)) {
                                         if (getRecipeCraftedItemID(recipe).has(recheck_recipe.reagents[0].reagent.id)) {
                                             if (getRecipeCraftedItemID(recheck_recipe).has(recipe.reagents[0].reagent.id)) {
                                                 logger.debug(`Found cyclic link for ${recipe.name} (${recipe.id}) and ${recheck_recipe.name} (${recheck_recipe.id})`)
