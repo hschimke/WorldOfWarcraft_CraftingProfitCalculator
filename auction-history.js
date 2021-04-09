@@ -143,9 +143,9 @@ async function fillNItems(fill_count = 5) {
             await client.query(update_sql, [fetched_item.name, is_craftable.craftable, item.item_id, item.region]);
             logger.debug(`Updated item: ${item.item_id}:${item.region} with name: '${fetched_item.name}' and craftable: ${is_craftable.craftable}`);
         } catch (e) {
-            logger.error(`Issue filling ${item.id} in ${item.region}. Skipping`, e);
-            await client.query('DELETE FROM items WHERE item_id = $1 AND region = $2', [item.id, item.region]);
-            logger.error(`DELETED ${item.id} in ${item.region} from items table.`);
+            logger.error(`Issue filling ${item.item_id} in ${item.region}. Skipping`, e);
+            await client.query('DELETE FROM items WHERE item_id = $1 AND region = $2', [item.item_id, item.region]);
+            logger.error(`DELETED ${item.item_id} in ${item.region} from items table.`);
         }
     }
     await client.query('COMMIT TRANSACTION');
