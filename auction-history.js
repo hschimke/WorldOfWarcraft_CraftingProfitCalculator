@@ -137,10 +137,14 @@ async function fillNItems(fill_count = 5) {
     const rows = (await client.query(select_sql, [fill_count])).rows;
     await client.query('BEGIN TRANSACTION');
     for (const item of rows) {
-        const fetched_item = await getItemDetails(item.item_id, item.region);
-        const is_craftable = await checkIsCrafting(item.item_id, ALL_PROFESSIONS, item.region);
-        await client.query(update_sql, [fetched_item.name, is_craftable.craftable, item.item_id, item.region]);
-        logger.debug(`Updated item: ${item.item_id}:${item.region} with name: '${fetched_item.name}' and craftable: ${is_craftable.craftable}`);
+        try {
+            const fetched_item = await getItemDetails(item.item_id, item.region);
+            const is_craftable = await checkIsCrafting(item.item_id, ALL_PROFESSIONS, item.region);
+            await client.query(update_sql, [fetched_item.name, is_craftable.craftable, item.item_id, item.region]);
+            logger.debug(`Updated item: ${item.item_id}:${item.region} with name: '${fetched_item.name}' and craftable: ${is_craftable.craftable}`);
+        } catch (e) {
+            logger.error(`Issue filling ${item.id} in ${item.region}. Skipping`, e);
+        }
     }
     await client.query('COMMIT TRANSACTION');
     client.release();
