@@ -236,15 +236,17 @@ async function performProfitAnalysis(region, server, character_professions, item
         for (const recipe of item_craftable.recipes) {
             // Get Reagents
             const item_bom = await getCraftingRecipe(recipe.recipe_id, region);
+            // ISSUE: ERROR: Will not work with min/max style recipes
+            price_obj.item_quantity = qauntity / getRecipeOutputValues(item_bom);
 
-            // Find alternates for reagents
-            //console.log(craftable_item_swaps);
-            for (const reagent of item_bom.reagents) {
-                    //console.log(reagent);
-                    //console.log(reagent.reagent.id);
-                    if (craftable_item_swaps[reagent.reagent.id] !== undefined) {
-                        //console.log('FOUNDFOUNDFOUND');
-                    }
+                // Find alternates for reagents
+                //console.log(craftable_item_swaps);
+                for(const reagent of item_bom.reagents) {
+                //console.log(reagent);
+                //console.log(reagent.reagent.id);
+                if (craftable_item_swaps[reagent.reagent.id] !== undefined) {
+                    //console.log('FOUNDFOUNDFOUND');
+                }
             }
 
             // Get prices for BOM
@@ -406,6 +408,7 @@ async function generateOutputFormat(price_data, region) {
                 name: recipe.name,
                 rank: recipe_option.rank,
                 id: recipe_option.recipe.recipe_id,
+                output: getRecipeOutputValues(recipe),
                 high: option_price.high,
                 low: option_price.low,
                 average: option_price.average,
@@ -448,6 +451,39 @@ async function generateOutputFormat(price_data, region) {
     }
 
     return object_output;
+}
+
+/*
+        "crafted_quantity": {
+            "minimum": 1,
+            "maximum": 1
+        }
+
+    OR
+
+        "crafted_quantity": {
+            "value": 3
+        }
+    */
+function getRecipeOutputValues(recipe) {
+    let min = -1;
+    let max = -1;
+    let value = -1;
+    if (recipe.crafted_quantity.minimum !== undefined) {
+        min = recipe.crafted_quantity.minimum;
+    }
+    if (recipe.crafted_quantity.maximum !== undefined) {
+        max = recipe.crafted_quantity.maximum;
+    }
+    if (recipe.crafted_quantity.value !== undefined) {
+        value = recipe.crafted_quantity.value;
+    }
+
+    if (min === -1 && max === -1) {
+        return value;
+    }
+
+    return { min, max, value };
 }
 
 /**
@@ -517,7 +553,7 @@ function build_shopping_list(intermediate_data, rank_requested) {
 
     let needed = intermediate_data.required;
 
-    if (intermediate_data.recipes.length == 0) {
+    if (intermediate_data.recipes.length === 0) {
         shopping_list.push({
             id: intermediate_data.id,
             name: intermediate_data.name,
@@ -547,12 +583,12 @@ function build_shopping_list(intermediate_data, rank_requested) {
                     for (let part of recipe.parts) {
                         // Only top level searches can have ranks
                         build_shopping_list(part, 0).forEach((sl) => {
-                            let al = sl;
-                            logger.debug(`Need ${al.quantity} of ${al.name} (${al.id}) for each of ${needed}`)
+                            //let al = sl;
+                            logger.debug(`Need ${sl.quantity} of ${sl.name} (${sl.id}) for each of ${needed}`);
 
-                            al.quantity = al.quantity * needed;
+                            sl.quantity = sl.quantity * needed;
 
-                            shopping_list.push(al);
+                            shopping_list.push(sl);
                         });
                     }
                 } else {

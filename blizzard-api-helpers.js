@@ -462,7 +462,7 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
                             }
 
                             if (!crafty && skill_tier.name.includes('Enchanting') && (cat.name.includes('Enchantments') || cat.name.includes('Echantments'))) {
-                                logger.debug(`Checking if uncraftable item ${item_detail.id} is craftable with a synthetic item-recipe connection.`);
+                                logger.silly(`Checking if uncraftable item ${item_detail.id} is craftable with a synthetic item-recipe connection.`);
                                 const slot = getSlotName(cat);
                                 const synthetic_item_name = `Enchant ${slot} - ${rec.name}`;
                                 logger.silly(`Generated synthetic item name ${synthetic_item_name}.`);
@@ -470,7 +470,7 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
                                 logger.silly(`Synthetic item ${synthetic_item_name} has id ${synthetic_item_id}`);
                                 if (synthetic_item_id === item_id) {
                                     crafty = true;
-                                    logger.debug(`Synthetic item ${synthetic_item_name} match for ${item_detail.name}.`);
+                                    logger.silly(`Synthetic item ${synthetic_item_name} match for ${item_detail.name}.`);
                                 }
                             }
                             else {
