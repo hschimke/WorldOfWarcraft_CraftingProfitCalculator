@@ -5,10 +5,10 @@
 	"main": "wow_crafting_profits.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"fill-cache": "node -r dotenv/config ./run.js --item 'simple wood'",
+		"fill-cache": "node -r dotenv/config ./src/run.js --item 'simple wood'",
 		"clear-cache": "rm ./cache/cache.db",
-		"server": "node -r dotenv/config ./server.js",
-		"cli": "node -r dotenv/config ./run.js",
+		"server": "node -r dotenv/config ./src/server.js",
+		"cli": "node -r dotenv/config ./src/run.js",
 		"client-server": "concurrently \"npm run server\" \"cd client && npm start\""
 	},
 	"repository": {

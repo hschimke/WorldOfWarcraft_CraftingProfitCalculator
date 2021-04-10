@@ -6,10 +6,10 @@ import { getDb } from './database.js';
 const logger = parentLogger.child();
 let cache_loaded = false;
 
-const bonuses_cache_fn = './cache/bonuses.json';
-const rank_mappings_cache_fn = './cache/rank-mappings.json';
-const shopping_recipe_exclusion_list_fn = './cache/shopping-recipe-exclusion-list.json'
-const data_sources_fn = './cache/data-sources.json';
+const bonuses_cache_fn = '../cache/bonuses.json';
+const rank_mappings_cache_fn = '../cache/rank-mappings.json';
+const shopping_recipe_exclusion_list_fn = '../cache/shopping-recipe-exclusion-list.json'
+const data_sources_fn = '../cache/data-sources.json';
 
 let bonuses_cache;
 let rank_mappings_cache;
