@@ -1,15 +1,15 @@
-FROM node:15
+FROM node:15-alpine
 
 ENV LOG_LEVEL=debug SERVER_PORT=8080 CACHE_DB_FN="./databases/cache.db" HISTORY_DB_FN="./databases/historical_auctions.db" DATABASE_TYPE=sqlit3 STANDALONE_CONTAINER=standalone DOCKERIZED=true
 
 # Create app directory
 WORKDIR /usr/src/wow_cpc
 
-COPY --chown=node:node package*.json ./
+COPY package*.json ./
 
 WORKDIR /usr/src/wow_cpc/client
 
-COPY --chown=node:node client/package*.json ./
+COPY client/package*.json ./
 
 WORKDIR /usr/src/wow_cpc
 
@@ -17,7 +17,7 @@ RUN npm ci && cd client && npm ci
 
 WORKDIR /usr/src/wow_cpc
 
-COPY --chown=node:node . .
+COPY . .
 
 WORKDIR /usr/src/wow_cpc/client
 RUN npm run build && mv ./build ../html
