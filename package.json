@@ -5,10 +5,10 @@
 	"main": "wow_crafting_profits.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"fill-cache": "node -r dotenv/config ./src/run.js --item 'simple wood'",
+		"fill-cache": "tsc && node -r dotenv/config ./dist/run.js --item 'simple wood'",
 		"clear-cache": "rm ./cache/cache.db",
-		"server": "node -r dotenv/config ./src/server.js",
-		"cli": "node -r dotenv/config ./src/run.js",
+		"server": "tsc && node -r dotenv/config ./dist/server.js",
+		"cli": "tsc && node -r dotenv/config ./dist/run.js",
 		"client-server": "concurrently \"npm run server\" \"cd client && npm start\""
 	},
 	"repository": {
@@ -33,16 +33,12 @@
 		"got": "^11.8.1",
 		"pg": "^8.5.1",
 		"sqlite3": "^5.0.1",
+		"typescript": "^4.2.4",
 		"winston": "^3.3.3",
 		"yargs": "^16.2.0"
 	},
 	"type": "module",
 	"devDependencies": {
-		"@babel/core": "^7.13.14",
-		"@babel/eslint-parser": "^7.13.14",
-		"@babel/plugin-syntax-top-level-await": "^7.12.13",
-		"@babel/preset-env": "^7.13.12",
-		"concurrently": "^6.0.1",
-		"eslint": "^7.23.0"
+		"concurrently": "^6.0.1"
 	}
 }
