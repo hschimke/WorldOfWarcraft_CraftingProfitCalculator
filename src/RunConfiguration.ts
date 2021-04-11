@@ -1,14 +1,14 @@
 import { parentLogger } from './logging.js';
-const logger = parentLogger.child();
+const logger = parentLogger.child({});
 
 class RunConfiguration {
     #internal_inventory = {};
     #inventory_overlay = {};
     #professions = [];
-    #realm_name
-    #realm_region
-    #item_id
-    #item_count
+    #realm_name : string
+    #realm_region : string
+    #item_id : number
+    #item_count : number
 
     constructor(raw_configuration_data, item, count) {
         if (raw_configuration_data != undefined) {

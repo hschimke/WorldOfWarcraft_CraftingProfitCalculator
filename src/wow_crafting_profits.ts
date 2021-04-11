@@ -3,14 +3,83 @@ import { static_sources, saveCache, } from './cached-data-sources.js';
 import { parentLogger } from './logging.js';
 import { getItemId, getConnectedRealmId, getItemDetails, getBlizRecipeDetail, checkIsCrafting, getCraftingRecipe, getAuctionHouse, buildCyclicRecipeList } from './blizzard-api-helpers.js';
 import { shutdownApiManager } from './blizzard-api-call.js';
-import { textFriendlyOutputFormat } from '../client/src/Shared/text-output-helpers.mjs';
+import { textFriendlyOutputFormat } from './text-output-helpers.js';
 import { getAuthorizationToken } from './blizz_oath.js';
 
-const logger = parentLogger.child();
+const logger = parentLogger.child({});
 
 let raidbots_bonus_lists;
 let rankings;
 let shopping_recipe_exclusions;
+
+// Types
+interface AHItemPriceObject {
+
+}
+
+interface CraftingStatus {
+
+}
+
+interface ProfitAnalysisRecipe {
+
+}
+
+interface ProfitAnalysisBonusPrice {
+
+}
+
+interface ProfitAnalysisObject {
+    item_id: number,
+    item_name: string,
+    ah_price: AHItemPriceObject,
+    item_quantity: number,
+    vendor_price: number,
+    crafting_status: CraftingStatus
+    bonus_lists: Array<number>,
+    recipe_options: Array<ProfitAnalysisRecipe>,
+    bonus_prices: Array<ProfitAnalysisBonusPrice>
+}
+
+interface ShoppingList {
+
+}
+
+interface OutputFormatRecipe {
+    name: string,
+    rank: number,
+    id: number,
+    output: RecipeProductionValues,
+    ah: OutputFormatPrice,
+    high: number,
+    low: number,
+    average: number,
+    parts: Array<OutputFormatObject>
+}
+
+interface OutputFormatPrice {
+}
+
+interface OutputFormatObject {
+    name: string,
+    id: number,
+    required: number,
+    recipes: Array<OutputFormatRecipe>,
+    ah: OutputFormatPrice,
+    vendor: number,
+    bonus_prices: Array<OutputFormatBonusPrices>,
+    shopping_lists: ShoppingList
+}
+
+interface RecipeProductionValues {
+    min: number,
+    max: number,
+    value: number
+}
+
+interface OutputFormatBonusPrices {
+
+}
 
 /**
  * Find the value of an item on the auction house.
@@ -20,7 +89,7 @@ let shopping_recipe_exclusions;
  * @param {object} auction_house An auction house to search through.
  * @param {?number} bonus_level_required An optional bonus level for crafted legendary base items.
  */
-async function getAHItemPrice(item_id, auction_house, bonus_level_required) {
+async function getAHItemPrice(item_id, auction_house, bonus_level_required?) : Promise<AHItemPriceObject> {
     // Find the item and return best, worst, average prices
 
     let auction_high = Number.MIN_VALUE;
@@ -163,7 +232,7 @@ function getLvlModifierForBonus(bonus_id) {
  * @param {number} qauntity The number of items required.
  * @param {?object} passed_ah If an auction house is already available, pass it in and it will be used.
  */
-async function performProfitAnalysis(region, server, character_professions, item, qauntity, passed_ah) {
+async function performProfitAnalysis(region, server, character_professions, item, qauntity, passed_ah?) : Promise<ProfitAnalysisObject> {
     // Check if we have to figure out the item id ourselves
     let item_id = 0;
     if (Number.isFinite(Number(item))) {
@@ -183,10 +252,9 @@ async function performProfitAnalysis(region, server, character_professions, item
 
     const craftable_item_swaps = await buildCyclicRecipeList(region);
 
-    let price_obj = {
-        item_id: item_id,
-        item_name: item_detail.name
-    };
+    let price_obj = {} as ProfitAnalysisObject;
+    price_obj.item_id= item_id;
+    price_obj.item_name= item_detail.name;
 
     logger.info(`Analyzing profits potential for ${item_detail.name} (${item_id})`);
 
@@ -217,7 +285,7 @@ async function performProfitAnalysis(region, server, character_professions, item
     // possible bonus_list. They're actually different items, blizz just tells us they aren't.
     price_obj.bonus_lists = Array.from(new Set(await getItemBonusLists(item_id, auction_house)));
     let bonus_link = {};
-    const bl_flat = Array.from(new Set(price_obj.bonus_lists.flat())).filter((bonus) => bonus in raidbots_bonus_lists && 'level' in raidbots_bonus_lists[bonus]);
+    const bl_flat : Array<number> = <Array<number>>(Array.from(new Set(price_obj.bonus_lists.flat())).filter((bonus: number) => bonus in raidbots_bonus_lists && 'level' in raidbots_bonus_lists[bonus]));
     for (const bonus of bl_flat) {
         const mod = getLvlModifierForBonus(bonus);
         if (mod !== -1) {
@@ -236,8 +304,8 @@ async function performProfitAnalysis(region, server, character_professions, item
         for (const recipe of item_craftable.recipes) {
             // Get Reagents
             const item_bom = await getCraftingRecipe(recipe.recipe_id, region);
-            // ISSUE: ERROR: Will not work with min/max style recipes
-            price_obj.item_quantity = qauntity / getRecipeOutputValues(item_bom);
+
+            price_obj.item_quantity = qauntity / getRecipeOutputValues(item_bom).min;
 
                 // Find alternates for reagents
                 //console.log(craftable_item_swaps);
@@ -381,13 +449,12 @@ async function recipeCostCalculator(recipe_option) {
  * @param {!object} price_data The object created by the analyze function.
  * @param {!string} region The region in which to work.
  */
-async function generateOutputFormat(price_data, region) {
-    const object_output = {
-        name: price_data.item_name,
-        id: price_data.item_id,
-        required: price_data.item_quantity,
-        recipes: [],
-    };
+async function generateOutputFormat(price_data, region) : Promise<OutputFormatObject>{
+    const object_output = {} as OutputFormatObject;
+    object_output.name = price_data.item_name;
+    object_output.id= price_data.item_id;
+    object_output.required= price_data.item_quantity;
+    object_output.recipes = [];
 
     if ((price_data.ah_price != undefined) && (price_data.ah_price.total_sales > 0)) {
         object_output.ah = {
@@ -404,16 +471,16 @@ async function generateOutputFormat(price_data, region) {
         for (let recipe_option of price_data.recipe_options) {
             const option_price = await recipeCostCalculator(recipe_option);
             const recipe = await getBlizRecipeDetail(recipe_option.recipe.recipe_id, region);
-            const obj_recipe = {
-                name: recipe.name,
-                rank: recipe_option.rank,
-                id: recipe_option.recipe.recipe_id,
-                output: getRecipeOutputValues(recipe),
-                high: option_price.high,
-                low: option_price.low,
-                average: option_price.average,
-                parts: [],
-            }
+            const obj_recipe = {} as OutputFormatRecipe;
+            obj_recipe.name= recipe.name;
+            obj_recipe.rank= recipe_option.rank;
+            obj_recipe.id= recipe_option.recipe.recipe_id;
+            obj_recipe.output= getRecipeOutputValues(recipe);
+            obj_recipe.high= option_price.high;
+            obj_recipe.low= option_price.low;
+            obj_recipe.average= option_price.average;
+            obj_recipe.parts= [];
+
             if ((recipe_option.rank_ah != undefined) && (recipe_option.rank_ah.total_sales > 0)) {
                 obj_recipe.ah = {
                     sales: recipe_option.rank_ah.total_sales,
@@ -465,7 +532,7 @@ async function generateOutputFormat(price_data, region) {
             "value": 3
         }
     */
-function getRecipeOutputValues(recipe) {
+function getRecipeOutputValues(recipe) : RecipeProductionValues {
     let min = -1;
     let max = -1;
     let value = -1;
@@ -480,7 +547,8 @@ function getRecipeOutputValues(recipe) {
     }
 
     if (min === -1 && max === -1) {
-        return value;
+        min = value;
+        max = value;
     }
 
     return { min, max, value };
@@ -503,7 +571,7 @@ function getShoppingListRanks(intermediate_data) {
  * @param {!object} intermediate_data Data from generateOutputFormat.
  * @param {!RunConfiguration} on_hand A provided inventory to get existing items from.
  */
-function constructShoppingList(intermediate_data, on_hand) {
+function constructShoppingList(intermediate_data, on_hand) : ShoppingList{
     const shopping_lists = {};
     for (let rank of getShoppingListRanks(intermediate_data)) {
         logger.debug(`Resetting inventory for rank shopping list.`);
@@ -646,8 +714,8 @@ async function run(region, server, professions, item, json_config, count) {
 
     logger.info(`Checking ${server} in ${region} for ${item} with available professions ${JSON.stringify(professions)}`);
 
-    let intermediate_data = {};
-    let price_data = {};
+    let intermediate_data : OutputFormatObject;
+    let price_data : ProfitAnalysisObject;
     let formatted_data = 'NO DATA';
 
     const cached_static_resources = await static_sources();

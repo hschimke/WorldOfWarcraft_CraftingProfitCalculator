@@ -3,7 +3,7 @@ import { getAuthorizationToken } from './blizz_oath.js';
 import { parentLogger } from './logging.js';
 import { cacheCheck, cacheGet, cacheSet } from './cached-data-sources.js';
 
-const logger = parentLogger.child();
+const logger = parentLogger.child({});
 
 const exclude_before_shadowlands = false;
 
@@ -21,6 +21,33 @@ const PROFESSION_LIST_CACHE = 'regional_profession_list';
 const COMPOSITE_REALM_NAME_CACHE = 'connected_realm_detail';
 const CYCLIC_LINK_CACHE = 'cyclic_links';
 
+// Types
+interface SearchResultsPage {
+    pageCount: number,
+    page: number
+}
+
+interface ConnectedRealmList {
+    href: string
+}
+
+interface AllConnectedRealms {
+    connected_realms: Array<ConnectedRealmList>
+}
+
+interface ConnectedRealm {
+name: string,
+}
+
+interface ConnectedRealmDetail {
+    realms: Array<ConnectedRealm>,
+    id: number
+}
+
+interface SkillTierCyclicLinks {
+
+}
+
 /**
  * Search through the item database for a string, returning the item id of the item.
  * @param {!string} region The region in which to search.
@@ -37,7 +64,7 @@ async function getItemId(region, item_name) {
     let item_id = -1;
 
     // Step 1: Get the initial results to see if we get anything
-    const initial_page = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+    const initial_page : SearchResultsPage = <SearchResultsPage>await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
         'namespace': 'static-us',
         'locale': 'en_US',
         'name.en_US': item_name,
@@ -115,14 +142,14 @@ async function getItemId(region, item_name) {
  * @param {string} region Region to return list of connected realms.
  * @param {object} token An OATH access token to use for the request.
  */
-async function getAllConnectedRealms(region, token) {
+async function getAllConnectedRealms(region, token) : Promise<AllConnectedRealms> {
     const list_connected_realms_api = '/data/wow/connected-realm/index';
     const list_connected_realms_form = {
         'namespace': 'dynamic-us',
         'locale': 'en_US'
     };
 
-    return getBlizzardAPIResponse(
+    return <Promise<AllConnectedRealms>>getBlizzardAPIResponse(
         region,
         token,
         list_connected_realms_form,
@@ -157,7 +184,7 @@ async function getConnectedRealmId(server_name, server_region) {
     // Pull the data for each connection until you find one with the server name in question
     for (let realm_href of all_connected_realms.connected_realms) {
         const hr = realm_href.href;
-        const connected_realm_detail = await getBlizzardRawUriResponse(access_token, get_connected_realm_form, hr);
+        const connected_realm_detail = <ConnectedRealmDetail>(await getBlizzardRawUriResponse(access_token, get_connected_realm_form, hr));
         const realm_list = connected_realm_detail.realms;
         let found_realm = false;
         for (let rlm of realm_list) {
@@ -570,7 +597,7 @@ async function buildCyclicRecipeList(region) {
             const st_scan_jobs = profession.skill_tiers.map((st) => {
                 return buildCyclicLinkforSkillTier(st, profession);
             });
-            (await Promise.all(st_scan_jobs)).forEach(r => {
+            (await Promise.all(st_scan_jobs)).forEach((r : Array<Promise<SkillTierCyclicLinks>>) => {
                 links.push(...r);
             });
         }
@@ -621,7 +648,7 @@ async function buildCyclicRecipeList(region) {
 
     return link_lookup;
 
-    async function buildCyclicLinkforSkillTier(skill_tier, profession) {
+    async function buildCyclicLinkforSkillTier(skill_tier, profession) : Promise<SkillTierCyclicLinks> {
         const cache_key = `${region}::${skill_tier.name}::${profession.id}`;
         if (await cacheCheck(CYCLIC_LINK_CACHE, cache_key)) {
             return cacheGet(CYCLIC_LINK_CACHE, cache_key);

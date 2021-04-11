@@ -3,7 +3,7 @@ import { parentLogger } from './logging.js';
 import { getDb } from './database.js';
 import { ALL_PROFESSIONS } from './shared-constants.js';
 
-const logger = parentLogger.child();
+const logger = parentLogger.child({});
 
 const sql_insert_auction = 'INSERT INTO auctions(item_id, quantity, price, downloaded, connected_realm_id, bonuses) VALUES($1,$2,$3,$4,$5,$6)';
 const sql_insert_auction_archive = 'INSERT INTO auction_archive(item_id, quantity, summary, downloaded, connected_realm_id, bonuses) VALUES($1,$2,$3,$4,$5,$6)';
@@ -14,6 +14,8 @@ const sql_check_item = 'SELECT COUNT(*) AS how_many FROM items WHERE item_id = $
 const sql_check_realm = 'SELECT COUNT(*) AS how_many FROM realms WHERE connected_realm_id = $1 AND region = $2';
 
 const db_type = process.env.DATABASE_TYPE;
+
+interface SummaryReturnObject { data?: Array<any>, min_value?: number, max_value?: number, avg_value?: number }
 
 async function ingest(region, connected_realm) {
     const db = await getDb('history');
@@ -116,7 +118,7 @@ async function getAllBonuses(item, region) {
         logger.info(`Found ${item_id} for ${item}`);
     }
 
-    const bonuses = await db.all(sql, [item_id]);
+    const bonuses: any = await db.all(sql, [item_id]);
 
     logger.debug(`Found ${bonuses.length} bonuses for ${item}`);
 
@@ -399,7 +401,7 @@ async function archiveAuctions() {
                 const vals = [item.item_id, item.bonuses, item.connected_realm_id, start_ticks, end_ticks];
 
                 // Run the getAuctions command for the combo
-                const summary = {};
+                const summary: SummaryReturnObject = {};
                 summary.data = (await client.query(sql_price_map, vals)).rows;
                 summary.min_value = (await client.query(sql_min, vals)).rows[0].min_price;
                 summary.max_value = (await client.query(sql_max, vals)).rows[0].max_price;

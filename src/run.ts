@@ -56,7 +56,7 @@ const argv = yargs(hideBin(process.argv))
     .alias('help', 'h')
     .argv;
 
-let character_config_json = { inventory: [] };
+let character_config_json = { inventory: [], realm: { realm_name: undefined, region_name: undefined}, professions: undefined };
 let region = argv.region;
 let server = argv.server;
 let professions = argv.profession;

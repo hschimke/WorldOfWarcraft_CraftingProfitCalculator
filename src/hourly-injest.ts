@@ -1,7 +1,7 @@
 import { scanRealms, archiveAuctions, fillNItems } from './auction-history.js';
 import { parentLogger } from './logging.js';
 
-const logger = parentLogger.child();
+const logger = parentLogger.child({});
 
 const server_mode = process.env.STANDALONE_CONTAINER === undefined ? 'normal' : process.env.STANDALONE_CONTAINER;
 

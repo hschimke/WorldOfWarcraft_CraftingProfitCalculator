@@ -7,7 +7,7 @@ import { getAuctions, getAllBonuses } from './auction-history.js';
 import { static_sources } from './cached-data-sources.js';
 import './hourly-injest.js';
 
-const logger = parentLogger.child();
+const logger = parentLogger.child({});
 
 const app = express();
 const port = process.env.SERVER_PORT;
@@ -32,7 +32,7 @@ app.post('/show_output', (req, res) => {
     if (req.body.addon_data.length > 0) {
         json_data = JSON.parse(req.body.addon_data);
     }
-    let config = {};
+    let config: RunConfiguration = undefined;
     if (req.body.type == 'custom') {
         config = new RunConfiguration({
             inventory: json_data.inventory,
@@ -46,7 +46,6 @@ app.post('/show_output', (req, res) => {
     } else if (req.body.type == 'json') {
         logger.debug('json search');
         config = new RunConfiguration(json_data, req.body.item_id, Number(req.body.needed));
-        config.region
         logger.debug(`JSON search for item: ${config.item_id}, server: ${config.realm_name}, region: ${config.realm_region}, professions: ${config.professions}. JSON DATA: ${json_data.inventory.length}`);
     }
 
@@ -67,7 +66,7 @@ app.post('/json_output', (req, res) => {
     if (req.body.addon_data.length > 0) {
         json_data = JSON.parse(req.body.addon_data);
     }
-    let config = {};
+    let config: RunConfiguration = undefined;
     if (req.body.type == 'custom') {
         config = new RunConfiguration({
             inventory: json_data.inventory,
@@ -129,8 +128,8 @@ app.post('/seen_item_bonuses', (req, res) => {
             const unknown_adjusts = new Set();
             let found_empty_bonuses = false;
 
-            const b_array = bonuses.bonuses.map(e => {
-                const v = { text: e.bonuses };
+            const b_array = (<Array<any>>(bonuses.bonuses)).map(e => {
+                const v = { text: e.bonuses, parsed: undefined, reduced: undefined };
                 v.parsed = JSON.parse(e.bonuses);
                 if (v.parsed !== null) {
                     v.reduced = v.parsed.reduce((acc, cur) => {
@@ -169,9 +168,9 @@ app.post('/seen_item_bonuses', (req, res) => {
                 //item: bonuses.item,
                 mapped: b_array,
                 collected: {
-                    ilvl: Array.from(ilvl_adjusts).map(i => { return { id: i, level: bonuses_cache[i].level + bonuses.item.level } }),
-                    socket: Array.from(socket_adjusts).map(i => { return { id: i, sockets: bonuses_cache[i].socket } }),
-                    quality: Array.from(quality_adjusts).map(i => { return { id: i, quality: bonuses_cache[i].quality } }),
+                    ilvl: Array.from(ilvl_adjusts).map((i: number) => { return { id: i, level: bonuses_cache[i].level + bonuses.item.level } }),
+                    socket: Array.from(socket_adjusts).map((i: number) => { return { id: i, sockets: bonuses_cache[i].socket } }),
+                    quality: Array.from(quality_adjusts).map((i: number) => { return { id: i, quality: bonuses_cache[i].quality } }),
                     unknown: Array.from(unknown_adjusts),
                     empty: found_empty_bonuses,
                 },

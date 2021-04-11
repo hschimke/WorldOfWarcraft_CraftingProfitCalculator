@@ -1,13 +1,23 @@
 import got from 'got';
 import { parentLogger } from './logging.js';
 
-const logger = parentLogger.child();
+const logger = parentLogger.child({});
 
 const clientID = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 
 const authorization_uri = 'https://us.battle.net/oauth/token';
-const clientAccessToken = {
+
+interface AccessToken {
+    access_token: string,
+    token_type: string,
+    expires_in: number,
+    scope: string,
+    fetched: number,
+    checkExpired: () => boolean
+};
+
+const clientAccessToken: AccessToken = {
     access_token: '',
     token_type: '',
     expires_in: 0,
@@ -31,7 +41,7 @@ async function getAuthorizationToken() {
     if (clientAccessToken.checkExpired()) {
         logger.debug('Access token expired, fetching fresh.');
         try {
-            const auth_response = await got(authorization_uri, {
+            const auth_response: { body: any } = await got(authorization_uri, {
                 responseType: 'json',
                 method: 'POST',
                 username: clientID,

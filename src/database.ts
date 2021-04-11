@@ -4,7 +4,7 @@ import sqlite3 from 'sqlite3';
 import pg from 'pg';
 const { Pool } = pg;
 
-const logger = parentLogger.child();
+const logger = parentLogger.child({});
 let l_pool;
 const dbs = new Map();
 let dbs_open;
@@ -154,7 +154,7 @@ async function getDb(db_name) {
     const context = function () { };
     if (db_type === 'sqlite3') {
         context.db = dbs.get(db_name);
-        context.get = function (query, values) {
+        context.get = function (query, values?): Promise<any> {
             logger.silly(sqlToString(query, values));
             return new Promise((accept, reject) => {
                 this.db.get(query, values, (err, row) => {
@@ -166,9 +166,9 @@ async function getDb(db_name) {
                 })
             });
         };
-        context.run = function (query, values) {
+        context.run = function (query, values?) {
             logger.silly(sqlToString(query, values));
-            return new Promise((accept, reject) => {
+            return new Promise<void>((accept, reject) => {
                 this.db.run(query, values, (err) => {
                     if (err) {
                         logger.error(`Issue running query '${query}' and values ${values}`, err);
@@ -179,7 +179,7 @@ async function getDb(db_name) {
                 })
             });
         };
-        context.all = function (query, values) {
+        context.all = function (query, values?) : Promise<any[]>{
             logger.silly(sqlToString(query, values));
             return new Promise((accept, reject) => {
                 this.db.all(query, values, (err, rows) => {
@@ -192,7 +192,7 @@ async function getDb(db_name) {
             });
         };
         context.serialize = function (queries, value_sets) {
-            return new Promise((accept, reject) => {
+            return new Promise<void>((accept, reject) => {
                 this.db.serialize(() => {
                     try {
                         for (let i = 0; i < queries.length; i++) {
@@ -215,8 +215,8 @@ async function getDb(db_name) {
         context.getClient = async function () {
             const f = function () { };
             f.release = async function () { };
-            f.query = async function (query, values) {
-                const result = await context.all(query, values);
+            f.query = async function (query, values?) {
+                const result = <Array<any>>(await context.all(query, values));
                 return { rows: [...result] };
             };
             return f;
@@ -235,16 +235,16 @@ async function getDb(db_name) {
             const client = await this.pool.connect();
             return client;
         };
-        context.query = async function (query, values) {
+        context.query = async function (query, values?) {
             logger.silly(sqlToString(query, values));
             const res = await this.pool.query(query, values);
             return res;
         };
-        context.get = async function (query, values) {
+        context.get = async function (query, values?): Promise<any> {
             const res = await this.query(query, values);
             return res.rows[0];
         }
-        context.all = async function (query, values) {
+        context.all = async function (query, values?) : Promise<any[]> {
             const result = await this.query(query, values);
             return result.rows;
         }

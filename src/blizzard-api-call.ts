@@ -2,7 +2,7 @@ import events from 'events';
 import got from 'got';
 import { parentLogger } from './logging.js';
 
-const logger = parentLogger.child();
+const logger = parentLogger.child({});
 
 const allowed_connections_per_period = 100;
 const period_reset_window = 1500;
@@ -72,7 +72,7 @@ async function getBlizzardAPIResponse(region_code, authorization_token, data, ur
     in_use++;
     try {
         const api_response = await got(`https://${region_code}.${base_uri}${uri}`, {
-            reponseType: 'json',
+            responseType: 'json',
             method: 'GET',
             headers: {
                 'Connection': 'keep-alive',
@@ -111,7 +111,7 @@ async function getBlizzardRawUriResponse(authorization_token, data, uri) {
     in_use++;
     try {
         const api_response = await got(uri, {
-            reponseType: 'json',
+            responseType: 'json',
             method: 'GET',
             headers: {
                 'Connection': 'keep-alive',
