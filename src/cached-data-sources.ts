@@ -11,10 +11,6 @@ const rank_mappings_cache_fn = '../cache/rank-mappings.json';
 const shopping_recipe_exclusion_list_fn = '../cache/shopping-recipe-exclusion-list.json'
 const data_sources_fn = '../cache/data-sources.json';
 
-interface BonusesCache {
-    bonuses: Array<any>
-}
-
 let bonuses_cache: BonusesCache;
 let rank_mappings_cache;
 let shopping_recipe_exclusion_list;

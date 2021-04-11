@@ -15,8 +15,6 @@ const sql_check_realm = 'SELECT COUNT(*) AS how_many FROM realms WHERE connected
 
 const db_type = process.env.DATABASE_TYPE;
 
-interface SummaryReturnObject { data?: Array<any>, min_value?: number, max_value?: number, avg_value?: number }
-
 async function ingest(region, connected_realm) {
     const db = await getDb('history');
     // Get auction house

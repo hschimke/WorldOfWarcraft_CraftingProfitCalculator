@@ -21,33 +21,6 @@ const PROFESSION_LIST_CACHE = 'regional_profession_list';
 const COMPOSITE_REALM_NAME_CACHE = 'connected_realm_detail';
 const CYCLIC_LINK_CACHE = 'cyclic_links';
 
-// Types
-interface SearchResultsPage {
-    pageCount: number,
-    page: number
-}
-
-interface ConnectedRealmList {
-    href: string
-}
-
-interface AllConnectedRealms {
-    connected_realms: Array<ConnectedRealmList>
-}
-
-interface ConnectedRealm {
-name: string,
-}
-
-interface ConnectedRealmDetail {
-    realms: Array<ConnectedRealm>,
-    id: number
-}
-
-interface SkillTierCyclicLinks {
-
-}
-
 /**
  * Search through the item database for a string, returning the item id of the item.
  * @param {!string} region The region in which to search.
