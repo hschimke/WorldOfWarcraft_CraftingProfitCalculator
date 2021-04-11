@@ -20,6 +20,23 @@ logger.add(new winston.transports.Console({
     level: 'silly',
 }));*/
 
+// Types
+type DatabaseClientFunction = {
+    release: () => void;
+    query: (query: string, values?: Array<string|number>) => Promise<any>;
+    (): void;
+}
+type DatabaseManagerFunction = {
+    db?: object;
+    pool?: object;
+    get: (query: string, values?: Array<string|number>) => Promise<any>;
+    run: (query: string, values?: Array<string|number>) => Promise<any>;
+    all: (query: string, values?: Array<string|number>) => Promise<any>;
+    query: (query: string, values?: Array<string|number>) => Promise<any>;
+    serialize: (query: Array<string>, values?: Array<Array<string|number>>) => Promise<any>;
+    getClient: () => Promise<DatabaseClientFunction>;
+    (): void;
+};
 
 const pragma_sync = 'PRAGMA synchronous = normal';
 const pragma_journal = 'PRAGMA journal_mode=WAL';
@@ -151,7 +168,7 @@ function shutdown() {
 
 async function getDb(db_name) {
     await start();
-    const context = function () { };
+    const context : DatabaseManagerFunction = function () { };
     if (db_type === 'sqlite3') {
         context.db = dbs.get(db_name);
         context.get = function (query, values?): Promise<any> {
