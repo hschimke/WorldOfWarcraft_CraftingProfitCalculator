@@ -10,21 +10,21 @@ const period_reset_window = 1500;
 let allowed_during_period = 0;
 let in_use = 0;
 
-function sleep(ms) {
+function sleep(ms) : Promise<void> {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
 }
 
 class BlizzardTimeoutManager extends events {
-    intervalTimeout;
+    intervalTimeout : NodeJS.Timeout;
 }
 const emitter = new BlizzardTimeoutManager();
-function exec_reset() {
+function exec_reset() : void {
     emitter.emit('reset');
 }
 
-function shutdownApiManager() {
+function shutdownApiManager() : void {
     emitter.emit('shutdown');
 }
 
@@ -42,7 +42,7 @@ emitter.on('start', () => {
     emitter.intervalTimeout.unref();
 });
 
-async function manageBlizzardTimeout() {
+async function manageBlizzardTimeout() : Promise<void> {
     emitter.emit('start');
 }
 
@@ -54,7 +54,7 @@ const base_uri = 'api.blizzard.com';
  * @param {Object} data The request data to send.
  * @param {!string} uri The url to query against.
  */
-async function getBlizzardAPIResponse(region_code, authorization_token, data, uri) {
+async function getBlizzardAPIResponse(region_code: RegionCode, authorization_token: AccessToken, data: string | Record<string, string|number>, uri: string) : Promise<BlizzardApi.BlizzardApiReponse>{
     let proceed = false;
     let wait_count = 0;
     while (!proceed) {
@@ -81,7 +81,7 @@ async function getBlizzardAPIResponse(region_code, authorization_token, data, ur
             searchParams: data
         }).json();
         in_use--;
-        return api_response;
+        return <BlizzardApi.BlizzardApiReponse>api_response;
     } catch (error) {
         logger.error(`Issue fetching blizzard data: (https://${region_code}.${base_uri}${uri}) ` + error);
     }
@@ -93,7 +93,7 @@ async function getBlizzardAPIResponse(region_code, authorization_token, data, ur
  * @param {object} data The request data to send.
  * @param {string} uri Raw url including transport to query.
  */
-async function getBlizzardRawUriResponse(authorization_token, data, uri) {
+async function getBlizzardRawUriResponse(authorization_token: AccessToken, data: string | Record<string, string|number>, uri: string) : Promise<BlizzardApi.BlizzardApiReponse>{
     let proceed = false;
     let wait_count = 0;
     while (!proceed) {
@@ -120,7 +120,7 @@ async function getBlizzardRawUriResponse(authorization_token, data, uri) {
             searchParams: data
         }).json();
         in_use--;
-        return api_response;
+        return <BlizzardApi.BlizzardApiReponse>api_response;
     } catch (error) {
         logger.error(`Issue fetching blizzard data: (${uri}) ` + error);
     }

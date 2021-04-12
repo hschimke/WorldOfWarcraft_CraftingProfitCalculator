@@ -26,7 +26,7 @@ const CYCLIC_LINK_CACHE = 'cyclic_links';
  * @param {!string} region The region in which to search.
  * @param {!string} item_name The name of the item to search for
  */
-async function getItemId(region, item_name) {
+async function getItemId(region: RegionCode, item_name : ItemName) : Promise<ItemID> {
     logger.info(`Searching for itemId for ${item_name}`);
 
     if (await cacheCheck(ITEM_SEARCH_CACHE, item_name)) {
@@ -37,7 +37,7 @@ async function getItemId(region, item_name) {
     let item_id = -1;
 
     // Step 1: Get the initial results to see if we get anything
-    const initial_page : SearchResultsPage = <SearchResultsPage>await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+    const initial_page : BlizzardApi.ItemSearch = <BlizzardApi.ItemSearch> await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
         'namespace': 'static-us',
         'locale': 'en_US',
         'name.en_US': item_name,
@@ -60,7 +60,7 @@ async function getItemId(region, item_name) {
             for (let cp = initial_page.page; cp <= page_count; cp++) {
                 logger.debug(`Checking page ${cp} for ${item_name}`);
                 if (page_item_id <= 0) {
-                    const current_page = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+                    const current_page = <BlizzardApi.ItemSearch> await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
                         'namespace': 'static-us',
                         'locale': 'en_US',
                         'name.en_US': item_name,
@@ -96,7 +96,7 @@ async function getItemId(region, item_name) {
      * @param {!string} item_name The name of the item we are searching for.
      * @return The item id of the item, or -1 if it doesn't.
      */
-    async function checkPageSearchResults(page, item_name) {
+    async function checkPageSearchResults(page : BlizzardApi.ItemSearch, item_name : ItemName) : Promise<ItemID> {
         let found_item_id = -1;
         for (let result of page.results) {
             //console.log(result);
@@ -115,14 +115,14 @@ async function getItemId(region, item_name) {
  * @param {string} region Region to return list of connected realms.
  * @param {object} token An OATH access token to use for the request.
  */
-async function getAllConnectedRealms(region, token) : Promise<AllConnectedRealms> {
+async function getAllConnectedRealms(region:RegionCode, token:AccessToken) : Promise<BlizzardApi.ConnectedRealmIndex> {
     const list_connected_realms_api = '/data/wow/connected-realm/index';
     const list_connected_realms_form = {
         'namespace': 'dynamic-us',
         'locale': 'en_US'
     };
 
-    return <Promise<AllConnectedRealms>>getBlizzardAPIResponse(
+    return <Promise<BlizzardApi.ConnectedRealmIndex>>getBlizzardAPIResponse(
         region,
         token,
         list_connected_realms_form,
@@ -136,7 +136,7 @@ async function getAllConnectedRealms(region, token) : Promise<AllConnectedRealms
  * @param {!string} server_region The region in which the server is hosted.
  * @return {Promise.<number>} The number associated with the connected realm for the server.
  */
-async function getConnectedRealmId(server_name, server_region) {
+async function getConnectedRealmId(server_name:RealmName, server_region:RegionCode) : Promise<ConnectedRealmID> {
     const connected_realm_key = `${server_region}::${server_name}`;
 
     if (await cacheCheck(CONNECTED_REALM_ID_CACHE, connected_realm_key)) {
@@ -147,7 +147,7 @@ async function getConnectedRealmId(server_name, server_region) {
         'namespace': 'dynamic-us',
         'locale': 'en_US'
     };
-    const access_token = await getAuthorizationToken();
+    const access_token = await getAuthorizationToken(server_region);
 
     let realm_id = 0;
 
@@ -157,7 +157,7 @@ async function getConnectedRealmId(server_name, server_region) {
     // Pull the data for each connection until you find one with the server name in question
     for (let realm_href of all_connected_realms.connected_realms) {
         const hr = realm_href.href;
-        const connected_realm_detail = <ConnectedRealmDetail>(await getBlizzardRawUriResponse(access_token, get_connected_realm_form, hr));
+        const connected_realm_detail = <BlizzardApi.ConnectedRealm>await getBlizzardRawUriResponse(access_token, get_connected_realm_form, hr);
         const realm_list = connected_realm_detail.realms;
         let found_realm = false;
         for (let rlm of realm_list) {
@@ -186,7 +186,7 @@ async function getConnectedRealmId(server_name, server_region) {
  * @param {!number} item_id The item id for the item to retrieve.
  * @param {!string} region The region in which we are searching.
  */
-async function getItemDetails(item_id, region) {
+async function getItemDetails(item_id : ItemID, region: RegionCode) : Promise<BlizzardApi.Item>{
     const key = item_id
 
     if (await cacheCheck(ITEM_DATA_CACHE, key)) {
@@ -195,7 +195,7 @@ async function getItemDetails(item_id, region) {
 
     const profession_item_detail_uri = `/data/wow/item/${item_id}`;
     //categories[array].recipes[array].name categories[array].recipes[array].id
-    const result = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+    const result = <BlizzardApi.Item>await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
         'namespace': 'static-us',
         'locale': 'en_US'
     },
@@ -209,7 +209,7 @@ async function getItemDetails(item_id, region) {
  * Get a list of all professions available.
  * @param {!string} region The region to search
  */
-async function getBlizProfessionsList(region) {
+async function getBlizProfessionsList(region:RegionCode) : Promise<BlizzardApi.ProfessionsIndex> {
     const key = region;
     const profession_list_uri = '/data/wow/profession/index'; // professions.name / professions.id
 
@@ -217,7 +217,7 @@ async function getBlizProfessionsList(region) {
         return cacheGet(PROFESSION_LIST_CACHE, key);
     }
 
-    const result = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+    const result = <BlizzardApi.ProfessionsIndex>await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
         'namespace': 'static-us',
         'locale': 'en_US'
     }, profession_list_uri);
@@ -232,7 +232,7 @@ async function getBlizProfessionsList(region) {
  * @param profession_id The id of the profession to fetch.
  * @param region The region in which to search.
  */
-async function getBlizProfessionDetail(profession_id, region) {
+async function getBlizProfessionDetail(profession_id:number, region:RegionCode):Promise<BlizzardApi.Profession> {
     const key = `${region}::${profession_id}`;
 
     if (await cacheCheck(PROFESSION_DETAIL_CACHE, key)) {
@@ -240,7 +240,7 @@ async function getBlizProfessionDetail(profession_id, region) {
     }
 
     const profession_detail_uri = `/data/wow/profession/${profession_id}`; // skill_tiers.name skill_tiers.id
-    const result = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+    const result = <BlizzardApi.Profession>await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
         'namespace': 'static-us',
         'locale': 'en_US'
     },
@@ -250,7 +250,7 @@ async function getBlizProfessionDetail(profession_id, region) {
     return result;
 }
 
-async function getBlizConnectedRealmDetail(connected_realm_id, region) {
+async function getBlizConnectedRealmDetail(connected_realm_id:ConnectedRealmID, region:RegionCode) : Promise<BlizzardApi.ConnectedRealm> {
     const key = `${region}::${connected_realm_id}`;
 
     if (await cacheCheck(COMPOSITE_REALM_NAME_CACHE, key)) {
@@ -258,7 +258,7 @@ async function getBlizConnectedRealmDetail(connected_realm_id, region) {
     }
 
     const connected_realm_detail_uri = `/data/wow/connected-realm/${connected_realm_id}`; // skill_tiers.name skill_tiers.id
-    const result = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+    const result = <BlizzardApi.ConnectedRealm>await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
         'namespace': 'dynamic-us',
         'locale': 'en_US'
     },
@@ -275,7 +275,7 @@ async function getBlizConnectedRealmDetail(connected_realm_id, region) {
  * @param {!number} skillTier_id The skill tier id we are interested in.
  * @param {!string} region The region in which to search.
  */
-async function getBlizSkillTierDetail(profession_id, skillTier_id, region) {
+async function getBlizSkillTierDetail(profession_id : number, skillTier_id: number, region: RegionCode) : Promise<BlizzardApi.ProfessionSkillTier> {
     const key = `${region}::${profession_id}::${skillTier_id}`;
 
     if (await cacheCheck(PROFESSION_SKILL_TIER_DETAILS_CACHE, key)) {
@@ -284,7 +284,7 @@ async function getBlizSkillTierDetail(profession_id, skillTier_id, region) {
 
     const profession_skill_tier_detail_uri = `/data/wow/profession/${profession_id}/skill-tier/${skillTier_id}`;
     //categories[array].recipes[array].name categories[array].recipes[array].id
-    const result = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+    const result = <BlizzardApi.ProfessionSkillTier>await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
         'namespace': 'static-us',
         'locale': 'en_US'
     },
@@ -301,7 +301,7 @@ async function getBlizSkillTierDetail(profession_id, skillTier_id, region) {
  * @param recipe_id The id of the recipe to fetch.
  * @param region The region in which to search.
  */
-async function getBlizRecipeDetail(recipe_id, region) {
+async function getBlizRecipeDetail(recipe_id : number, region: RegionCode) : Promise<BlizzardApi.Recipe> {
     const key = `${region}::${recipe_id}`;
 
     if (await cacheCheck(PROFESSION_RECIPE_DETAIL_CACHE, key)) {
@@ -311,7 +311,7 @@ async function getBlizRecipeDetail(recipe_id, region) {
     const profession_recipe_uri = `/data/wow/recipe/${recipe_id}`;
     //crafted_item.name crafted_item.id / reagents[array].name reagents[array].id reagents[array].quantity
 
-    const result = await getBlizzardAPIResponse(region, await getAuthorizationToken(), {
+    const result = <BlizzardApi.Recipe>await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
         'namespace': 'static-us',
         'locale': 'en_US'
     },
@@ -328,7 +328,7 @@ async function getBlizRecipeDetail(recipe_id, region) {
  * @param {!Array.<string>}character_professions The list of professions available to the user.
  * @param {!string} region The region in which to search.
  */
-async function checkIsCrafting(item_id, character_professions, region) {
+async function checkIsCrafting(item_id : ItemID, character_professions: Array<CharacterProfession>, region : RegionCode): Promise<CraftingStatus> {
     // Check if we've already run this check, and if so return the cached version, otherwise keep on
     const key = `${region}::${item_id}::${JSON.stringify(character_professions)}`;
 
@@ -386,7 +386,7 @@ async function checkIsCrafting(item_id, character_professions, region) {
     return recipe_options;
 }
 
-function getProfessionId(profession_list, profession_name) {
+function getProfessionId(profession_list: BlizzardApi.ProfessionsIndex, profession_name:string) : number {
     return profession_list.professions.find((item) => {
         return (item.name.localeCompare(profession_name, undefined, { sensitivity: 'accent' }) == 0);
     }).id;
@@ -400,7 +400,7 @@ function getProfessionId(profession_list, profession_name) {
  * @param {number} item_id The item id of the item we are checking.
  * @param {object} item_detail Details about the item we are checking.
  */
-async function checkProfessionCrafting(profession_list, prof, region, item_id, item_detail) {
+async function checkProfessionCrafting(profession_list: BlizzardApi.ProfessionsIndex, prof:CharacterProfession, region : RegionCode, item_id:ItemID, item_detail:BlizzardApi.Item) : Promise<CraftingStatus> {
     const cache_key = `${region}:${prof}:${item_id}`;
     if (await cacheCheck(CRAFTABLE_BY_SINGLE_PROFESSION_CACHE, cache_key)) {
         return cacheGet(CRAFTABLE_BY_SINGLE_PROFESSION_CACHE, cache_key);
@@ -433,7 +433,7 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
      * Scan a tier of a given profession to see if it can craft an item.
      * @param skill_tier The tier level to check.
      */
-    async function checkProfessionTierCrafting(skill_tier, region) {
+    async function checkProfessionTierCrafting(skill_tier: { name: any; id: any; }, region:RegionCode) : Promise<void> {
         let check_scan_tier = skill_tier.name.includes('Shadowlands');
         if (!exclude_before_shadowlands) {
             check_scan_tier = true;
@@ -450,8 +450,8 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
                 const categories = skill_tier_detail.categories;
 
                 checked_categories += categories.length;
-                for (let cat of categories) {
-                    for (let rec of cat.recipes) {
+                for (const cat of categories) {
+                    for (const rec of cat.recipes) {
                         const recipe = await getBlizRecipeDetail(rec.id, region);
                         recipes_checked++;
                         logger.silly(`Check recipe ${recipe.name}`);
@@ -502,8 +502,8 @@ async function checkProfessionCrafting(profession_list, prof, region, item_id, i
     }
 }
 
-function getRecipeCraftedItemID(recipe) {
-    let item_ids = new Set();
+function getRecipeCraftedItemID(recipe : BlizzardApi.Recipe) : Set<ItemID> {
+    let item_ids : Set<ItemID> = new Set();
     let found = false;
     if ('alliance_crafted_item' in recipe) {
         item_ids.add(recipe.alliance_crafted_item.id);
@@ -524,7 +524,7 @@ function getRecipeCraftedItemID(recipe) {
     return item_ids;
 }
 
-function getSlotName(category) {
+function getSlotName(category : BlizzardApi._skillTierCategory) : string {
     const name = category.name;
 
     let raw_slot_name = name;
@@ -550,7 +550,7 @@ function getSlotName(category) {
     }
 }
 
-async function buildCyclicRecipeList(region) {
+async function buildCyclicRecipeList(region : RegionCode) : Promise<SkillTierCyclicLinks> {
 
     const profession_list = await getBlizProfessionsList(region);
 
@@ -621,7 +621,7 @@ async function buildCyclicRecipeList(region) {
 
     return link_lookup;
 
-    async function buildCyclicLinkforSkillTier(skill_tier, profession) : Promise<SkillTierCyclicLinks> {
+    async function buildCyclicLinkforSkillTier(skill_tier: { name: any; id: any; }, profession : BlizzardApi.Profession) : Promise<SkillTierCyclicLinks> {
         const cache_key = `${region}::${skill_tier.name}::${profession.id}`;
         if (await cacheCheck(CYCLIC_LINK_CACHE, cache_key)) {
             return cacheGet(CYCLIC_LINK_CACHE, cache_key);
@@ -680,7 +680,7 @@ async function buildCyclicRecipeList(region) {
  * @param recipe_id The id of the recipe to check.
  * @param region The region in which to search.
  */
-async function getCraftingRecipe(recipe_id, region) {
+async function getCraftingRecipe(recipe_id : number, region:RegionCode) : Promise<BlizzardApi.Recipe>{
     const recipe = getBlizRecipeDetail(recipe_id, region);
     return recipe;
 }
@@ -690,7 +690,7 @@ async function getCraftingRecipe(recipe_id, region) {
  * @param {!number} server_id The connected realm id to fetch.
  * @param {!string} server_region The region in which the realm exists.
  */
-async function getAuctionHouse(server_id, server_region) {
+async function getAuctionHouse(server_id:ConnectedRealmID, server_region:RegionCode) : Promise<BlizzardApi.Auctions> {
     // Download the auction house for the server_id
     // If the auction house is older than an hour then remove it from the cached_data.fetched_auction_houses array
     if (await cacheCheck(AUCTION_DATA_CACHE, server_id, 3.6e+6)) {
@@ -700,9 +700,9 @@ async function getAuctionHouse(server_id, server_region) {
     logger.info('Auction house is out of date, fetching it fresh.')
 
     const auction_house_fetch_uri = `/data/wow/connected-realm/${server_id}/auctions`;
-    const ah = await getBlizzardAPIResponse(
+    const ah = <BlizzardApi.Auctions>await getBlizzardAPIResponse(
         server_region,
-        await getAuthorizationToken(),
+        await getAuthorizationToken(server_region),
         {
             'namespace': 'dynamic-us',
             'locale': 'en_US'

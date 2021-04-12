@@ -28,7 +28,7 @@ app.get('*', (req, res) => {
 });
 
 app.post('/show_output', (req, res) => {
-    let json_data = { inventory: [] };
+    let json_data: AddonData = { inventory: [] } as AddonData;
     if (req.body.addon_data.length > 0) {
         json_data = JSON.parse(req.body.addon_data);
     }
@@ -62,7 +62,7 @@ app.post('/show_output', (req, res) => {
 });
 
 app.post('/json_output', (req, res) => {
-    let json_data = { inventory: [] };
+    let json_data: AddonData = { inventory: [] } as AddonData;
     if (req.body.addon_data.length > 0) {
         json_data = JSON.parse(req.body.addon_data);
     }
@@ -197,11 +197,11 @@ const server = app.listen(port, () => {
 process.on('SIGTERM', () => {
     logger.info('SIGTERM signal received: closing HTTP server')
     shutdown()
-        .then(server.close());
+        .then(() => { server.close() });
 });
 
 process.on('SIGINT', () => {
     logger.info('SIGINT signal received: closing HTTP server')
     shutdown()
-        .then(server.close());
+        .then(() => { server.close() });
 });

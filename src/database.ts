@@ -77,7 +77,7 @@ const cache_sql_run_at_open_sq3 = [
     pragma_sync,
     pragma_journal];
 
-function sqlToString(sql, values) {
+function sqlToString(sql : string, values : Array<string | number | boolean>) : string {
     const value_str = values !== undefined ? values.map((val) => {
         return `[value: ${val} type: ${typeof (val)}] `;
     }) : '';
@@ -92,7 +92,7 @@ async function performDBMigration() {
 
 }*/
 
-async function start() {
+async function start() : Promise<void> {
     if (!dbs_open) {
         if (db_type === 'sqlite3') {
             const cache_fn = process.env.CACHE_DB_FN;
@@ -128,7 +128,7 @@ async function start() {
     }
 }
 
-function shutdown() {
+function shutdown() : void {
     logger.info('Closing DB connection');
     dbs_open = false;
     if (db_type === 'sqlite3') {
@@ -148,7 +148,7 @@ function shutdown() {
     }
 }
 
-async function getDb(db_name) {
+async function getDb(db_name: string) : Promise<DatabaseManagerFunction> {
     await start();
     const context : DatabaseManagerFunction = function () { };
     if (db_type === 'sqlite3') {

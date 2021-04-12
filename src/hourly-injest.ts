@@ -9,7 +9,7 @@ let standalone_container_abc = undefined;
 
 //await addRealmToScanList('hyjal','us');
 
-async function job() {
+async function job(): Promise<void> {
     logger.info('Starting hourly injest job.');
     //const run_list = [];
 

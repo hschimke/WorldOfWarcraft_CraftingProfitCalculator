@@ -5,12 +5,13 @@ import { getItemId, getConnectedRealmId, getItemDetails, getBlizRecipeDetail, ch
 import { shutdownApiManager } from './blizzard-api-call.js';
 import { textFriendlyOutputFormat } from './text-output-helpers.js';
 import { getAuthorizationToken } from './blizz_oath.js';
+import { RunConfiguration } from './RunConfiguration.js';
 
 const logger = parentLogger.child({});
 
-let raidbots_bonus_lists;
-let rankings;
-let shopping_recipe_exclusions;
+let raidbots_bonus_lists: BonusesCache;
+let rankings: RankMappingsCache;
+let shopping_recipe_exclusions: ShoppingRecipeExclusionList;
 
 /**
  * Find the value of an item on the auction house.
@@ -20,7 +21,7 @@ let shopping_recipe_exclusions;
  * @param {object} auction_house An auction house to search through.
  * @param {?number} bonus_level_required An optional bonus level for crafted legendary base items.
  */
-async function getAHItemPrice(item_id, auction_house, bonus_level_required?) : Promise<AHItemPriceObject> {
+async function getAHItemPrice(item_id: ItemID, auction_house: BlizzardApi.Auctions, bonus_level_required?: number): Promise<AHItemPriceObject> {
     // Find the item and return best, worst, average prices
 
     let auction_high = Number.MIN_VALUE;
@@ -37,7 +38,7 @@ async function getAHItemPrice(item_id, auction_house, bonus_level_required?) : P
     auction_house.auctions.forEach((auction) => {
         if (auction.item.id == item_id) {
             if (((bonus_level_required != undefined) && (('bonus_lists' in auction.item) && auction.item.bonus_lists.includes(bonus_level_required))) || (bonus_level_required == undefined)) {
-                if ('buyout' in auction) {
+                if (auction.buyout !== undefined) {
                     if (auction.buyout > auction_high) {
                         auction_high = auction.buyout;
                     }
@@ -76,13 +77,13 @@ async function getAHItemPrice(item_id, auction_house, bonus_level_required?) : P
  * @param {Number} item_id 
  * @param {String} region 
  */
-async function findNoneAHPrice(item_id, region) {
+async function findNoneAHPrice(item_id: ItemID, region: RegionCode): Promise<number> {
     // Get the item from blizz and see what the purchase price is
     // The general method is to get the item and see if the description mentions the auction house,
     // if it does then return -1, if it doesn't return the 'purchase_price' options
     const item = await getItemDetails(item_id, region);
     let vendor_price = -1;
-    if ('description' in item) {
+    if (item.description !== undefined) {
         if (item.description.includes('vendor')) {
             vendor_price = item.purchase_price;
         }
@@ -92,7 +93,7 @@ async function findNoneAHPrice(item_id, region) {
     } else {
         vendor_price = item.purchase_price;
     }
-    if ('purchase_quantity' in item) {
+    if (item.purchase_quantity !== undefined) {
         vendor_price = vendor_price / item.purchase_quantity;
     }
     return vendor_price;
@@ -109,7 +110,7 @@ async function findNoneAHPrice(item_id, region) {
  * @param {number} item_id Item ID to scan
  * @param {object} auction_house The auction house data to use as a source.
  */
-async function getItemBonusLists(item_id, auction_house) {
+async function getItemBonusLists(item_id: ItemID, auction_house: BlizzardApi.Auctions): Promise<Array<number>> {
     let bonus_lists = [];
     let bonus_lists_set = [];
     auction_house.auctions.forEach((auction) => {
@@ -142,7 +143,7 @@ async function getItemBonusLists(item_id, auction_house) {
  * get the item level delta for that bonus id.
  * @param bonus_id The bonus ID to check.
  */
-function getLvlModifierForBonus(bonus_id) {
+function getLvlModifierForBonus(bonus_id: number): number {
     if (bonus_id in raidbots_bonus_lists) {
         if ('level' in raidbots_bonus_lists[bonus_id]) {
             return raidbots_bonus_lists[bonus_id].level;
@@ -163,11 +164,14 @@ function getLvlModifierForBonus(bonus_id) {
  * @param {number} qauntity The number of items required.
  * @param {?object} passed_ah If an auction house is already available, pass it in and it will be used.
  */
-async function performProfitAnalysis(region, server, character_professions, item, qauntity, passed_ah?) : Promise<ProfitAnalysisObject> {
+async function performProfitAnalysis(region: RegionCode, server: RealmName, character_professions: Array<CharacterProfession>, item: ItemSoftIdentity, qauntity: number, passed_ah?: BlizzardApi.Auctions): Promise<ProfitAnalysisObject> {
     // Check if we have to figure out the item id ourselves
     let item_id = 0;
-    if (Number.isFinite(Number(item))) {
+    if (typeof item === 'number') {
         item_id = item;
+    }
+    else if (Number.isFinite(Number(item))) {
+        item_id = Number(item);
     } else {
         item_id = await getItemId(region, item);
         if (item_id < 0) {
@@ -184,8 +188,8 @@ async function performProfitAnalysis(region, server, character_professions, item
     const craftable_item_swaps = await buildCyclicRecipeList(region);
 
     let price_obj = {} as ProfitAnalysisObject;
-    price_obj.item_id= item_id;
-    price_obj.item_name= item_detail.name;
+    price_obj.item_id = item_id;
+    price_obj.item_name = item_detail.name;
 
     logger.info(`Analyzing profits potential for ${item_detail.name} (${item_id})`);
 
@@ -216,7 +220,7 @@ async function performProfitAnalysis(region, server, character_professions, item
     // possible bonus_list. They're actually different items, blizz just tells us they aren't.
     price_obj.bonus_lists = Array.from(new Set(await getItemBonusLists(item_id, auction_house)));
     let bonus_link = {};
-    const bl_flat : Array<number> = <Array<number>>(Array.from(new Set(price_obj.bonus_lists.flat())).filter((bonus: number) => bonus in raidbots_bonus_lists && 'level' in raidbots_bonus_lists[bonus]));
+    const bl_flat = (Array.from(new Set(price_obj.bonus_lists.flat())).filter((bonus: number) => bonus in raidbots_bonus_lists && 'level' in raidbots_bonus_lists[bonus]));
     for (const bonus of bl_flat) {
         const mod = getLvlModifierForBonus(bonus);
         if (mod !== -1) {
@@ -238,9 +242,9 @@ async function performProfitAnalysis(region, server, character_professions, item
 
             price_obj.item_quantity = qauntity / getRecipeOutputValues(item_bom).min;
 
-                // Find alternates for reagents
-                //console.log(craftable_item_swaps);
-                for(const reagent of item_bom.reagents) {
+            // Find alternates for reagents
+            //console.log(craftable_item_swaps);
+            for (const reagent of item_bom.reagents) {
                 //console.log(reagent);
                 //console.log(reagent.reagent.id);
                 if (craftable_item_swaps[reagent.reagent.id] !== undefined) {
@@ -262,7 +266,7 @@ async function performProfitAnalysis(region, server, character_professions, item
             });
 
             let rank_level = 0;
-            let rank_AH = {};
+            let rank_AH = {} as AHItemPriceObject;
             if (recipe_id_list.length > 1) {
                 rank_level = recipe_id_list.indexOf(recipe.recipe_id) > -1 ? rankings.available_levels[rankings.rank_mapping[recipe_id_list.indexOf(recipe.recipe_id)]] : 0;
                 if (bonus_link[rank_level] != undefined) {
@@ -301,7 +305,7 @@ async function performProfitAnalysis(region, server, character_professions, item
  * Figure out the best/worst/average cost to construct a recipe given all items required.
  * @param recipe_option The recipe to price.
  */
-async function recipeCostCalculator(recipe_option) {
+async function recipeCostCalculator(recipe_option: ProfitAnalysisRecipe): Promise<{ high: number, low: number, average: number }> {
     /**
      * For each recipe
      *   For each component
@@ -349,7 +353,7 @@ async function recipeCostCalculator(recipe_option) {
             let low = Number.MAX_VALUE;
 
             let rc_price_promises = [];
-            for (let opt of component.recipe_options) {
+            for (const opt of component.recipe_options) {
                 rc_price_promises.push(recipeCostCalculator(opt));
             }
 
@@ -380,11 +384,11 @@ async function recipeCostCalculator(recipe_option) {
  * @param {!object} price_data The object created by the analyze function.
  * @param {!string} region The region in which to work.
  */
-async function generateOutputFormat(price_data, region) : Promise<OutputFormatObject>{
+async function generateOutputFormat(price_data: ProfitAnalysisObject, region: RegionCode): Promise<OutputFormatObject> {
     const object_output = {} as OutputFormatObject;
     object_output.name = price_data.item_name;
-    object_output.id= price_data.item_id;
-    object_output.required= price_data.item_quantity;
+    object_output.id = price_data.item_id;
+    object_output.required = price_data.item_quantity;
     object_output.recipes = [];
 
     if ((price_data.ah_price != undefined) && (price_data.ah_price.total_sales > 0)) {
@@ -403,14 +407,14 @@ async function generateOutputFormat(price_data, region) : Promise<OutputFormatOb
             const option_price = await recipeCostCalculator(recipe_option);
             const recipe = await getBlizRecipeDetail(recipe_option.recipe.recipe_id, region);
             const obj_recipe = {} as OutputFormatRecipe;
-            obj_recipe.name= recipe.name;
-            obj_recipe.rank= recipe_option.rank;
-            obj_recipe.id= recipe_option.recipe.recipe_id;
-            obj_recipe.output= getRecipeOutputValues(recipe);
-            obj_recipe.high= option_price.high;
-            obj_recipe.low= option_price.low;
-            obj_recipe.average= option_price.average;
-            obj_recipe.parts= [];
+            obj_recipe.name = recipe.name;
+            obj_recipe.rank = recipe_option.rank;
+            obj_recipe.id = recipe_option.recipe.recipe_id;
+            obj_recipe.output = getRecipeOutputValues(recipe);
+            obj_recipe.high = option_price.high;
+            obj_recipe.low = option_price.low;
+            obj_recipe.average = option_price.average;
+            obj_recipe.parts = [];
 
             if ((recipe_option.rank_ah != undefined) && (recipe_option.rank_ah.total_sales > 0)) {
                 obj_recipe.ah = {
@@ -463,7 +467,7 @@ async function generateOutputFormat(price_data, region) : Promise<OutputFormatOb
             "value": 3
         }
     */
-function getRecipeOutputValues(recipe) : RecipeProductionValues {
+function getRecipeOutputValues(recipe: BlizzardApi.Recipe): RecipeProductionValues {
     let min = -1;
     let max = -1;
     let value = -1;
@@ -489,7 +493,7 @@ function getRecipeOutputValues(recipe) : RecipeProductionValues {
  * Return the ranks available for the top level item generated from generateOutputFormat.
  * @param {!object} intermediate_data Data from generateOutputFormat.
  */
-function getShoppingListRanks(intermediate_data) {
+function getShoppingListRanks(intermediate_data: OutputFormatObject): Array<number> {
     const ranks = [];
     for (let recipe of intermediate_data.recipes) {
         ranks.push(recipe.rank);
@@ -502,8 +506,8 @@ function getShoppingListRanks(intermediate_data) {
  * @param {!object} intermediate_data Data from generateOutputFormat.
  * @param {!RunConfiguration} on_hand A provided inventory to get existing items from.
  */
-function constructShoppingList(intermediate_data, on_hand) : ShoppingList{
-    const shopping_lists = {};
+function constructShoppingList(intermediate_data: OutputFormatObject, on_hand: RunConfiguration): OutputFormatShoppingList {
+    const shopping_lists: OutputFormatShoppingList = {} as OutputFormatShoppingList;
     for (let rank of getShoppingListRanks(intermediate_data)) {
         logger.debug(`Resetting inventory for rank shopping list.`);
         on_hand.resetInventoryAdjustments();
@@ -545,7 +549,7 @@ function constructShoppingList(intermediate_data, on_hand) : ShoppingList{
  * @param {!object} intermediate_data The generateOutputFormat data used for construction.
  * @param {number} rank_requested The specific rank to generate a list for, only matters for legendary base items in Shadowlands.
  */
-function build_shopping_list(intermediate_data, rank_requested) {
+function build_shopping_list(intermediate_data: OutputFormatObject, rank_requested: number): Array<ShoppingList> {
     let shopping_list = [];
 
     logger.debug(`Build shopping list for ${intermediate_data.name} (${intermediate_data.id}) rank ${rank_requested}`);
@@ -619,6 +623,20 @@ function build_shopping_list(intermediate_data, rank_requested) {
     return ret_list;
 }
 
+function getRegionCode(region_name: string): RegionCode {
+    const check_str = region_name.toLowerCase();
+    switch (check_str) {
+        case 'us':
+        case 'eu':
+        case 'kr':
+        case 'tw':
+            return check_str;
+        default:
+            throw new Error(`'${region_name} is invalid. Valid regions include 'us', 'eu', 'kr', and 'tw'.`);
+
+    }
+}
+
 //outline
 // [X] Get the item and server from the user
 // [X] If the item is a string then get the item ID from bliz
@@ -640,13 +658,13 @@ function build_shopping_list(intermediate_data, rank_requested) {
  * @param {!RunConfiguration} json_config A RunConfiguration object containing the available inventory.
  * @param {!number} count The number of items required.
  */
-async function run(region, server, professions, item, json_config, count) {
+async function run(region: string, server: RealmName, professions: Array<CharacterProfession>, item: ItemSoftIdentity, json_config: RunConfiguration, count: number): Promise<RunReturn> {
     logger.info("World of Warcraft Crafting Profit Calculator");
 
     logger.info(`Checking ${server} in ${region} for ${item} with available professions ${JSON.stringify(professions)}`);
 
-    let intermediate_data : OutputFormatObject;
-    let price_data : ProfitAnalysisObject;
+    let intermediate_data: OutputFormatObject;
+    let price_data: ProfitAnalysisObject;
     let formatted_data = 'NO DATA';
 
     const cached_static_resources = await static_sources();
@@ -655,8 +673,8 @@ async function run(region, server, professions, item, json_config, count) {
     shopping_recipe_exclusions = cached_static_resources.shopping_recipe_exclusion_list;
 
     try {
-        price_data = await performProfitAnalysis(region, server, professions, item, count);
-        intermediate_data = await generateOutputFormat(price_data, region);
+        price_data = await performProfitAnalysis(getRegionCode(region), server, professions, item, count);
+        intermediate_data = await generateOutputFormat(price_data, getRegionCode(region));
         intermediate_data.shopping_lists = constructShoppingList(intermediate_data, json_config);
         formatted_data = await textFriendlyOutputFormat(intermediate_data, 0);
     } catch (e) {
@@ -674,7 +692,7 @@ async function run(region, server, professions, item, json_config, count) {
 /**
  * Shutdown the analyzer, primarily closes cache.
  */
-async function shutdown() {
+async function shutdown(): Promise<void> {
     await saveCache();
     shutdownApiManager();
 }
@@ -685,7 +703,7 @@ async function shutdown() {
  * @param intermediate_data The output cost object with shopping list.
  * @param formatted_data The preformatted text output with shopping list.
  */
-async function saveOutput(price_data, intermediate_data, formatted_data) {
+async function saveOutput(price_data: ProfitAnalysisObject, intermediate_data: OutputFormatObject, formatted_data: string): Promise<void> {
     logger.info('Saving output');
     await fs.writeFile('intermediate_output.json', JSON.stringify(intermediate_data, null, 2), 'utf8');
     logger.info('Intermediate output saved');
@@ -699,8 +717,8 @@ async function saveOutput(price_data, intermediate_data, formatted_data) {
  * Perform a run with pure json configuration from the addon.
  * @param {RunConfiguration} json_config The configuration object.
  */
-async function runWithJSONConfig(json_config) {
-    getAuthorizationToken();
+async function runWithJSONConfig(json_config: RunConfiguration): Promise<RunReturn> {
+    getAuthorizationToken(getRegionCode(json_config.realm_region));
     return run(json_config.realm_region,
         json_config.realm_name,
         json_config.professions,
@@ -714,7 +732,7 @@ async function runWithJSONConfig(json_config) {
  * Run from the command prompt.
  * @param {RunConfiguration} json_config The configuration object to execute.
  */
-async function cliRun(json_config) {
+async function cliRun(json_config: RunConfiguration): Promise<void> {
     try {
         const { price, intermediate, formatted } = await runWithJSONConfig(json_config);
         await saveOutput(price, intermediate, formatted);
@@ -723,4 +741,28 @@ async function cliRun(json_config) {
     }
 }
 
-export { runWithJSONConfig, shutdown, cliRun };
+function validateProfessions(profession_list: Array<string>): Array<CharacterProfession> {
+    const return_array: Array<CharacterProfession> = [];
+
+    for (const element of profession_list) {
+        switch (element) {
+            case 'Jewelcrafting':
+            case 'Tailoring':
+            case 'Alchemy':
+            case 'Herbalism':
+            case 'Inscription':
+            case 'Enchanting':
+            case 'Blacksmithing':
+            case 'Mining':
+            case 'Engineering':
+            case 'Leatherworking':
+            case 'Skinning':
+            case 'Cooking':
+                return_array.push(element);
+        }
+    }
+
+    return return_array;
+}
+
+export { runWithJSONConfig, shutdown, cliRun, validateProfessions };

@@ -15,7 +15,7 @@ const sql_check_realm = 'SELECT COUNT(*) AS how_many FROM realms WHERE connected
 
 const db_type = process.env.DATABASE_TYPE;
 
-async function ingest(region, connected_realm) {
+async function ingest(region: RegionCode, connected_realm: number) {
     const db = await getDb('history');
     // Get auction house
     const auction_house = await getAuctionHouse(connected_realm, region);
@@ -29,7 +29,7 @@ async function ingest(region, connected_realm) {
         }
         let price = 0;
         const quantity = auction.quantity;
-        if ('buyout' in auction) {
+        if (auction.buyout !== undefined ) {
             price = auction.buyout;
         } else {
             price = auction.unit_price;
@@ -45,7 +45,7 @@ async function ingest(region, connected_realm) {
         items[item_id_key][price].quantity += quantity;
     });
 
-    const item_set = new Set();
+    const item_set: Set<number> = new Set();
     const insert_values_array = [];
 
     for (const key of Object.keys(items)) {
@@ -99,14 +99,16 @@ async function ingest(region, connected_realm) {
     await client.release();
 }
 
-async function getAllBonuses(item, region) {
+async function getAllBonuses(item: ItemSoftIdentity, region: RegionCode) {
     const db = await getDb('history');
     logger.debug(`Fetching bonuses for ${item}`);
     const sql = 'SELECT DISTINCT bonuses FROM auctions WHERE item_id = $1';
 
     let item_id = 0;
-    if (Number.isFinite(Number(item))) {
+    if (typeof item === 'number') {
         item_id = item;
+    } else if (Number.isFinite(Number(item))) {
+        item_id = Number(item);
     } else {
         item_id = await getItemId(region, item);
         if (item_id < 0) {
@@ -128,7 +130,7 @@ async function getAllBonuses(item, region) {
     };
 }
 
-async function fillNItems(fill_count = 5) {
+async function fillNItems(fill_count: number = 5) {
     const db = await getDb('history');
     logger.info(`Filling ${fill_count} items with details.`);
     const select_sql = 'SELECT item_id, region FROM items WHERE name ISNULL LIMIT $1';
@@ -153,7 +155,7 @@ async function fillNItems(fill_count = 5) {
 }
 
 
-async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
+async function getAuctions(item: ItemSoftIdentity, realm: ConnectedRealmSoftIentity, region: RegionCode, bonuses: Array<number>, start_dtm: number, end_dtm: number): Promise<AuctionSummaryData> {
     const db = await getDb('history');
     logger.debug(`getAuctions(${item}, ${realm}, ${region}, ${bonuses}, ${start_dtm}, ${end_dtm})`);
     //const sql_build = 'SELECT * FROM auctions';
@@ -170,8 +172,10 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
     if (item !== undefined) {
         // Get specific items
         let item_id = 0;
-        if (Number.isFinite(Number(item))) {
+        if (typeof item === 'number') {
             item_id = item;
+        } else if (Number.isFinite(Number(item))) {
+            item_id = Number(item);
         } else {
             item_id = await getItemId(region, item);
             if (item_id < 0) {
@@ -187,8 +191,10 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
     }
     if (realm !== undefined) {
         let server_id = 0;
-        if (Number.isFinite(Number(realm))) {
+        if (typeof realm === 'number') {
             server_id = realm;
+        } else if (Number.isFinite(Number(realm))) {
+            server_id = Number(realm);
         } else {
             server_id = await getConnectedRealmId(realm, region);
             if (server_id < 0) {
@@ -219,8 +225,8 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
             sql_addins.push(`bonuses = ${get_place_marker()}`);
             value_searches.push(bonuses);
         } else {
-            bonuses.forEach(b => {
-                if (b !== null && b !== '') {
+            bonuses.forEach((b) => {
+                if (b !== null && b !== undefined) {
                     logger.debug(`Add bonus ${b} in (select json_each.value from json_each(bonuses))`);
                     const json_query = db_type === 'sqlite3' ? `${get_place_marker()} IN (SELECT json_each.value FROM json_each(bonuses))` : `${get_place_marker()} IN (SELECT json_array_elements_text(bonuses::json)::numeric)`
                     sql_addins.push(json_query);
@@ -344,7 +350,7 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
         archives: archive_build,
     };
 
-    function build_sql_with_addins(base_sql, addin_list) {
+    function build_sql_with_addins(base_sql: string, addin_list: Array<string>): string {
         let construct_sql = base_sql;
         if (addin_list.length > 0) {
             construct_sql += ' WHERE ';
@@ -357,12 +363,12 @@ async function getAuctions(item, realm, region, bonuses, start_dtm, end_dtm) {
         return construct_sql;
     }
 
-    function get_place_marker() {
+    function get_place_marker(): string {
         return `$${value_searches.length + 1}`;
     }
 }
 
-async function archiveAuctions() {
+async function archiveAuctions(): Promise<void> {
     const db = await getDb('history');
     const backstep_time_diff = (6.048e+8); // One Week
     //const backstep_time_diff = 1.21e+9; // Two weeks
@@ -424,19 +430,19 @@ async function archiveAuctions() {
     client.release();
 }
 
-async function addRealmToScanList(realm_name, realm_region) {
+async function addRealmToScanList(realm_name: RealmName, realm_region: RegionCode): Promise<void> {
     const db = await getDb('history');
     const sql = 'INSERT INTO realm_scan_list(connected_realm_id,region) VALUES($1,$2)';
     await db.run(sql, [await getConnectedRealmId(realm_name, realm_region), realm_region.toUpperCase()]);
 }
 
-async function removeRealmFromScanList(realm_name, realm_region) {
+async function removeRealmFromScanList(realm_name: RealmName, realm_region: RegionCode): Promise<void> {
     const db = await getDb('history');
     const sql = 'DELETE FROM realm_scan_list WHERE connected_realm_id = $1 AND region = $2';
     await db.run(sql, [await getConnectedRealmId(realm_name, realm_region), realm_region.toUpperCase()]);
 }
 
-async function scanRealms() {
+async function scanRealms(): Promise<void> {
     const db = await getDb('history');
     const getScannableRealms = 'SELECT connected_realm_id, region FROM realm_scan_list';
     const realm_scan_list = await db.all(getScannableRealms, []);

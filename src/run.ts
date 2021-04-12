@@ -1,7 +1,7 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { RunConfiguration } from './RunConfiguration.js';
-import { cliRun } from './wow_crafting_profits.js';
+import { cliRun, validateProfessions } from './wow_crafting_profits.js';
 
 //blacksmithing
 //const test_item = 171414;
@@ -95,7 +95,7 @@ try {
 }
 const config = new RunConfiguration({
     inventory: character_config_json.inventory,
-    professions: professions,
+    professions: validateProfessions( professions ),
     realm: {
         realm_name: server,
         region_name: region,

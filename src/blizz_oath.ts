@@ -6,16 +6,7 @@ const logger = parentLogger.child({});
 const clientID = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 
-const authorization_uri = 'https://us.battle.net/oauth/token';
-
-interface AccessToken {
-    access_token: string,
-    token_type: string,
-    expires_in: number,
-    scope: string,
-    fetched: number,
-    checkExpired: () => boolean
-};
+const authorization_uri_base = 'battle.net/oath/token';
 
 const clientAccessToken: AccessToken = {
     access_token: '',
@@ -23,7 +14,7 @@ const clientAccessToken: AccessToken = {
     expires_in: 0,
     scope: '',
     fetched: Date.now(),
-    checkExpired: function () {
+    checkExpired: function (): boolean {
         let expired = true;
         const current_time = Date.now();
         const expire_time = this.fetched + (this.expires_in * 1000);
@@ -37,11 +28,11 @@ const clientAccessToken: AccessToken = {
 /**
  * Get an oath token from blizzard, or use one we already have.
  */
-async function getAuthorizationToken() {
+async function getAuthorizationToken(region: RegionCode): Promise<AccessToken> {
     if (clientAccessToken.checkExpired()) {
         logger.debug('Access token expired, fetching fresh.');
         try {
-            const auth_response: { body: any } = await got(authorization_uri, {
+            const auth_response: { body: any } = await got(`https://${region}.authorization_uri`, {
                 responseType: 'json',
                 method: 'POST',
                 username: clientID,

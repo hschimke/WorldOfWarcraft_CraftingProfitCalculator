@@ -8,74 +8,87 @@ interface AccessToken {
     checkExpired: () => boolean
 }
 
+// blizzard-api-calls.ts
+
 // auction-history.ts
 interface SummaryReturnObject { data?: Array<any>, min_value?: number, max_value?: number, avg_value?: number }
 
 // blizzard-api-helpers.ts
-interface SearchResultsPage {
-    pageCount: number,
-    page: number
-}
-
-interface ConnectedRealmList {
-    href: string
-}
-
-interface AllConnectedRealms {
-    connected_realms: Array<ConnectedRealmList>
-}
-
-interface ConnectedRealm {
-    name: string,
-}
-
-interface ConnectedRealmDetail {
-    realms: Array<ConnectedRealm>,
-    id: number
-}
+type AuctionSummaryData = any;
 
 interface SkillTierCyclicLinks {
 
 }
+
+
 
 // cached-data-sources.ts
 interface BonusesCache {
     bonuses: Array<any>
 }
 
+type StaticSources = {
+    bonuses_cache: BonusesCache;
+    rank_mappings_cache: RankMappingsCache;
+    shopping_recipe_exclusion_list: ShoppingRecipeExclusionList;
+    (): void;
+}
+
+interface RankMappingsCache {
+    available_levels: Array<number>,
+        rank_mapping: Array<number>
+}
+
+interface ShoppingRecipeExclusionList {
+        exclusions: Array<number>
+}
+
 // databases.ts
 type DatabaseClientFunction = {
     release: () => void;
-    query: (query: string, values?: Array<string | number>) => Promise<any>;
+    query: (query: string, values?: Array<string | number | boolean>) => Promise<any>;
     (): void;
 }
 type DatabaseManagerFunction = {
     db?: object;
     pool?: object;
-    get: (query: string, values?: Array<string | number>) => Promise<any>;
-    run: (query: string, values?: Array<string | number>) => Promise<any>;
-    all: (query: string, values?: Array<string | number>) => Promise<any>;
-    query: (query: string, values?: Array<string | number>) => Promise<any>;
-    serialize: (query: Array<string>, values?: Array<Array<string | number>>) => Promise<any>;
+    get: (query: string, values?: Array<string | number | boolean>) => Promise<any>;
+    run: (query: string, values?: Array<string | number | boolean>) => Promise<any>;
+    all: (query: string, values?: Array<string | number | boolean>) => Promise<any>;
+    query: (query: string, values?: Array<string | number | boolean>) => Promise<any>;
+    serialize: (query: Array<string>, values?: Array<Array<string | number | boolean>>) => Promise<any>;
     getClient: () => Promise<DatabaseClientFunction>;
     (): void;
 };
 
 // wow_crafting_profits.ts
 interface AHItemPriceObject {
-
+    total_sales:number,
+    average: number,
+    high: number,
+    low: number,
 }
 
 interface CraftingStatus {
-
+    recipe_ids: Array<number>,
+    craftable: boolean,
+    recipes: Array<{
+        recipe_id: number
+    }>
 }
 
 interface ProfitAnalysisRecipe {
-
+    prices: Array<ProfitAnalysisObject>,
+    recipe: {
+        recipe_id: number
+    },
+    rank: number,
+    rank_ah: AHItemPriceObject
 }
 
 interface ProfitAnalysisBonusPrice {
-
+    level: number,
+    ah: AHItemPriceObject
 }
 
 interface ProfitAnalysisObject {
@@ -91,7 +104,13 @@ interface ProfitAnalysisObject {
 }
 
 interface ShoppingList {
-
+    quantity: number,
+    id: ItemID,
+    name: ItemName,
+    cost: {
+        vendor: number,
+        ah: OutputFormatPrice
+    }
 }
 
 interface OutputFormatRecipe {
@@ -107,6 +126,14 @@ interface OutputFormatRecipe {
 }
 
 interface OutputFormatPrice {
+    sales: number,
+    high: number,
+    low: number,
+    average: number
+}
+
+interface  OutputFormatShoppingList {
+
 }
 
 interface OutputFormatObject {
@@ -117,7 +144,7 @@ interface OutputFormatObject {
     ah: OutputFormatPrice,
     vendor: number,
     bonus_prices: Array<OutputFormatBonusPrices>,
-    shopping_lists: ShoppingList
+    shopping_lists: OutputFormatShoppingList
 }
 
 interface RecipeProductionValues {
@@ -127,5 +154,39 @@ interface RecipeProductionValues {
 }
 
 interface OutputFormatBonusPrices {
-
+    level: number,
+    ah: OutputFormatPrice
 }
+
+interface RunReturn {
+    price: ProfitAnalysisObject,
+    intermediate: OutputFormatObject,
+    formatted: string
+}
+
+// RunConfiguration.js
+interface AddonData {
+    inventory: Array< {
+        id: ItemID,
+        quantity: number
+    }>,
+    professions: Array<CharacterProfession>,
+    realm: {
+        region_id?: number,
+        region_name: string,
+        realm_id?: ConnectedRealmID,
+        realm_name: RealmName
+    }
+}
+
+// Global
+type RegionCode = 'us' | 'eu' | 'kr' | 'tw';
+type ItemID = number;
+type ItemName = string;
+type ItemSoftIdentity = ItemID | ItemName;
+
+type ConnectedRealmID = number;
+type RealmName = string;
+type ConnectedRealmSoftIentity = ConnectedRealmID | RealmName;
+
+type CharacterProfession = 'Jewelcrafting' | 'Tailoring' | 'Alchemy' | 'Herbalism' | 'Inscription' | 'Enchanting' | 'Blacksmithing' | 'Mining' | 'Engineering' | 'Leatherworking' | 'Skinning' | 'Cooking';
