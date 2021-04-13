@@ -110,9 +110,9 @@ async function findNoneAHPrice(item_id: ItemID, region: RegionCode): Promise<num
  * @param {number} item_id Item ID to scan
  * @param {object} auction_house The auction house data to use as a source.
  */
-async function getItemBonusLists(item_id: ItemID, auction_house: BlizzardApi.Auctions): Promise<Array<number>> {
-    let bonus_lists = [];
-    let bonus_lists_set = [];
+async function getItemBonusLists(item_id: ItemID, auction_house: BlizzardApi.Auctions): Promise<Array<Array<number>>> {
+    let bonus_lists: Array<Array<number>> = [];
+    let bonus_lists_set: Array<Array<number>> = [];
     auction_house.auctions.forEach((auction) => {
         if (auction.item.id == item_id) {
             if ('bonus_lists' in auction.item) {
@@ -145,8 +145,9 @@ async function getItemBonusLists(item_id: ItemID, auction_house: BlizzardApi.Auc
  */
 function getLvlModifierForBonus(bonus_id: number): number {
     if (bonus_id in raidbots_bonus_lists) {
-        if ('level' in raidbots_bonus_lists[bonus_id]) {
-            return raidbots_bonus_lists[bonus_id].level;
+        const rbl = raidbots_bonus_lists[bonus_id];
+        if (rbl.level !== undefined) {
+            return rbl.level;
         } else {
             return -1;
         }
@@ -219,7 +220,7 @@ async function performProfitAnalysis(region: RegionCode, server: RealmName, char
     // When that's the case we should actually return an entire extra set of price data based on each
     // possible bonus_list. They're actually different items, blizz just tells us they aren't.
     price_obj.bonus_lists = Array.from(new Set(await getItemBonusLists(item_id, auction_house)));
-    let bonus_link = {};
+    let bonus_link: Record<number, number> = {};
     const bl_flat = (Array.from(new Set(price_obj.bonus_lists.flat())).filter((bonus: number) => bonus in raidbots_bonus_lists && 'level' in raidbots_bonus_lists[bonus]));
     for (const bonus of bl_flat) {
         const mod = getLvlModifierForBonus(bonus);
@@ -253,7 +254,7 @@ async function performProfitAnalysis(region: RegionCode, server: RealmName, char
             }
 
             // Get prices for BOM
-            const bom_prices = [];
+            const bom_prices: ProfitAnalysisObject[] = [];
 
             logger.debug(`Recipe ${item_bom.name} (${recipe.recipe_id}) has ${item_bom.reagents.length} reagents`);
 
@@ -289,8 +290,9 @@ async function performProfitAnalysis(region: RegionCode, server: RealmName, char
         if (price_obj.bonus_lists.length > 0) {
             price_obj.bonus_prices = [];
             for (const bonus of bl_flat) {
+                const rbl = raidbots_bonus_lists[bonus];
                 const level_uncrafted_ah_cost = {
-                    level: base_ilvl + raidbots_bonus_lists[bonus].level,
+                    level: base_ilvl + (rbl.level !== undefined ? rbl.level : 0),
                     ah: await getAHItemPrice(item_id, auction_house, bonus)
                 };
                 price_obj.bonus_prices.push(level_uncrafted_ah_cost);
@@ -508,11 +510,11 @@ function getShoppingListRanks(intermediate_data: OutputFormatObject): Array<numb
  */
 function constructShoppingList(intermediate_data: OutputFormatObject, on_hand: RunConfiguration): OutputFormatShoppingList {
     const shopping_lists: OutputFormatShoppingList = {} as OutputFormatShoppingList;
-    for (let rank of getShoppingListRanks(intermediate_data)) {
+    for (const rank of getShoppingListRanks(intermediate_data)) {
         logger.debug(`Resetting inventory for rank shopping list.`);
         on_hand.resetInventoryAdjustments();
         const shopping_list = build_shopping_list(intermediate_data, rank);
-        for (let li of shopping_list) {
+        for (const li of shopping_list) {
             let needed = li.quantity;
             let available = on_hand.itemCount(li.id);
 
@@ -602,8 +604,8 @@ function build_shopping_list(intermediate_data: OutputFormatObject, rank_request
     }
 
     // Build the return shopping list.
-    let tmp = {};
-    let ret_list = [];
+    let tmp: Record<number | string, ShoppingList> = {};
+    let ret_list: ShoppingList[] = [];
     //logger.debug(shopping_list);
     for (let list_element of shopping_list) {
         if (!(list_element.id in tmp)) {
@@ -637,17 +639,6 @@ function getRegionCode(region_name: string): RegionCode {
     }
 }
 
-//outline
-// [X] Get the item and server from the user
-// [X] If the item is a string then get the item ID from bliz
-// [X] Get the connected-server id from bliz
-// [X] Verify that the item is a crafting item and pull requirements from bliz
-// [X] Check the auction house cache and refresh it if necessary (probably if it is older than one hour)
-// [X] Pull all the prices for the item from the auction house cache
-// [X] Pull all the prices for the components from the auction house
-// [X] Check if there is a non-crafting/non-auction price for the components
-// [ ] Print the summary of the item price from auction house and the component prices
-
 /**
  * Perform a full run of the profit analyzer, beginning with profit analyze and finishing with various output formats.
  * 
@@ -663,8 +654,8 @@ async function run(region: string, server: RealmName, professions: Array<Charact
 
     logger.info(`Checking ${server} in ${region} for ${item} with available professions ${JSON.stringify(professions)}`);
 
-    let intermediate_data: OutputFormatObject;
-    let price_data: ProfitAnalysisObject;
+    let intermediate_data: OutputFormatObject | undefined = undefined;
+    let price_data: ProfitAnalysisObject | undefined = undefined
     let formatted_data = 'NO DATA';
 
     const cached_static_resources = await static_sources();
@@ -703,14 +694,18 @@ async function shutdown(): Promise<void> {
  * @param intermediate_data The output cost object with shopping list.
  * @param formatted_data The preformatted text output with shopping list.
  */
-async function saveOutput(price_data: ProfitAnalysisObject, intermediate_data: OutputFormatObject, formatted_data: string): Promise<void> {
+async function saveOutput(price_data: ProfitAnalysisObject | undefined, intermediate_data: OutputFormatObject | undefined, formatted_data: string): Promise<void> {
     logger.info('Saving output');
-    await fs.writeFile('intermediate_output.json', JSON.stringify(intermediate_data, null, 2), 'utf8');
-    logger.info('Intermediate output saved');
+    if (intermediate_data !== undefined) {
+        await fs.writeFile('intermediate_output.json', JSON.stringify(intermediate_data, null, 2), 'utf8');
+        logger.info('Intermediate output saved');
+    }
     await fs.writeFile('formatted_output', formatted_data, 'utf8');
     logger.info('Formatted output saved');
-    await fs.writeFile('raw_output.json', JSON.stringify(price_data, null, 2), 'utf8');
-    logger.info('Raw output saved');
+    if (price_data !== undefined) {
+        await fs.writeFile('raw_output.json', JSON.stringify(price_data, null, 2), 'utf8');
+        logger.info('Raw output saved');
+    }
 }
 
 /**

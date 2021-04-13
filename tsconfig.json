@@ -5,7 +5,8 @@
     "target":"ESNext",
     "moduleResolution": "node",
     "module": "ESNext",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "strict": true
   },
   "include": [
     "./src/**/*"

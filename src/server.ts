@@ -27,46 +27,12 @@ app.get('*', (req, res) => {
     res.sendFile(path.resolve('html/build/index.html'));
 });
 
-app.post('/show_output', (req, res) => {
-    let json_data: AddonData = { inventory: [] } as AddonData;
-    if (req.body.addon_data.length > 0) {
-        json_data = JSON.parse(req.body.addon_data);
-    }
-    let config: RunConfiguration = undefined;
-    if (req.body.type == 'custom') {
-        config = new RunConfiguration({
-            inventory: json_data.inventory,
-            professions: JSON.parse(req.body.professions),
-            realm: {
-                realm_name: req.body.server,
-                region_name: req.body.region,
-            },
-        }, req.body.item_id, Number(req.body.count));
-        logger.debug(`Custom search for item: ${req.body.item_id}, server: ${req.body.server}, region: ${req.body.region}, professions: ${req.body.professions}. JSON DATA: ${json_data.inventory.length}`);
-    } else if (req.body.type == 'json') {
-        logger.debug('json search');
-        config = new RunConfiguration(json_data, req.body.item_id, Number(req.body.needed));
-        logger.debug(`JSON search for item: ${config.item_id}, server: ${config.realm_name}, region: ${config.realm_region}, professions: ${config.professions}. JSON DATA: ${json_data.inventory.length}`);
-    }
-
-    runWithJSONConfig(config).then((data) => {
-        const { formatted } = data;
-        res.send(`
-        <html>
-            <head></head>
-            <body>
-                <pre>${formatted}</pre>
-            </body>
-        </html>`);
-    });
-});
-
 app.post('/json_output', (req, res) => {
-    let json_data: AddonData = { inventory: [] } as AddonData;
+    let json_data: AddonData = { inventory: [], professions: [], realm: { realm_name: '', region_name: '' } };
     if (req.body.addon_data.length > 0) {
         json_data = JSON.parse(req.body.addon_data);
     }
-    let config: RunConfiguration = undefined;
+    let config: RunConfiguration | undefined = undefined;
     if (req.body.type == 'custom') {
         config = new RunConfiguration({
             inventory: json_data.inventory,
@@ -83,10 +49,12 @@ app.post('/json_output', (req, res) => {
         logger.debug(`JSON search for item: ${config.item_id}, server: ${config.realm_name}, region: ${config.realm_region}, professions: ${config.professions}. JSON DATA: ${json_data.inventory.length}`);
     }
 
-    runWithJSONConfig(config).then((data) => {
-        const { intermediate } = data;
-        res.json(intermediate);
-    });
+    if (config !== undefined) {
+        runWithJSONConfig(config).then((data) => {
+            const { intermediate } = data;
+            res.json(intermediate);
+        });
+    }
 });
 
 app.post('/auction_history', (req, res) => {
@@ -122,31 +90,33 @@ app.post('/seen_item_bonuses', (req, res) => {
             const bonuses_cache = cache.bonuses_cache;
             logger.debug(`Regurning bonus lists for ${item}`);
 
-            const ilvl_adjusts = new Set();
-            const socket_adjusts = new Set();
-            const quality_adjusts = new Set();
-            const unknown_adjusts = new Set();
+            const ilvl_adjusts: Set<number | string> = new Set();
+            const socket_adjusts: Set<number | string> = new Set();
+            const quality_adjusts: Set<number | string> = new Set();
+            const unknown_adjusts: Set<number | string> = new Set();
             let found_empty_bonuses = false;
 
-            const b_array = (<Array<any>>(bonuses.bonuses)).map(e => {
-                const v = { text: e.bonuses, parsed: undefined, reduced: undefined };
+            const b_array = bonuses.bonuses.map(e => {
+                const v: { text: string, parsed: Array<number | string>, reduced: string | undefined } = { text: e.bonuses, parsed: [], reduced: undefined };
                 v.parsed = JSON.parse(e.bonuses);
                 if (v.parsed !== null) {
-                    v.reduced = v.parsed.reduce((acc, cur) => {
+                    v.reduced = <string>v.parsed.reduce((acc, cur) => {
                         let value = acc;
-                        if (cur in bonuses_cache) {
+                        if (bonuses_cache[cur] !== undefined) {
                             let found = false;
-                            if ('level' in bonuses_cache[cur]) {
-                                value += `ilevel ${bonuses.item.level + bonuses_cache[cur].level} `;
+                            const bonus_link = bonuses_cache[cur];
+
+                            if (bonus_link.level !== undefined) {
+                                value += `ilevel ${bonuses.item.level + bonus_link.level} `;
                                 found = true;
                                 ilvl_adjusts.add(cur);
                             }
-                            if ('socket' in bonuses_cache[cur]) {
+                            if (bonus_link.socket !== undefined) {
                                 value += `socketed `;
                                 found = true;
                                 socket_adjusts.add(cur);
                             }
-                            if ('quality' in bonuses_cache[cur]) {
+                            if (bonus_link.quality !== undefined) {
                                 value += `quality: ${bonuses_cache[cur].quality} `;
                                 found = true;
                                 quality_adjusts.add(cur);
@@ -168,9 +138,18 @@ app.post('/seen_item_bonuses', (req, res) => {
                 //item: bonuses.item,
                 mapped: b_array,
                 collected: {
-                    ilvl: Array.from(ilvl_adjusts).map((i: number) => { return { id: i, level: bonuses_cache[i].level + bonuses.item.level } }),
-                    socket: Array.from(socket_adjusts).map((i: number) => { return { id: i, sockets: bonuses_cache[i].socket } }),
-                    quality: Array.from(quality_adjusts).map((i: number) => { return { id: i, quality: bonuses_cache[i].quality } }),
+                    ilvl: Array.from(ilvl_adjusts).map(
+                        (i: number | string) => {
+                            return { id: i, level: bonuses_cache[i].level! + bonuses.item.level }
+                        }),
+                    socket: Array.from(socket_adjusts).map(
+                        (i: number | string) => {
+                            return { id: i, sockets: bonuses_cache[i].socket }
+                        }),
+                    quality: Array.from(quality_adjusts).map(
+                        (i: number | string) => {
+                            return { id: i, quality: bonuses_cache[i].quality }
+                        }),
                     unknown: Array.from(unknown_adjusts),
                     empty: found_empty_bonuses,
                 },

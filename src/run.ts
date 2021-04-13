@@ -56,7 +56,8 @@ const argv = yargs(hideBin(process.argv))
     .alias('help', 'h')
     .argv;
 
-let character_config_json = { inventory: [], realm: { realm_name: undefined, region_name: undefined}, professions: undefined };
+let character_config_json : AddonData = { inventory: [], realm: { realm_name: '', region_name: ''}, professions: [] };
+
 let region = argv.region;
 let server = argv.server;
 let professions = argv.profession;
@@ -64,7 +65,7 @@ let item = argv.item;
 let required = argv.count;
 
 try {
-    character_config_json = JSON.parse(argv.json_data);
+    character_config_json  = JSON.parse(argv.json_data);
     let good = true;
     let has_inventory = true;
     let has_professions = true;

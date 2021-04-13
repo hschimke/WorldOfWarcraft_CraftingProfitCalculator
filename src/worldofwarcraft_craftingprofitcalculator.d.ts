@@ -16,16 +16,26 @@ interface SummaryReturnObject { data?: Array<any>, min_value?: number, max_value
 // blizzard-api-helpers.ts
 type AuctionSummaryData = any;
 
-interface SkillTierCyclicLinks {
+type SkillTierCyclicLinks = Record<number, Array<{
+    id: number,
+    takes: number,
+    makes: number
+}>>;
 
-}
+type SkillTierCyclicLinksBuild = Array<Array<{
+    id: number[],
+    quantity: number
+}>>;
 
 
 
 // cached-data-sources.ts
-interface BonusesCache {
-    bonuses: Array<any>
-}
+type BonusesCache = Record<number | string, {
+    id: number,
+    level?: number,
+    quality?: number,
+    socket?: number
+}>;
 
 type StaticSources = {
     bonuses_cache: BonusesCache;
@@ -36,34 +46,34 @@ type StaticSources = {
 
 interface RankMappingsCache {
     available_levels: Array<number>,
-        rank_mapping: Array<number>
+    rank_mapping: Array<number>
 }
 
 interface ShoppingRecipeExclusionList {
-        exclusions: Array<number>
+    exclusions: Array<number>
 }
 
 // databases.ts
 type DatabaseClientFunction = {
     release: () => void;
-    query: (query: string, values?: Array<string | number | boolean>) => Promise<any>;
+    query: (query: string, values?: Array<string | number | boolean | null>) => Promise<any>;
     (): void;
 }
 type DatabaseManagerFunction = {
-    db?: object;
-    pool?: object;
-    get: (query: string, values?: Array<string | number | boolean>) => Promise<any>;
-    run: (query: string, values?: Array<string | number | boolean>) => Promise<any>;
-    all: (query: string, values?: Array<string | number | boolean>) => Promise<any>;
-    query: (query: string, values?: Array<string | number | boolean>) => Promise<any>;
-    serialize: (query: Array<string>, values?: Array<Array<string | number | boolean>>) => Promise<any>;
+    db: any;
+    pool: any;
+    get: (query: string, values?: Array<string | number | boolean | null>) => Promise<any>;
+    run: (query: string, values?: Array<string | number | boolean | null>) => Promise<any>;
+    all: (query: string, values?: Array<string | number | boolean | null>) => Promise<any>;
+    query: (query: string, values?: Array<string | number | boolean | null>) => Promise<any>;
+    serialize: (query: Array<string>, values: Array<Array<string | number | boolean | null>>) => Promise<any>;
     getClient: () => Promise<DatabaseClientFunction>;
     (): void;
 };
 
 // wow_crafting_profits.ts
 interface AHItemPriceObject {
-    total_sales:number,
+    total_sales: number,
     average: number,
     high: number,
     low: number,
@@ -73,7 +83,8 @@ interface CraftingStatus {
     recipe_ids: Array<number>,
     craftable: boolean,
     recipes: Array<{
-        recipe_id: number
+        recipe_id: number,
+        crafting_profession: CharacterProfession,
     }>
 }
 
@@ -98,7 +109,7 @@ interface ProfitAnalysisObject {
     item_quantity: number,
     vendor_price: number,
     crafting_status: CraftingStatus
-    bonus_lists: Array<number>,
+    bonus_lists: Array<Array<number>>,
     recipe_options: Array<ProfitAnalysisRecipe>,
     bonus_prices: Array<ProfitAnalysisBonusPrice>
 }
@@ -132,9 +143,7 @@ interface OutputFormatPrice {
     average: number
 }
 
-interface  OutputFormatShoppingList {
-
-}
+type OutputFormatShoppingList = Record<number|string,ShoppingList[]>;
 
 interface OutputFormatObject {
     name: string,
@@ -159,14 +168,14 @@ interface OutputFormatBonusPrices {
 }
 
 interface RunReturn {
-    price: ProfitAnalysisObject,
-    intermediate: OutputFormatObject,
+    price?: ProfitAnalysisObject,
+    intermediate?: OutputFormatObject,
     formatted: string
 }
 
 // RunConfiguration.js
 interface AddonData {
-    inventory: Array< {
+    inventory: Array<{
         id: ItemID,
         quantity: number
     }>,

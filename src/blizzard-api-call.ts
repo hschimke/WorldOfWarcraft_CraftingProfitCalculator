@@ -10,21 +10,26 @@ const period_reset_window = 1500;
 let allowed_during_period = 0;
 let in_use = 0;
 
-function sleep(ms) : Promise<void> {
+function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
 }
 
 class BlizzardTimeoutManager extends events {
-    intervalTimeout : NodeJS.Timeout;
+    intervalTimeout?: NodeJS.Timeout;
+
+    constructor() {
+        super();
+        this.intervalTimeout = undefined;
+    }
 }
 const emitter = new BlizzardTimeoutManager();
-function exec_reset() : void {
+function exec_reset(): void {
     emitter.emit('reset');
 }
 
-function shutdownApiManager() : void {
+function shutdownApiManager(): void {
     emitter.emit('shutdown');
 }
 
@@ -34,7 +39,9 @@ emitter.on('reset', () => {
 });
 emitter.on('shutdown', () => {
     logger.debug(`Stop API manager with ${allowed_during_period} still running and ${in_use} in use`);
-    clearInterval(emitter.intervalTimeout);
+    if (emitter.intervalTimeout !== undefined) {
+        clearInterval(emitter.intervalTimeout);
+    }
 });
 emitter.on('start', () => {
     logger.debug(`Start API manager with window ${period_reset_window}`);
@@ -42,7 +49,7 @@ emitter.on('start', () => {
     emitter.intervalTimeout.unref();
 });
 
-async function manageBlizzardTimeout() : Promise<void> {
+async function manageBlizzardTimeout(): Promise<void> {
     emitter.emit('start');
 }
 
@@ -54,7 +61,7 @@ const base_uri = 'api.blizzard.com';
  * @param {Object} data The request data to send.
  * @param {!string} uri The url to query against.
  */
-async function getBlizzardAPIResponse(region_code: RegionCode, authorization_token: AccessToken, data: string | Record<string, string|number>, uri: string) : Promise<BlizzardApi.BlizzardApiReponse>{
+async function getBlizzardAPIResponse(region_code: RegionCode, authorization_token: AccessToken, data: string | Record<string, string | number>, uri: string): Promise<BlizzardApi.BlizzardApiReponse | void> {
     let proceed = false;
     let wait_count = 0;
     while (!proceed) {
@@ -93,7 +100,7 @@ async function getBlizzardAPIResponse(region_code: RegionCode, authorization_tok
  * @param {object} data The request data to send.
  * @param {string} uri Raw url including transport to query.
  */
-async function getBlizzardRawUriResponse(authorization_token: AccessToken, data: string | Record<string, string|number>, uri: string) : Promise<BlizzardApi.BlizzardApiReponse>{
+async function getBlizzardRawUriResponse(authorization_token: AccessToken, data: string | Record<string, string | number>, uri: string): Promise<BlizzardApi.BlizzardApiReponse | void> {
     let proceed = false;
     let wait_count = 0;
     while (!proceed) {

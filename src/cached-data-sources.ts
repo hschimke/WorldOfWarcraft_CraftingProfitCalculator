@@ -71,14 +71,22 @@ async function cacheCheck(namespace: string, key: string | number, expiration_pe
     //logger.profile('cacheGet');
     //const query = 'select namespace, key, value, cached from key_values where namespace = ? and key = ?';
     const query_no_expiration = 'SELECT COUNT(*) AS how_many FROM key_values WHERE namespace = $1 AND key = $2';
-    const no_expiration_values = [namespace, key];
     const query_with_expiration = 'SELECT COUNT(*) AS how_many FROM key_values WHERE namespace = $1 AND key = $2 AND (cached + $3) > $4';
-    const expiration_values = [namespace, key, expiration_period, Date.now()];
 
-    const query = (expiration_period !== undefined) ? query_with_expiration : query_no_expiration;
-    const values = (expiration_period !== undefined) ? expiration_values : no_expiration_values;
+    let result : any;
 
-    const result: any = await db.get(query, values);
+    if(expiration_period !== undefined){
+        const query = query_with_expiration;
+        const values = [namespace, key, expiration_period, Date.now()];;
+        result = await db.get(query, values);
+    }else{
+        const query = query_no_expiration;
+        const values = [namespace, key];
+        result = await db.get(query, values);
+    }
+    
+
+    //const result: any = await db.get(query, values);
 
     let found = false;
     if (result.how_many > 0) {

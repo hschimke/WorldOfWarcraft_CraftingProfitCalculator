@@ -15,13 +15,18 @@ const sql_check_realm = 'SELECT COUNT(*) AS how_many FROM realms WHERE connected
 
 const db_type = process.env.DATABASE_TYPE;
 
-async function ingest(region: RegionCode, connected_realm: number) {
+async function ingest(region: RegionCode, connected_realm: number) : Promise<void> {
     const db = await getDb('history');
     // Get auction house
     const auction_house = await getAuctionHouse(connected_realm, region);
     const downloaded = Date.now();
     // Loop over each auction and add it.
-    const items = {};
+    const items: Record<string, Record<string | number, {
+        item_id: ItemID,
+        bonus_lists: Array<number>,
+        price: number,
+        quantity: number
+    }>> = {};
     auction_house.auctions.forEach((auction) => {
         const item_id_key = auction.item.id + (('bonus_lists' in auction.item) ? JSON.stringify(auction.item.bonus_lists) : '');
         if (!(item_id_key in items)) {
@@ -29,7 +34,7 @@ async function ingest(region: RegionCode, connected_realm: number) {
         }
         let price = 0;
         const quantity = auction.quantity;
-        if (auction.buyout !== undefined ) {
+        if (auction.buyout !== undefined) {
             price = auction.buyout;
         } else {
             price = auction.unit_price;
@@ -118,7 +123,7 @@ async function getAllBonuses(item: ItemSoftIdentity, region: RegionCode) {
         logger.info(`Found ${item_id} for ${item}`);
     }
 
-    const bonuses: any = await db.all(sql, [item_id]);
+    const bonuses: Record<string,string>[] = await db.all(sql, [item_id]);
 
     logger.debug(`Found ${bonuses.length} bonuses for ${item}`);
 
@@ -155,7 +160,7 @@ async function fillNItems(fill_count: number = 5) {
 }
 
 
-async function getAuctions(item: ItemSoftIdentity, realm: ConnectedRealmSoftIentity, region: RegionCode, bonuses: Array<number>, start_dtm: number, end_dtm: number): Promise<AuctionSummaryData> {
+async function getAuctions(item: ItemSoftIdentity, realm: ConnectedRealmSoftIentity, region: RegionCode, bonuses: Array<number> | string, start_dtm: number, end_dtm: number): Promise<AuctionSummaryData> {
     const db = await getDb('history');
     logger.debug(`getAuctions(${item}, ${realm}, ${region}, ${bonuses}, ${start_dtm}, ${end_dtm})`);
     //const sql_build = 'SELECT * FROM auctions';
@@ -221,7 +226,7 @@ async function getAuctions(item: ItemSoftIdentity, realm: ConnectedRealmSoftIent
         if (bonuses === null) {
             sql_addins.push('bonuses IS NULL');
         }
-        else if (typeof bonuses !== typeof []) {
+        else if (typeof bonuses === 'string') {
             sql_addins.push(`bonuses = ${get_place_marker()}`);
             value_searches.push(bonuses);
         } else {
@@ -271,20 +276,37 @@ async function getAuctions(item: ItemSoftIdentity, realm: ConnectedRealmSoftIent
     const avg_value = (await db.get(avg_sql, value_searches)).avg_price;
     const latest_dl_value = (await db.get(latest_dl_sql, value_searches)).latest_download;
 
-    const price_data_by_download = {};
+    interface AuctionPriceSummaryRecord {
+        data?: Array<SalesCountSummaryPrice>,
+        min_value: number,
+        max_value: number,
+        avg_value: number
+    };
+
+    interface SalesCountSummary {
+        sales_at_price: number,
+        quantity_at_price: number
+    };
+
+    interface SalesCountSummaryPrice extends SalesCountSummary {
+        price: number
+    };
+
+    const price_data_by_download: Record<number, AuctionPriceSummaryRecord> = {};
     for (const row of (await db.all(distinct_download_sql, value_searches))) {
-        price_data_by_download[row.downloaded] = {};
-        price_data_by_download[row.downloaded].data = await db.all(price_group_sql, [...value_searches, row.downloaded]);
-        price_data_by_download[row.downloaded].min_value = (await db.get(min_dtm_sql, [...value_searches, row.downloaded])).min_price;
-        price_data_by_download[row.downloaded].max_value = (await db.get(max_dtm_sql, [...value_searches, row.downloaded])).max_price;
-        price_data_by_download[row.downloaded].avg_value = (await db.get(avg_dtm_sql, [...value_searches, row.downloaded])).avg_price;
+        price_data_by_download[row.downloaded] = {
+            data: await db.all(price_group_sql, [...value_searches, row.downloaded]),
+            min_value: (await db.get(min_dtm_sql, [...value_searches, row.downloaded])).min_price,
+            max_value: (await db.get(max_dtm_sql, [...value_searches, row.downloaded])).max_price,
+            avg_value: (await db.get(avg_dtm_sql, [...value_searches, row.downloaded])).avg_price
+        };
     }
 
     // Get archives if they exist
     const archive_fetch_sql = build_sql_with_addins(sql_archive_build, sql_addins);
     const archives = await db.all(archive_fetch_sql, value_searches);
 
-    const archived_results = {};
+    const archived_results: Record<string, Array<AuctionPriceSummaryRecord>> = {};
     logger.debug(`Found ${archives.length} archive rows.`);
     for (const archive of archives) {
         if (!(archive.downloaded in archived_results)) {
@@ -300,13 +322,13 @@ async function getAuctions(item: ItemSoftIdentity, realm: ConnectedRealmSoftIent
 
         const arch_build = {
             timestamp: key,
-            data: [],
+            data: [] as Array<SalesCountSummaryPrice>,
             min_value: Number.MAX_SAFE_INTEGER,
             max_value: Number.MIN_SAFE_INTEGER,
             avg_value: 0,
         };
 
-        const price_link = {};
+        const price_link: Record<string, SalesCountSummary> = {};
 
         for (const a of arch) {
 
@@ -317,25 +339,29 @@ async function getAuctions(item: ItemSoftIdentity, realm: ConnectedRealmSoftIent
                 arch_build.max_value = a.max_value;
             }
             arch_build.avg_value += a.avg_value;
-            for (const p of a.data) {
-                if (!(p.price in price_link)) {
-                    price_link[p.price] = {
-                        sales_at_price: 0,
-                        quantity_at_price: 0,
+            if (a.data !== undefined) {
+                for (const p of a.data) {
+                    if (!(p.price in price_link)) {
+                        price_link[p.price] = {
+                            sales_at_price: 0,
+                            quantity_at_price: 0,
+                        }
                     }
+                    price_link[p.price].sales_at_price += p.sales_at_price;
+                    price_link[p.price].quantity_at_price += p.quantity_at_price;
                 }
-                price_link[p.price].sales_at_price += p.sales_at_price;
-                price_link[p.price].quantity_at_price += p.quantity_at_price;
             }
         }
         arch_build.avg_value = arch_build.avg_value / arch.length;
+
         Object.keys(price_link).forEach((key) => {
             arch_build.data.push({
-                price: key,
+                price: Number(key),
                 sales_at_price: price_link[key].sales_at_price,
                 quantity_at_price: price_link[key].quantity_at_price,
             })
         });
+
         archive_build.push(arch_build);
     }
 
@@ -411,9 +437,12 @@ async function archiveAuctions(): Promise<void> {
                 summary.max_value = (await client.query(sql_max, vals)).rows[0].max_price;
                 summary.avg_value = (await client.query(sql_avg, vals)).rows[0].avg_price;
 
-                const quantity = summary.data.reduce((acc, cur) => {
-                    return acc + cur.quantity_at_price;
-                }, 0);
+                let quantity = 0;
+                if (summary.data !== undefined) {
+                    quantity = summary.data.reduce((acc, cur) => {
+                        return acc + cur.quantity_at_price;
+                    }, 0);
+                }
 
                 // Add the archive
                 await client.query(sql_insert_auction_archive, [item.item_id, quantity, (db_type === 'pg' ? summary : JSON.stringify(summary)), start_ticks, item.connected_realm_id, item.bonuses]);
@@ -446,7 +475,7 @@ async function scanRealms(): Promise<void> {
     const db = await getDb('history');
     const getScannableRealms = 'SELECT connected_realm_id, region FROM realm_scan_list';
     const realm_scan_list = await db.all(getScannableRealms, []);
-    await Promise.all(realm_scan_list.map((realm) => {
+    await Promise.all(realm_scan_list.map((realm : { region: RegionCode, connected_realm_id: number}) => {
         return ingest(realm.region, realm.connected_realm_id);
     }));
 }

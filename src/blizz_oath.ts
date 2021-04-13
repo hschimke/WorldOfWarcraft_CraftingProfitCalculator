@@ -6,7 +6,7 @@ const logger = parentLogger.child({});
 const clientID = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 
-const authorization_uri_base = 'battle.net/oath/token';
+const authorization_uri_base = 'battle.net/oauth/token';
 
 const clientAccessToken: AccessToken = {
     access_token: '',
@@ -32,7 +32,7 @@ async function getAuthorizationToken(region: RegionCode): Promise<AccessToken> {
     if (clientAccessToken.checkExpired()) {
         logger.debug('Access token expired, fetching fresh.');
         try {
-            const auth_response: { body: any } = await got(`https://${region}.authorization_uri`, {
+            const auth_response: { body: any } = await got(`https://${region}.${authorization_uri_base}`, {
                 responseType: 'json',
                 method: 'POST',
                 username: clientID,

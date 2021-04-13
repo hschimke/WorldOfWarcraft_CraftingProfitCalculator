@@ -2,11 +2,11 @@ import { parentLogger } from './logging.js';
 const logger = parentLogger.child({});
 
 class RunConfiguration {
-    #internal_inventory = {};
-    #inventory_overlay = {};
-    #professions = [];
-    #realm_name: string
-    #realm_region: string
+    #internal_inventory : Record<ItemID,number>= {};
+    #inventory_overlay : Record<ItemID,number> = {};
+    #professions : CharacterProfession[] = [];
+    #realm_name: RealmName = '';
+    #realm_region: string = '';
     #item_id: ItemSoftIdentity
     #item_count: number
 
