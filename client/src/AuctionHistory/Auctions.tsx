@@ -1,12 +1,12 @@
 /// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import React, { FormEvent, useReducer } from 'react';
 import './Auctions.css';
-import { useFetchHistoryApi, UseFetchApiState } from '../Shared/ApiClient.js';
+import { useFetchHistoryApi, UseFetchApiState } from '../Shared/ApiClient';
 import { Chart } from "react-google-charts";
-import { GoldFormatter } from '../Shared/GoldFormatter.jsx';
-import { BonusListDropdown } from './BonusListDropdown.jsx';
-import { RegionSelector } from '../Shared/RegionSelector.jsx';
-import { AuctionHistoryDispatch } from './Shared.js';
+import { GoldFormatter } from '../Shared/GoldFormatter';
+import { BonusListDropdown } from './BonusListDropdown';
+import { RegionSelector } from '../Shared/RegionSelector';
+import { AuctionHistoryDispatch } from './Shared';
 
 export interface AuctionsFormDataReducerAction {
     fieldName: string,

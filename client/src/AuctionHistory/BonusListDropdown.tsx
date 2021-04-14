@@ -1,7 +1,7 @@
 /// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import { useContext } from 'react';
-import { useSeenBonusesApi } from '../Shared/ApiClient.jsx';
-import { AuctionHistoryDispatch } from './Shared.js';
+import { useSeenBonusesApi } from '../Shared/ApiClient';
+import { AuctionHistoryDispatch } from './Shared';
 import './BonusListDropdown.css';
 
 export interface BonusListDropdownProps {

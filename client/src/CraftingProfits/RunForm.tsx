@@ -1,7 +1,7 @@
 import './RunForm.css';
-import { CraftingProfitsDispatch, CharacterProfessionList } from './Shared.js';
+import { CraftingProfitsDispatch, CharacterProfessionList } from './Shared';
 import { useContext } from 'react';
-import { RegionSelector } from '../Shared/RegionSelector.jsx';
+import { RegionSelector } from '../Shared/RegionSelector';
 
 export interface RunFormProps {
     form_type: string,

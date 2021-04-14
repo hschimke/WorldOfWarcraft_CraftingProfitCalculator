@@ -1,9 +1,9 @@
 /// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import { useState } from 'react';
-import { textFriendlyOutputFormat } from '../Shared/text-output-helpers.js';
+import { textFriendlyOutputFormat } from '../Shared/text-output-helpers';
 import './RunResultDisplay.css';
-import { GoldFormatter, VendorItemPrice, AHItemPrice } from '../Shared/GoldFormatter.jsx';
-import { ShoppingLists } from './ShoppingLists.jsx';
+import { GoldFormatter, VendorItemPrice, AHItemPrice } from '../Shared/GoldFormatter';
+import { ShoppingLists } from './ShoppingLists';
 
 const hidden_recipe_listing_header = {};
 

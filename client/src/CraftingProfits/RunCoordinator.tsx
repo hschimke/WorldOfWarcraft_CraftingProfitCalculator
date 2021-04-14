@@ -1,9 +1,9 @@
 /// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import { useState, useReducer } from 'react';
 import { RunForm } from './RunForm';
-import { useFetchCPCApi, UseFetchApiState } from '../Shared/ApiClient.js';
-import RunResultDisplay from './RunResultDisplay.jsx';
-import { all_professions, CraftingProfitsDispatch, CharacterProfessionList, validateAndCleanProfessions } from './Shared.js';
+import { useFetchCPCApi, UseFetchApiState } from '../Shared/ApiClient';
+import RunResultDisplay from './RunResultDisplay';
+import { all_professions, CraftingProfitsDispatch, CharacterProfessionList, validateAndCleanProfessions } from './Shared';
 import './RunCoordinator.css';
 
 export interface RunCoordinatorFormDataReducerState {
