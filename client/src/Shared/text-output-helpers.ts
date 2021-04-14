@@ -1,9 +1,11 @@
+/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
+
 /**
  * Format a raw value into a string for Gold, Silver, and Copper
  * @param {!number} price_in The blizzard provided cost number.
  * @returns {string} The formatted Gold,Silver,Copper value as seen in game.
  */
-function goldFormatter(price_in) {
+function goldFormatter(price_in : number) {
     const price = Math.trunc(price_in);
     const copper = price % 100;
     const silver = (((price % 10000) - copper)) / 100;
@@ -15,7 +17,7 @@ function goldFormatter(price_in) {
  * Provide a string to indent a preformatted text.
  * @param level The number of indents to include.
  */
-function indentAdder(level) {
+function indentAdder(level : number) {
     let str = '';
     for (let i = 0; i < level; i++) {
         str += '  ';
@@ -28,7 +30,7 @@ function indentAdder(level) {
  * @param {!object} output_data The object created by generateOutputFormat.
  * @param {!number} indent The number of spaces the current level should be indented.
  */
-function textFriendlyOutputFormat(output_data, indent) {
+function textFriendlyOutputFormat(output_data : OutputFormatObject, indent:number) {
     /*
      * Output format:
      * Item

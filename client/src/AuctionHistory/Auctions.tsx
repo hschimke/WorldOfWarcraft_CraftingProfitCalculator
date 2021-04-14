@@ -1,11 +1,11 @@
 import React, { useReducer } from 'react';
 import './Auctions.css';
-import { useFetchHistoryApi } from '../Shared/ApiClient.js';
+import { useFetchHistoryApi } from '../Shared/ApiClient';
 import { Chart } from "react-google-charts";
-import { GoldFormatter } from '../Shared/GoldFormatter.js';
-import { BonusListDropdown } from './BonusListDropdown.js';
-import { RegionSelector } from '../Shared/RegionSelector.js';
-import { AuctionHistoryDispatch } from './Shared.js';
+import { GoldFormatter } from '../Shared/GoldFormatter';
+import { BonusListDropdown } from './BonusListDropdown';
+import { RegionSelector } from '../Shared/RegionSelector';
+import { AuctionHistoryDispatch } from './Shared';
 
 function formDataReducer(state, action) {
     switch (action.fieldName) {

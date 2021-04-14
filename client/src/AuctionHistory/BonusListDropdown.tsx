@@ -1,6 +1,6 @@
 import { useContext } from 'react';
-import { useSeenBonusesApi } from '../Shared/ApiClient.js';
-import { AuctionHistoryDispatch } from './Shared.js';
+import { useSeenBonusesApi } from '../Shared/ApiClient';
+import { AuctionHistoryDispatch } from './Shared';
 import './BonusListDropdown.css';
 
 function BonusListDropdown(props) {

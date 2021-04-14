@@ -1,6 +1,6 @@
 import './App.css';
-import RunCoordinator from './CraftingProfits/RunCoordinator.js';
-import Auctions from './AuctionHistory/Auctions.js';
+import RunCoordinator from './CraftingProfits/RunCoordinator';
+import Auctions from './AuctionHistory/Auctions';
 import {
   BrowserRouter as Router,
   Switch,

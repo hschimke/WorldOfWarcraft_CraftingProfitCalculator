@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { textFriendlyOutputFormat } from '../Shared/text-output-helpers.mjs';
+import { textFriendlyOutputFormat } from '../Shared/text-output-helpers';
 import './RunResultDisplay.css';
-import { GoldFormatter, VendorItemPrice, AHItemPrice } from '../Shared/GoldFormatter.js';
-import { ShoppingLists } from './ShoppingLists.js';
+import { GoldFormatter, VendorItemPrice, AHItemPrice } from '../Shared/GoldFormatter';
+import { ShoppingLists } from './ShoppingLists';
 
 const hidden_recipe_listing_header = {};
 

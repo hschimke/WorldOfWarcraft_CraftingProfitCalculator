@@ -1,5 +1,5 @@
 import './ShoppingLists.css';
-import { AHItemPrice, VendorItemPrice } from '../Shared/GoldFormatter.js';
+import { AHItemPrice, VendorItemPrice } from '../Shared/GoldFormatter';
 
 function ShoppingLists(props) {
     return (

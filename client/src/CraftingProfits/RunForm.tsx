@@ -1,7 +1,7 @@
 import './RunForm.css';
-import { CraftingProfitsDispatch } from './Shared.js';
+import { CraftingProfitsDispatch } from './Shared';
 import { useContext } from 'react';
-import { RegionSelector } from '../Shared/RegionSelector.js';
+import { RegionSelector } from '../Shared/RegionSelector';
 
 function RunForm(props) {
     switch (props.form_type) {

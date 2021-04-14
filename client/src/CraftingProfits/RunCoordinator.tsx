@@ -1,8 +1,8 @@
 import { useState, useReducer } from 'react';
-import { RunForm } from './RunForm.js';
-import { useFetchCPCApi } from '../Shared/ApiClient.js';
-import RunResultDisplay from './RunResultDisplay.js';
-import { all_professions, CraftingProfitsDispatch } from './Shared.js';
+import { RunForm } from './RunForm';
+import { useFetchCPCApi } from '../Shared/ApiClient';
+import RunResultDisplay from './RunResultDisplay';
+import { all_professions, CraftingProfitsDispatch } from './Shared';
 import './RunCoordinator.css';
 
 const formDataReducer = (state, action) => {
