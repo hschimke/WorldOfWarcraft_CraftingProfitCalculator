@@ -1,6 +1,12 @@
+/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
+
 import './GoldFormatter.css';
 
-function GoldFormatter(props) {
+export interface GoldFormatterProps {
+    raw_price: number
+}
+
+function GoldFormatter(props: GoldFormatterProps) {
     const price_in = props.raw_price;
     const price = Math.trunc(price_in);
     const copper = price % 100;
@@ -24,7 +30,7 @@ function GoldFormatter(props) {
     );
 }
 
-function AHItemPrice(props) {
+function AHItemPrice(props: { ah: OutputFormatPrice }) {
     return (
         <div className="AHItemPrice">
             AH {props.ah.sales}: <GoldFormatter raw_price={props.ah.high} />/<GoldFormatter raw_price={props.ah.low} />/<GoldFormatter raw_price={props.ah.average} />
@@ -32,7 +38,7 @@ function AHItemPrice(props) {
     );
 }
 
-function VendorItemPrice(props) {
+function VendorItemPrice(props: { vendor: number }) {
     return (
         <div className="VendorItemPrice">
             Vendor <GoldFormatter raw_price={props.vendor} />

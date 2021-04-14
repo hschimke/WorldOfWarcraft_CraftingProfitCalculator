@@ -1,11 +1,29 @@
+/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import { useState, useReducer } from 'react';
 import { RunForm } from './RunForm';
-import { useFetchCPCApi } from '../Shared/ApiClient';
-import RunResultDisplay from './RunResultDisplay';
-import { all_professions, CraftingProfitsDispatch } from './Shared';
+import { useFetchCPCApi, UseFetchApiState } from '../Shared/ApiClient.js';
+import RunResultDisplay from './RunResultDisplay.jsx';
+import { all_professions, CraftingProfitsDispatch, CharacterProfessionList, validateAndCleanProfessions } from './Shared.js';
 import './RunCoordinator.css';
 
-const formDataReducer = (state, action) => {
+export interface RunCoordinatorFormDataReducerState {
+    item: string,
+    addon_data: string,
+    required: string|number,
+    region: string,
+    realm: string,
+    professions: CharacterProfessionList
+}
+
+export interface RunCoordinatorFormDataReducerAction {
+    field: string,
+    value: string,
+    professions: CharacterProfessionList
+}
+
+export interface RunCoordinatorProps{}
+
+const formDataReducer = (state: RunCoordinatorFormDataReducerState, action: RunCoordinatorFormDataReducerAction) : RunCoordinatorFormDataReducerState => {
     switch (action.field) {
         case 'item':
             return { ...state, item: action.value };
@@ -18,21 +36,26 @@ const formDataReducer = (state, action) => {
         case 'realm':
             return { ...state, realm: action.value };
         case 'professions':
-            const index = state.professions.indexOf(action.value);
-            const new_profs = state.professions.slice();
-            if (index > -1) {
-                new_profs.splice(index, 1);
+            const cleaned_prof = validateAndCleanProfessions(action.value);
+            if (cleaned_prof !== undefined && !Array.isArray(cleaned_prof)) {
+                const index = state.professions.indexOf(cleaned_prof);
+                const new_profs = state.professions.slice();
+                if (index > -1) {
+                    new_profs.splice(index, 1);
+                } else {
+                    new_profs.push(cleaned_prof);
+                }
+                return { ...state, professions: new_profs };
             } else {
-                new_profs.push(action.value);
+                return { ...state };
             }
-            return { ...state, professions: new_profs };
         default:
             throw new Error();
     }
 }
 
-function RunCoordinator(props) {
-    const [apiState, setPayload] = useFetchCPCApi();
+function RunCoordinator(props:RunCoordinatorProps) {
+    const [apiState, setPayload] = useFetchCPCApi() as [UseFetchApiState<ServerRunResultReturn>, (React.Dispatch<React.SetStateAction<object | undefined>>)];
     const [formData, dispatchFormUpdate] = useReducer(formDataReducer, {
         item: 'Grim-Veiled Bracers',
         addon_data: '',
@@ -40,7 +63,7 @@ function RunCoordinator(props) {
         region: 'US',
         realm: 'Hyjal',
         professions: all_professions.slice(),
-    })
+    });
     const enable_run_button = !apiState.isLoading;
     const output_display = apiState.isLoading ? `Analyzing ${formData.item}` : 'ready';
     const raw_data = apiState.data;
@@ -48,7 +71,7 @@ function RunCoordinator(props) {
     const [show_raw_results, updateShowRawResults] = useState(false);
     const [run_type, updateRunType] = useState('advanced');
 
-    const handleSubmit = (event) => {
+    const handleSubmit : React.FormEventHandler = (event) => {
         event.preventDefault();
 
         const run_data = {
@@ -63,13 +86,13 @@ function RunCoordinator(props) {
         setPayload(run_data);
     };
 
-    const pickForm = (e) => {
+    const pickForm : React.ChangeEventHandler<HTMLSelectElement | HTMLInputElement>= (e) => {
         switch (e.target.name) {
             case 'formType':
                 updateRunType(e.target.value);
                 break;
             case 'includeRaw':
-                updateShowRawResults(e.target.checked);
+                updateShowRawResults(!show_raw_results);
                 break;
             default:
                 break;
@@ -88,7 +111,7 @@ function RunCoordinator(props) {
                 </label>
                 <label>
                     Include Raw Output:
-                        <input type="checkbox" name="includeRaw" value={show_raw_results} onChange={pickForm} />
+                        <input type="checkbox" name="includeRaw" checked={show_raw_results} onChange={pickForm} />
                 </label>
             </form>
             <div>

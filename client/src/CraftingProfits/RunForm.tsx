@@ -1,9 +1,23 @@
 import './RunForm.css';
-import { CraftingProfitsDispatch } from './Shared';
+import { CraftingProfitsDispatch, CharacterProfessionList } from './Shared.js';
 import { useContext } from 'react';
-import { RegionSelector } from '../Shared/RegionSelector';
+import { RegionSelector } from '../Shared/RegionSelector.jsx';
 
-function RunForm(props) {
+export interface RunFormProps {
+    form_type: string,
+    handleSubmit: React.FormEventHandler,
+    item: string,
+    required: string|number,
+    addon_data: string,
+    button_enabled: boolean,
+    region: string,
+    realm: string,
+    professions: CharacterProfessionList,
+    allProfessions: CharacterProfessionList,
+
+}
+
+function RunForm(props: RunFormProps) {
     switch (props.form_type) {
         case 'advanced':
             return <AdvancedRunFrom {...props} />
@@ -14,11 +28,13 @@ function RunForm(props) {
     }
 }
 
-function SimpleRunFrom(props) {
+function SimpleRunFrom(props: RunFormProps) {
     const dispatch = useContext(CraftingProfitsDispatch);
 
-    const handleInputChange = (event) => {
-        dispatch({ field: event.target.name, value: event.target.value });
+    const handleInputChange: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement> = (event) => {
+        if (dispatch !== undefined) {
+            dispatch({ field: event.target.name, value: event.target.value });
+        }
     };
     return (
         <form onSubmit={props.handleSubmit} className="RunForm">
@@ -29,23 +45,27 @@ function SimpleRunFrom(props) {
                     <input type="text" name="required" value={props.required} onChange={handleInputChange} />
             </label>
             <label>Addon Data
-                    <textarea name="addon_data" rows="5" cols="100" value={props.addon_data} onChange={handleInputChange} />
+                    <textarea name="addon_data" rows={5} cols={100} value={props.addon_data} onChange={handleInputChange} />
             </label>
             <button type="submit" disabled={!props.button_enabled} value="Run">Run</button>
         </form >
     );
 }
 
-function AdvancedRunFrom(props) {
+function AdvancedRunFrom(props: RunFormProps) {
     const profession_list = props.allProfessions;
     const dispatch = useContext(CraftingProfitsDispatch);
 
-    const handleInputChange = (event) => {
-        dispatch({ field: event.target.name, value: event.target.value });
+    const handleInputChange: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement> = (event) => {
+        if (dispatch !== undefined) {
+            dispatch({ field: event.target.name, value: event.target.value });
+        }
     };
 
-    const handleCheckbox = (event) => {
-        dispatch({ field: 'professions', value: event.target.name });
+    const handleCheckbox: React.ChangeEventHandler<HTMLInputElement> = (event) => {
+        if (dispatch !== undefined) {
+            dispatch({ field: 'professions', value: event.target.name });
+        }
     };
     return (
         <form onSubmit={props.handleSubmit} className="RunForm">
@@ -71,7 +91,7 @@ function AdvancedRunFrom(props) {
                 })}
             </fieldset>
             <label>Addon Data
-                    <textarea name="addon_data" rows="5" cols="100" value={props.addon_data} onChange={handleInputChange} />
+                    <textarea name="addon_data" rows={5} cols={100} value={props.addon_data} onChange={handleInputChange} />
             </label>
             <button type="submit" disabled={!props.button_enabled} value="Run">Run</button>
         </form >

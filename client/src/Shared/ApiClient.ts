@@ -1,22 +1,38 @@
+/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import { useState, useEffect, useReducer } from 'react';
 
-function apiGetSeenBonuses(payload, cb) {
+/*function apiGetSeenBonuses(payload, cb) {
     if (payload.item !== undefined && payload.item.length > 0) {
         return apiCall('/seen_item_bonuses', payload, cb);
     } else {
         return { 'ERROR': 'Empty' };
     }
-}
+}*/
 
 function useFetchHistoryApi() {
-    return useFetchApi('/auction_history');
+    return useFetchApi<AuctionHistoryReturn>('/auction_history');
 }
 
 function useFetchCPCApi() {
-    return useFetchApi('/json_output');
+    return useFetchApi<ServerRunResultReturn>('/json_output');
 }
 
-const dataFetchReducer = (state, action) => {
+export interface UseFetchApiState<FetchType> {
+    isLoading: boolean,
+    isError: boolean,
+    data: FetchType & ServerErrorReturn | undefined
+}
+
+export interface UseFetchApiAction {
+    type: string,
+    payload?: any
+}
+
+interface DataFetchReducerFunction<FetchType> {
+    (state: UseFetchApiState<FetchType>, action: UseFetchApiAction): UseFetchApiState<FetchType>
+}
+
+function dataFetchReducer<FetchType>(state: UseFetchApiState<FetchType>, action: UseFetchApiAction): UseFetchApiState<FetchType> {
     switch (action.type) {
         case 'FETCH_INIT':
             return {
@@ -40,11 +56,12 @@ const dataFetchReducer = (state, action) => {
         default:
             throw new Error();
     }
-};
+}
 
-function useFetchApi(endpoint) {
-    const [payload, setPayload] = useState();
-    const [state, dispatch] = useReducer(dataFetchReducer, {
+function useFetchApi<FetchType>(endpoint: string) {
+    const [payload, setPayload] = useState<object>();
+    const localReducer: DataFetchReducerFunction<FetchType> = dataFetchReducer;
+    const [state, dispatch] = useReducer(localReducer, {
         isLoading: false,
         isError: false,
         data: undefined,
@@ -85,8 +102,9 @@ function useFetchApi(endpoint) {
     return [state, setPayload];
 }
 
-function useSeenBonusesApi(item, region, realm) {
-    const [state, dispatch] = useReducer(dataFetchReducer, {
+function useSeenBonusesApi(item: string, region: string, realm: string) {
+    const localReducer : DataFetchReducerFunction<SeenItemBonusesReturn> = dataFetchReducer;
+    const [state, dispatch] = useReducer(localReducer, {
         isLoading: false,
         isError: false,
         data: undefined,
@@ -132,7 +150,7 @@ function useSeenBonusesApi(item, region, realm) {
     return [state];
 };
 
-function apiCall(end_point, data, cb) {
+function apiCall(end_point: string, data: any, cb: (a: any) => any) {
     return fetch(end_point, {
         method: 'POST',
         body: JSON.stringify(data),
@@ -144,19 +162,19 @@ function apiCall(end_point, data, cb) {
         .then(cb);
 }
 
-function checkStatus(response) {
+function checkStatus(response: Response) {
     if (response.status >= 200 && response.status < 300) {
         return response;
     }
     const error = new Error(`HTTP Error ${response.statusText}`);
-    error.status = response.statusText;
-    error.response = response;
+    //error.status = response.statusText;
+    //error.response = response;
     console.log(error); // eslint-disable-line no-console
     throw error;
 }
 
-function parseJSON(response) {
+function parseJSON(response: Response) {
     return response.json();
 }
 
-export { apiGetSeenBonuses, useFetchHistoryApi, useFetchApi, useFetchCPCApi, useSeenBonusesApi };
+export { useFetchHistoryApi, useFetchApi, useFetchCPCApi, useSeenBonusesApi };

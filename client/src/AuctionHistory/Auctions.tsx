@@ -1,13 +1,32 @@
-import React, { useReducer } from 'react';
+/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
+import React, { FormEvent, useReducer } from 'react';
 import './Auctions.css';
-import { useFetchHistoryApi } from '../Shared/ApiClient';
+import { useFetchHistoryApi, UseFetchApiState } from '../Shared/ApiClient.js';
 import { Chart } from "react-google-charts";
-import { GoldFormatter } from '../Shared/GoldFormatter';
-import { BonusListDropdown } from './BonusListDropdown';
-import { RegionSelector } from '../Shared/RegionSelector';
-import { AuctionHistoryDispatch } from './Shared';
+import { GoldFormatter } from '../Shared/GoldFormatter.jsx';
+import { BonusListDropdown } from './BonusListDropdown.jsx';
+import { RegionSelector } from '../Shared/RegionSelector.jsx';
+import { AuctionHistoryDispatch } from './Shared.js';
 
-function formDataReducer(state, action) {
+export interface AuctionsFormDataReducerAction {
+    fieldName: string,
+    value: string
+}
+
+export interface AuctionsFormDataReducerState {
+    item_name: string,
+    realm_name: string,
+    region: string
+    ilevel: string,
+    sockets: string,
+    quality: string
+}
+
+export interface AuctionsProps {
+
+}
+
+function formDataReducer(state: AuctionsFormDataReducerState, action: AuctionsFormDataReducerAction): AuctionsFormDataReducerState {
     switch (action.fieldName) {
         case 'item_name':
             return {
@@ -53,8 +72,8 @@ function formDataReducer(state, action) {
     }
 }
 
-function Auctions(props) {
-    const [apiState, sendPayload] = useFetchHistoryApi();
+function Auctions(props: AuctionsProps) {
+    const [apiState, sendPayload] = useFetchHistoryApi() as [UseFetchApiState<AuctionHistoryReturn>, (React.Dispatch<React.SetStateAction<object | undefined>>)];
     const [formState, dispatchFormUpdate] = useReducer(formDataReducer, {
         item_name: 'Grim-Veiled Bracers',
         realm_name: 'Hyjal',
@@ -67,11 +86,11 @@ function Auctions(props) {
     const button_enabled = (apiState.isLoading) ? false : true;
     let chart_ready = false;
 
-    const handleChange = (event) => {
+    const handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
         dispatchFormUpdate({ fieldName: event.target.name, value: event.target.value });
     };
 
-    const handleSubmit = (event) => {
+    const handleSubmit: React.FormEventHandler = (event) => {
         event.preventDefault();
         const send_data = {
             item: formState.item_name,
@@ -82,32 +101,37 @@ function Auctions(props) {
         sendPayload(send_data);
     };
 
-    let bubble_chart_data;
-    let bar_chart_data;
-    let volume_chart_data;
+    let bubble_chart_data: (string | number | Date)[][] = [['ID', 'Auctions', 'Price', 'Quantity']];
+    let bar_chart_data: (string | number | Date)[][] = [['Fetch', 'High', 'Low', 'Average']];
+    let volume_chart_data: (string | number | Date)[][] = [['Date', 'Qauntity']];
     if (!(apiState.isLoading || apiState.isError) && apiState.data !== undefined) {
         const data = apiState.data;
-        if (!('ERROR' in data)) {
+        if (data.ERROR !== undefined) {
 
             const latest = data.price_map[data.latest];
 
-            bubble_chart_data = [['ID', 'Auctions', 'Price', 'Quantity']];
-            latest.data.forEach(element => {
-                bubble_chart_data.push(['', Number(element.sales_at_price), Number(element.price), Number(element.quantity_at_price)]);
-            });
+            //bubble_chart_data = [['ID', 'Auctions', 'Price', 'Quantity']];
+            if (latest.data !== undefined) {
+                latest.data.forEach(element => {
+                    bubble_chart_data.push(['', Number(element.sales_at_price), Number(element.price), Number(element.quantity_at_price)]);
+                });
+            }
 
-            bar_chart_data = [['Fetch', 'High', 'Low', 'Average']];
+            //bar_chart_data = [['Fetch', 'High', 'Low', 'Average']];
             Object.keys(data.price_map).forEach(key => {
                 const element = data.price_map[key];
                 bar_chart_data.push([new Date(Number(key)), Number(element.max_value), Number(element.min_value), Number(element.avg_value)]);
             });
 
-            volume_chart_data = [['Date', 'Qauntity']];
+            //volume_chart_data = [['Date', 'Qauntity']];
             Object.keys(data.price_map).forEach(key => {
                 let sales_by_key = 0;
-                data.price_map[key].data.forEach(element => {
-                    sales_by_key += Number(element.quantity_at_price);
-                });
+                const price_map_for_key = data.price_map[key];
+                if (price_map_for_key.data !== undefined) {
+                    price_map_for_key.data.forEach(element => {
+                        sales_by_key += Number(element.quantity_at_price);
+                    });
+                }
                 volume_chart_data.push([new Date(Number(key)), sales_by_key]);
             });
 
@@ -127,6 +151,13 @@ function Auctions(props) {
         }
     }
 
+    if (apiState.data !== undefined) {
+        const latest_price_data = apiState.data.price_map[apiState.data.latest];
+        const historical_price_data = apiState.data;
+        const current_price_data = apiState.data.price_map[apiState.data.latest].data;
+    }
+
+
     // https://react-google-charts.com/scatter-chart
     return (
         <div className="Auctions">
@@ -141,16 +172,20 @@ function Auctions(props) {
                         <input type="text" name="realm_name" value={formState.realm_name} onChange={handleChange} />
                     </label>
                     <RegionSelector selected_region={formState.region} onChange={handleChange} label="Region:" />
-                    <BonusListDropdown item={formState.item_name} region={formState.region} realm={formState.realm} ilevel={formState.ilevel} quality={formState.quality} sockets={formState.sockets} />
+                    <BonusListDropdown item={formState.item_name} region={formState.region} realm={formState.realm_name} ilevel={formState.ilevel} quality={formState.quality} sockets={formState.sockets} />
                     <button type="submit" disabled={!button_enabled} value="Run">Run</button>
                 </form>
             </AuctionHistoryDispatch.Provider>
             {
                 (chart_ready === true) &&
                 <div className="DataReturnDisplay">
-                    <PriceSummary title="Current Spot" high={apiState.data.price_map[apiState.data.latest].max_value} low={apiState.data.price_map[apiState.data.latest].min_value} average={apiState.data.price_map[apiState.data.latest].avg_value} />
-                    <PriceSummary title="Historical" high={apiState.data.max} low={apiState.data.min} average={apiState.data.avg} />
-                    <PriceChart title="Current Breakdown" rows={apiState.data.price_map[apiState.data.latest].data} />
+                    {(apiState.data !== undefined) &&
+                        <span>
+                            <PriceSummary title="Current Spot" high={apiState.data.price_map[apiState.data.latest].max_value} low={apiState.data.price_map[apiState.data.latest].min_value} average={apiState.data.price_map[apiState.data.latest].avg_value} />
+                            <PriceSummary title="Historical" high={apiState.data.max} low={apiState.data.min} average={apiState.data.avg} />
+                            <PriceChart title="Current Breakdown" rows={apiState.data.price_map[apiState.data.latest].data} />
+                        </span>
+                    }
                     <Chart
                         width={'500px'}
                         height={'300px'}
@@ -225,7 +260,14 @@ function Auctions(props) {
     );
 }
 
-function PriceSummary(props) {
+export interface PriceSummaryProps {
+    title: string,
+    high: number,
+    average: number,
+    low: number
+}
+
+function PriceSummary(props: PriceSummaryProps) {
     return (
         <div className="PriceSummary">
             <span className="PriceSummaryTitle">{props.title}</span>
@@ -245,7 +287,11 @@ function PriceSummary(props) {
     );
 }
 
-function PriceChart(props) {
+export interface PriceChartProps {
+    title: string,
+    rows?: SalesCountSummaryPrice[]
+}
+function PriceChart(props: PriceChartProps) {
     return (
         <div className="PriceChart">
             <span>{props.title}</span>
@@ -262,6 +308,7 @@ function PriceChart(props) {
                 </thead>
                 <tbody>
                     {
+                        (props.rows !== undefined) &&
                         props.rows.map(row => {
                             return (
                                 <tr key={row.price}>

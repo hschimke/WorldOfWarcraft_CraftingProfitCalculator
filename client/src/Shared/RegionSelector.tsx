@@ -3,15 +3,22 @@ import './RegionSelector.css'
 
 const region_list = ['US', 'EU', 'KR', 'TW'];
 
-function RegionSelector({ selected_region = 'US', onChange, name = 'region', label = 'Region' }) {
+export interface RegionSelectorProps {
+    selected_region?: string,
+    onChange: any,
+    name?: string,
+    label?: string
+}
+
+function RegionSelector({ selected_region = 'US', onChange, name = 'region', label = 'Region' } : RegionSelectorProps ) {
     const [selector_visible, updateVisible] = useState(false);
 
-    const handlePick = (value) => {
+    const handlePick = (value : string) => {
         onChange({target:{name: name, value:value}});
         updateVisible(false);
     };
 
-    const handleClick = (event) => {
+    const handleClick = (event : React.FormEvent) => {
         updateVisible(!selector_visible);
     }
 

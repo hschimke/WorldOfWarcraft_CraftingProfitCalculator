@@ -6,6 +6,8 @@
     "moduleResolution": "node",
     "module": "ESNext",
     "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "sourceMap": true,
     "strict": true
   },
   "include": [

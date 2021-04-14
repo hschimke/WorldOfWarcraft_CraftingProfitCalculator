@@ -1,7 +1,22 @@
+/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import './ShoppingLists.css';
-import { AHItemPrice, VendorItemPrice } from '../Shared/GoldFormatter';
+import { AHItemPrice, VendorItemPrice } from '../Shared/GoldFormatter.jsx';
 
-function ShoppingLists(props) {
+export interface ShoppingListsProps {
+    name: string,
+    lists: OutputFormatShoppingList
+}
+
+export interface ShoppingListProps {
+    level: string | number,
+    list: ShoppingList[]
+}
+
+export interface ShoppingListItemProps {
+    item: ShoppingList
+}
+
+function ShoppingLists(props: ShoppingListsProps) {
     return (
         <div className="ShoppingLists">
             <span className="ShoppingListsHeader">
@@ -16,7 +31,7 @@ function ShoppingLists(props) {
     );
 }
 
-function ShoppingList(props) {
+function ShoppingList(props: ShoppingListProps) {
     return (
         <li className="ShoppingList">
             <span className="ShoppingListTitle">
@@ -31,7 +46,7 @@ function ShoppingList(props) {
     );
 }
 
-function ShoppingListItem(props) {
+function ShoppingListItem(props: ShoppingListItemProps) {
     const li = props.item;
     const show_vendor = (li.cost.vendor !== undefined);
     const show_ah = (li.cost.ah !== undefined);

@@ -66,7 +66,7 @@ app.post('/auction_history', (req, res) => {
     const end_dtm = req.body.end_dtm;
 
     logger.info(`Request for item: ${item}, realm: ${realm}, region: ${region}, bonuses: ${bonuses}, start_dtm: ${start_dtm}, end_dtm: ${end_dtm}`);
-    getAuctions(item, realm, region, bonuses, start_dtm, end_dtm).then(result => {
+    getAuctions(item, realm, region, bonuses, start_dtm, end_dtm).then((result : AuctionSummaryData) => {
         logger.debug(`Return auction data`);
         res.json(result);
     }).catch(error => {
@@ -133,7 +133,7 @@ app.post('/seen_item_bonuses', (req, res) => {
                 return v;
             });
 
-            res.json({
+            const return_value : SeenItemBonusesReturn = {
                 bonuses: bonuses.bonuses,
                 //item: bonuses.item,
                 mapped: b_array,
@@ -153,7 +153,9 @@ app.post('/seen_item_bonuses', (req, res) => {
                     unknown: Array.from(unknown_adjusts),
                     empty: found_empty_bonuses,
                 },
-            });
+            }
+
+            res.json(return_value);
         }).catch(error => {
             logger.error("Issue getting bonuses", error);
             res.json({ ERROR: error });

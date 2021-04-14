@@ -276,22 +276,6 @@ async function getAuctions(item: ItemSoftIdentity, realm: ConnectedRealmSoftIent
     const avg_value = (await db.get(avg_sql, value_searches)).avg_price;
     const latest_dl_value = (await db.get(latest_dl_sql, value_searches)).latest_download;
 
-    interface AuctionPriceSummaryRecord {
-        data?: Array<SalesCountSummaryPrice>,
-        min_value: number,
-        max_value: number,
-        avg_value: number
-    };
-
-    interface SalesCountSummary {
-        sales_at_price: number,
-        quantity_at_price: number
-    };
-
-    interface SalesCountSummaryPrice extends SalesCountSummary {
-        price: number
-    };
-
     const price_data_by_download: Record<number, AuctionPriceSummaryRecord> = {};
     for (const row of (await db.all(distinct_download_sql, value_searches))) {
         price_data_by_download[row.downloaded] = {

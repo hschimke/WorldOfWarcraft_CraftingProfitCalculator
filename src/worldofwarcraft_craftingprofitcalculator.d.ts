@@ -14,7 +14,36 @@ interface AccessToken {
 interface SummaryReturnObject { data?: Array<any>, min_value?: number, max_value?: number, avg_value?: number }
 
 // blizzard-api-helpers.ts
-type AuctionSummaryData = any;
+interface AuctionPriceSummaryRecord {
+    data?: Array<SalesCountSummaryPrice>,
+    min_value: number,
+    max_value: number,
+    avg_value: number
+}
+
+interface SalesCountSummary {
+    sales_at_price: number,
+    quantity_at_price: number
+}
+
+interface SalesCountSummaryPrice extends SalesCountSummary {
+    price: number
+}
+
+interface AuctionSummaryData {
+    min: number;
+    max: number;
+    avg: number;
+    latest: number;
+    price_map: Record<string|number, AuctionPriceSummaryRecord>;
+    archives: {
+        timestamp: string;
+        data: SalesCountSummaryPrice[];
+        min_value: number;
+        max_value: number;
+        avg_value: number;
+    }[];
+}
 
 type SkillTierCyclicLinks = Record<number, Array<{
     id: number,
@@ -187,6 +216,38 @@ interface AddonData {
         realm_name: RealmName
     }
 }
+
+// server.js
+interface SeenItemBonusesReturn {
+    bonuses: Record<string, string>[],
+    mapped: {
+        text: string,
+        parsed: Array<number | string>,
+        reduced: string | undefined,
+    }[],
+    collected: {
+        ilvl: {
+            id: string | number,
+            level: number,
+        }[],
+        socket: {
+            id: string | number,
+            sockets: number | undefined,
+        }[],
+        quality: {
+            id: string | number,
+            quality: number | undefined,
+        }[],
+        unknown: (string | number)[],
+        empty: boolean,
+    }
+}
+
+interface ServerErrorReturn {
+    ERROR: string
+}
+type AuctionHistoryReturn = AuctionSummaryData;
+type ServerRunResultReturn = OutputFormatObject;
 
 // Global
 type RegionCode = 'us' | 'eu' | 'kr' | 'tw';

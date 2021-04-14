@@ -1,14 +1,24 @@
+/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import { useContext } from 'react';
-import { useSeenBonusesApi } from '../Shared/ApiClient';
-import { AuctionHistoryDispatch } from './Shared';
+import { useSeenBonusesApi } from '../Shared/ApiClient.jsx';
+import { AuctionHistoryDispatch } from './Shared.js';
 import './BonusListDropdown.css';
 
-function BonusListDropdown(props) {
+export interface BonusListDropdownProps {
+    item: string,
+    region: string,
+    realm: string,
+    ilevel: string,
+    sockets: string,
+    quality: string
+}
+
+function BonusListDropdown(props: BonusListDropdownProps) {
     const [apiState] = useSeenBonusesApi(props.item, props.region, props.realm);
 
     const raw = apiState.data;
-    const mapped = raw !== undefined && !('ERROR' in raw) ? raw.mapped : [];
-    const collected = raw !== undefined && !('ERROR' in raw) ? raw.collected : {
+    const mapped = raw !== undefined && raw.ERROR !== undefined ? raw.mapped : [];
+    const collected = raw !== undefined && raw.ERROR !== undefined ? raw.collected : {
         ilvl: [],
         socket: [],
         quality: [],
@@ -18,8 +28,10 @@ function BonusListDropdown(props) {
 
     const dispatch = useContext(AuctionHistoryDispatch);
 
-    const handleChange = (event) => {
-        dispatch({ fieldName: event.target.name, value: event.target.value });
+    const handleChange: React.ChangeEventHandler<HTMLSelectElement> = (event) => {
+        if (dispatch !== undefined) {
+            dispatch({ fieldName: event.target.name, value: event.target.value });
+        }
     };
 
     return (

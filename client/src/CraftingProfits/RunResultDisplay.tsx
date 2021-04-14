@@ -1,17 +1,32 @@
+/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import { useState } from 'react';
-import { textFriendlyOutputFormat } from '../Shared/text-output-helpers';
+import { textFriendlyOutputFormat } from '../Shared/text-output-helpers.js';
 import './RunResultDisplay.css';
-import { GoldFormatter, VendorItemPrice, AHItemPrice } from '../Shared/GoldFormatter';
-import { ShoppingLists } from './ShoppingLists';
+import { GoldFormatter, VendorItemPrice, AHItemPrice } from '../Shared/GoldFormatter.jsx';
+import { ShoppingLists } from './ShoppingLists.jsx';
 
 const hidden_recipe_listing_header = {};
 
 const hidden_run_result_header = {};
 
-function RecipeListing(props) {
+export interface RecipeListingProps {
+    recipe: OutputFormatRecipe
+}
+
+export interface RunResultItemProps{
+    raw_run: ServerRunResultReturn & ServerErrorReturn | ServerRunResultReturn | undefined,
+    show_children?: boolean
+}
+export interface RunResultDisplayProps{
+    raw_run: ServerRunResultReturn & ServerErrorReturn | undefined,
+    status: string,
+    show_raw_result: boolean
+}
+
+function RecipeListing(props:RecipeListingProps) {
     const [child_visible, setChildVisibility] = useState(false);
 
-    const toggleChildren = (e) => {
+    const toggleChildren : React.MouseEventHandler = (e) => {
         setChildVisibility(!child_visible);
     };
 
@@ -60,14 +75,14 @@ function RecipeListing(props) {
     );
 }
 
-function RunResultItem({ raw_run, show_children = true }) {
+function RunResultItem({ raw_run, show_children = true }: RunResultItemProps) {
     const [child_visibility, updateChildVisibility] = useState(show_children);
 
     if (raw_run === undefined) {
         return null;
     }
 
-    const toggleChildren = (e) => {
+    const toggleChildren : React.MouseEventHandler = (e) => {
         updateChildVisibility(!child_visibility);
     };
 
@@ -76,7 +91,7 @@ function RunResultItem({ raw_run, show_children = true }) {
     let recipes = false;
     let bonuses = false;
     let shopping = false;
-    const output_data = raw_run !== undefined ? raw_run : {};
+    const output_data = raw_run;
 
     ah_addin = ((output_data.ah !== undefined) && (output_data.ah.sales > 0));
     vendor_addin = (output_data.vendor > 0);
@@ -138,7 +153,7 @@ function RunResultItem({ raw_run, show_children = true }) {
     );
 }
 
-function RunResultDisplay(props) {
+function RunResultDisplay(props:RunResultDisplayProps) {
     const SHOW_RES = props.show_raw_result;
     let res;
     if (props.status === 'ready' && props.raw_run !== undefined) {
@@ -152,7 +167,7 @@ function RunResultDisplay(props) {
                 </div>
             }
             {SHOW_RES &&
-                <div class="RawResult">
+                <div className="RawResult">
                     <pre>
                         {res}
                     </pre>
