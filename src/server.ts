@@ -6,6 +6,8 @@ import { parentLogger } from './logging.js';
 import { getAuctions, getAllBonuses } from './auction-history.js';
 import { static_sources } from './cached-data-sources.js';
 import './hourly-injest.js';
+import { validateProfessions } from './validateProfessions.js';
+import { getRegionCode } from './getRegionCode.js';
 
 const logger = parentLogger.child({});
 
@@ -58,15 +60,15 @@ app.post('/json_output', (req, res) => {
 });
 
 app.post('/auction_history', (req, res) => {
-    const item = req.body.item;
-    const realm = req.body.realm;
-    const region = req.body.region;
-    const bonuses = req.body.bonuses;
-    const start_dtm = req.body.start_dtm;
-    const end_dtm = req.body.end_dtm;
+    const item: string = req.body.item;
+    const realm: string = req.body.realm;
+    const region: string = req.body.region;
+    const bonuses: string[] = req.body.bonuses;
+    const start_dtm: string | undefined = req.body.start_dtm;
+    const end_dtm: string | undefined = req.body.end_dtm;
 
     logger.info(`Request for item: ${item}, realm: ${realm}, region: ${region}, bonuses: ${bonuses}, start_dtm: ${start_dtm}, end_dtm: ${end_dtm}`);
-    getAuctions(item, realm, region, bonuses, start_dtm, end_dtm).then((result : AuctionSummaryData) => {
+    getAuctions(item, realm, getRegionCode(region), bonuses, start_dtm, end_dtm).then((result: AuctionSummaryData) => {
         logger.debug(`Return auction data`);
         res.json(result);
     }).catch(error => {
@@ -76,8 +78,8 @@ app.post('/auction_history', (req, res) => {
 });
 
 app.post('/seen_item_bonuses', (req, res) => {
-    const item = req.body.item;
-    const region = req.body.region;
+    const item: string = req.body.item;
+    const region: string = req.body.region;
 
     logger.debug(`Getting seen bonus lists for ${item} in ${region}`);
 
@@ -85,7 +87,7 @@ app.post('/seen_item_bonuses', (req, res) => {
         res.json({ ERROR: 'empty item' });
     }
 
-    getAllBonuses(item, region).then(bonuses => {
+    getAllBonuses(item, getRegionCode(region)).then(bonuses => {
         static_sources().then(cache => {
             const bonuses_cache = cache.bonuses_cache;
             logger.debug(`Regurning bonus lists for ${item}`);
@@ -133,7 +135,7 @@ app.post('/seen_item_bonuses', (req, res) => {
                 return v;
             });
 
-            const return_value : SeenItemBonusesReturn = {
+            const return_value: SeenItemBonusesReturn = {
                 bonuses: bonuses.bonuses,
                 //item: bonuses.item,
                 mapped: b_array,
@@ -155,6 +157,7 @@ app.post('/seen_item_bonuses', (req, res) => {
                 },
             }
 
+            //console.log(JSON.stringify(return_value,undefined,2));
             res.json(return_value);
         }).catch(error => {
             logger.error("Issue getting bonuses", error);

@@ -106,7 +106,7 @@ function Auctions(props: AuctionsProps) {
     let volume_chart_data: (string | number | Date)[][] = [['Date', 'Qauntity']];
     if (!(apiState.isLoading || apiState.isError) && apiState.data !== undefined) {
         const data = apiState.data;
-        if (data.ERROR !== undefined) {
+        if (data.ERROR === undefined) {
 
             const latest = data.price_map[data.latest];
 

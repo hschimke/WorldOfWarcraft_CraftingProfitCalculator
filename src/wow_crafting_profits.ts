@@ -6,6 +6,7 @@ import { shutdownApiManager } from './blizzard-api-call.js';
 import { textFriendlyOutputFormat } from './text-output-helpers.js';
 import { getAuthorizationToken } from './blizz_oath.js';
 import { RunConfiguration } from './RunConfiguration.js';
+import { getRegionCode } from './getRegionCode.js';
 
 const logger = parentLogger.child({});
 
@@ -625,20 +626,6 @@ function build_shopping_list(intermediate_data: OutputFormatObject, rank_request
     return ret_list;
 }
 
-function getRegionCode(region_name: string): RegionCode {
-    const check_str = region_name.toLowerCase();
-    switch (check_str) {
-        case 'us':
-        case 'eu':
-        case 'kr':
-        case 'tw':
-            return check_str;
-        default:
-            throw new Error(`'${region_name} is invalid. Valid regions include 'us', 'eu', 'kr', and 'tw'.`);
-
-    }
-}
-
 /**
  * Perform a full run of the profit analyzer, beginning with profit analyze and finishing with various output formats.
  * 
@@ -736,28 +723,4 @@ async function cliRun(json_config: RunConfiguration): Promise<void> {
     }
 }
 
-function validateProfessions(profession_list: Array<string>): Array<CharacterProfession> {
-    const return_array: Array<CharacterProfession> = [];
-
-    for (const element of profession_list) {
-        switch (element) {
-            case 'Jewelcrafting':
-            case 'Tailoring':
-            case 'Alchemy':
-            case 'Herbalism':
-            case 'Inscription':
-            case 'Enchanting':
-            case 'Blacksmithing':
-            case 'Mining':
-            case 'Engineering':
-            case 'Leatherworking':
-            case 'Skinning':
-            case 'Cooking':
-                return_array.push(element);
-        }
-    }
-
-    return return_array;
-}
-
-export { runWithJSONConfig, shutdown, cliRun, validateProfessions };
+export { runWithJSONConfig, shutdown, cliRun };

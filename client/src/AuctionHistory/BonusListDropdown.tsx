@@ -17,8 +17,8 @@ function BonusListDropdown(props: BonusListDropdownProps) {
     const [apiState] = useSeenBonusesApi(props.item, props.region, props.realm);
 
     const raw = apiState.data;
-    const mapped = raw !== undefined && raw.ERROR !== undefined ? raw.mapped : [];
-    const collected = raw !== undefined && raw.ERROR !== undefined ? raw.collected : {
+    const mapped = raw !== undefined && raw.ERROR === undefined ? raw.mapped : [];
+    const collected = raw !== undefined && raw.ERROR === undefined ? raw.collected : {
         ilvl: [],
         socket: [],
         quality: [],
@@ -81,7 +81,7 @@ function BonusListDropdown(props: BonusListDropdownProps) {
                     })}
                 </select>
             </label>
-            {false &&
+            {false  &&
                 <pre>
                     {JSON.stringify(raw, undefined, 2)}
                 </pre>

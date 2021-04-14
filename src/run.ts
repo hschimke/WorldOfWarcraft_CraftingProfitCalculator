@@ -1,7 +1,8 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { RunConfiguration } from './RunConfiguration.js';
-import { cliRun, validateProfessions } from './wow_crafting_profits.js';
+import { cliRun } from './wow_crafting_profits.js';
+import { validateProfessions } from "./validateProfessions.js";
 
 //blacksmithing
 //const test_item = 171414;
