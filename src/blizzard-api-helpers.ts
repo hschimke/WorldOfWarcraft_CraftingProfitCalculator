@@ -27,7 +27,7 @@ const CYCLIC_LINK_CACHE = 'cyclic_links';
  * @param {!string} item_name The name of the item to search for
  */
 async function getItemId(region: RegionCode, item_name: ItemName): Promise<ItemID> {
-    logger.info(`Searching for itemId for ${item_name}`);
+    logger.debug(`Searching for itemId for ${item_name}`);
 
     if (await cacheCheck(ITEM_SEARCH_CACHE, item_name)) {
         return cacheGet(ITEM_SEARCH_CACHE, item_name);
