@@ -104,7 +104,12 @@ async function ingest(region: RegionCode, connected_realm: number): Promise<void
     await client.release();
 }
 
-async function getAllBonuses(item: ItemSoftIdentity, region: RegionCode) {
+export interface GetAllBonusesReturn {
+    bonuses: Record<string, string>[]
+    item: BlizzardApi.Item
+}
+
+async function getAllBonuses(item: ItemSoftIdentity, region: RegionCode): Promise<GetAllBonusesReturn> {
     const db = await getDb('history');
     logger.debug(`Fetching bonuses for ${item}`);
     const sql = 'SELECT DISTINCT bonuses FROM auctions WHERE item_id = $1';
@@ -135,7 +140,7 @@ async function getAllBonuses(item: ItemSoftIdentity, region: RegionCode) {
     };
 }
 
-async function fillNItems(fill_count: number = 5) {
+async function fillNItems(fill_count: number = 5) : Promise<void> {
     const db = await getDb('history');
     logger.info(`Filling ${fill_count} items with details.`);
     const select_sql = 'SELECT item_id, region FROM items WHERE name ISNULL LIMIT $1';
