@@ -1,4 +1,3 @@
-/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import { useState, useReducer } from 'react';
 import { RunForm } from './RunForm';
 import { useFetchCPCApi, UseFetchApiState } from '../Shared/ApiClient';

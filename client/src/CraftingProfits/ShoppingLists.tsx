@@ -1,4 +1,3 @@
-/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import './ShoppingLists.css';
 import { AHItemPrice, VendorItemPrice } from '../Shared/GoldFormatter';
 

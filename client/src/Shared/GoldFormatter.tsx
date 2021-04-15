@@ -1,5 +1,3 @@
-/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
-
 import './GoldFormatter.css';
 
 export interface GoldFormatterProps {

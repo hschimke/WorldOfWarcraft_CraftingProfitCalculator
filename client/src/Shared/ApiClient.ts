@@ -1,4 +1,3 @@
-/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import { useState, useEffect, useReducer } from 'react';
 
 /*function apiGetSeenBonuses(payload, cb) {

@@ -1,5 +1,3 @@
-/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
-
 /**
  * Format a raw value into a string for Gold, Silver, and Copper
  * @param {!number} price_in The blizzard provided cost number.

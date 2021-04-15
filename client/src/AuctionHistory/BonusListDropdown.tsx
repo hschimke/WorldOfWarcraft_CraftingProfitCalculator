@@ -1,4 +1,3 @@
-/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import { useContext } from 'react';
 import { useSeenBonusesApi } from '../Shared/ApiClient';
 import { AuctionHistoryDispatch } from './Shared';

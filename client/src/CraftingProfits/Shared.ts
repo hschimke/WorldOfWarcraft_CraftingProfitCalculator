@@ -1,4 +1,3 @@
-/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import React, { Dispatch } from 'react';
 
 const CraftingProfitsDispatch = React.createContext<Dispatch<any> | undefined>(undefined);

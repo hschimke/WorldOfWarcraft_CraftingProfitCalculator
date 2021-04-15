@@ -1,4 +1,3 @@
-/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import React, { FormEvent, useReducer } from 'react';
 import './Auctions.css';
 import { useFetchHistoryApi, UseFetchApiState } from '../Shared/ApiClient';

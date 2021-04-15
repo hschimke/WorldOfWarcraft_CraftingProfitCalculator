@@ -1,4 +1,3 @@
-/// <reference path="../../../src/worldofwarcraft_craftingprofitcalculator.d.ts" />
 import { useState } from 'react';
 import { textFriendlyOutputFormat } from '../Shared/text-output-helpers';
 import './RunResultDisplay.css';
