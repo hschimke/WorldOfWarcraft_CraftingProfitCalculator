@@ -429,7 +429,7 @@ async function archiveAuctions(): Promise<void> {
                 }
 
                 // Add the archive
-                await client.query(sql_insert_auction_archive, [item.item_id, quantity, (db_type === 'pg' ? summary : JSON.stringify(summary)), start_ticks, item.connected_realm_id, item.bonuses]);
+                await client.query(sql_insert_auction_archive, [item.item_id, quantity, JSON.stringify(summary), start_ticks, item.connected_realm_id, item.bonuses]);
             }
             // Delete the archived data
             await client.query(sql_delete_archived_auctions, [start_ticks, end_ticks]);
