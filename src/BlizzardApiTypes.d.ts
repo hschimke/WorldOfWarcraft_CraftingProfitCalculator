@@ -2,25 +2,25 @@ declare namespace BlizzardApi {
     interface ItemSearch {
         pageCount: number,
         page: number,
-        results: Array<{
+        results: {
             data: {
                 name: Record<string, string>,
                 id: ItemID
             }
-        }>
+        }[]
     }
 
     interface ConnectedRealmIndex {
-        connected_realms: Array<{
+        connected_realms: {
             href: string
-        }>
+        }[]
     }
 
     interface ConnectedRealm {
         id: ConnectedRealmID,
-        realms: Array<{
+        realms: {
             name: string
-        }>
+        }[]
     }
 
     interface Item {
@@ -33,30 +33,30 @@ declare namespace BlizzardApi {
     }
 
     interface ProfessionsIndex {
-        professions: Array<{
+        professions: {
             name: string,
             id: number
-        }>
+        }[]
     }
 
     interface Profession {
-        skill_tiers: Array<{
+        skill_tiers: {
             name: string,
             id: number,
 
-        }>,
+        }[],
         name: string,
         id: number
     }
 
     interface ProfessionSkillTier {
-        categories: Array<{
-            recipes: Array<{
+        categories: {
+            recipes: {
                 id: number,
                 name: string
-            }>,
+            }[],
             name: string
-        }>
+        }[]
     }
 
     interface Recipe {
@@ -85,15 +85,15 @@ declare namespace BlizzardApi {
     }
 
     interface Auctions {
-        auctions: Array<{
+        auctions: {
             item: {
                 id: ItemID,
-                bonus_lists: Array<number>,
+                bonus_lists: number[],
             }
             quantity: number,
             buyout: number,
             unit_price: number
-        }>
+        }[]
     }
 
     type BlizzardApiReponse = ItemSearch | ConnectedRealmIndex | Item | ProfessionsIndex | Profession | ConnectedRealm | ProfessionSkillTier | Recipe | Auctions;

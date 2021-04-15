@@ -11,11 +11,11 @@ interface AccessToken {
 // blizzard-api-calls.ts
 
 // auction-history.ts
-interface SummaryReturnObject { data?: Array<any>, min_value?: number, max_value?: number, avg_value?: number }
+interface SummaryReturnObject { data?: any[], min_value?: number, max_value?: number, avg_value?: number }
 
 // blizzard-api-helpers.ts
 interface AuctionPriceSummaryRecord {
-    data?: Array<SalesCountSummaryPrice>,
+    data?: SalesCountSummaryPrice[],
     min_value: number,
     max_value: number,
     avg_value: number
@@ -45,17 +45,16 @@ interface AuctionSummaryData {
     }[];
 }
 
-type SkillTierCyclicLinks = Record<number, Array<{
+type SkillTierCyclicLinks = Record<number, {
     id: number,
     takes: number,
     makes: number
-}>>;
+}[]>;
 
-type SkillTierCyclicLinksBuild = Array<Array<{
+type SkillTierCyclicLinksBuild = {
     id: number[],
     quantity: number
-}>>;
-
+}[][];
 
 
 // cached-data-sources.ts
@@ -74,12 +73,12 @@ type StaticSources = {
 }
 
 interface RankMappingsCache {
-    available_levels: Array<number>,
-    rank_mapping: Array<number>
+    available_levels: number[],
+    rank_mapping: number[]
 }
 
 interface ShoppingRecipeExclusionList {
-    exclusions: Array<number>
+    exclusions: number[]
 }
 
 // databases.ts
@@ -109,16 +108,16 @@ interface AHItemPriceObject {
 }
 
 interface CraftingStatus {
-    recipe_ids: Array<number>,
+    recipe_ids: number[],
     craftable: boolean,
-    recipes: Array<{
+    recipes: {
         recipe_id: number,
         crafting_profession: CharacterProfession,
-    }>
+    }[]
 }
 
 interface ProfitAnalysisRecipe {
-    prices: Array<ProfitAnalysisObject>,
+    prices: ProfitAnalysisObject[],
     recipe: {
         recipe_id: number
     },
@@ -138,9 +137,9 @@ interface ProfitAnalysisObject {
     item_quantity: number,
     vendor_price: number,
     crafting_status: CraftingStatus
-    bonus_lists: Array<Array<number>>,
-    recipe_options: Array<ProfitAnalysisRecipe>,
-    bonus_prices: Array<ProfitAnalysisBonusPrice>
+    bonus_lists: number[][],
+    recipe_options: ProfitAnalysisRecipe[],
+    bonus_prices: ProfitAnalysisBonusPrice[]
 }
 
 interface ShoppingList {
@@ -162,7 +161,7 @@ interface OutputFormatRecipe {
     high: number,
     low: number,
     average: number,
-    parts: Array<OutputFormatObject>
+    parts: OutputFormatObject[]
 }
 
 interface OutputFormatPrice {
@@ -178,10 +177,10 @@ interface OutputFormatObject {
     name: string,
     id: number,
     required: number,
-    recipes: Array<OutputFormatRecipe>,
+    recipes: OutputFormatRecipe[],
     ah: OutputFormatPrice,
     vendor: number,
-    bonus_prices: Array<OutputFormatBonusPrices>,
+    bonus_prices: OutputFormatBonusPrices[],
     shopping_lists: OutputFormatShoppingList
 }
 
@@ -204,11 +203,11 @@ interface RunReturn {
 
 // RunConfiguration.js
 interface AddonData {
-    inventory: Array<{
+    inventory: {
         id: ItemID,
         quantity: number
-    }>,
-    professions: Array<CharacterProfession>,
+    }[],
+    professions: CharacterProfession[],
     realm: {
         region_id?: number,
         region_name: string,
