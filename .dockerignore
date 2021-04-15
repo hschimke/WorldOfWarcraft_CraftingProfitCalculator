@@ -18,3 +18,5 @@ test_data
 *.log
 
 notes
+
+dist

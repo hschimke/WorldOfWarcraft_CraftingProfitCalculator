@@ -35,7 +35,7 @@ interface AuctionSummaryData {
     max: number;
     avg: number;
     latest: number;
-    price_map: Record<string|number, AuctionPriceSummaryRecord>;
+    price_map: Record<string | number, AuctionPriceSummaryRecord>;
     archives: {
         timestamp: string;
         data: SalesCountSummaryPrice[];
@@ -172,7 +172,7 @@ interface OutputFormatPrice {
     average: number
 }
 
-type OutputFormatShoppingList = Record<number|string,ShoppingList[]>;
+type OutputFormatShoppingList = Record<number | string, ShoppingList[]>;
 
 interface OutputFormatObject {
     name: string,

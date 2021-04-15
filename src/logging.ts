@@ -1,6 +1,6 @@
 import winston from 'winston';
 
-const lowest_level_to_report : string = (process.env.LOG_LEVEL !== undefined) ? process.env.LOG_LEVEL : 'info';
+const lowest_level_to_report: string = (process.env.LOG_LEVEL !== undefined) ? process.env.LOG_LEVEL : 'info';
 
 const parentLogger = winston.createLogger({
     level: lowest_level_to_report,

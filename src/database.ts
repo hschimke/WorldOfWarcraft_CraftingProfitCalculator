@@ -5,9 +5,9 @@ import pg from 'pg';
 const { Pool } = pg;
 
 const logger = parentLogger.child({});
-let l_pool : pg.Pool;
+let l_pool: pg.Pool;
 const dbs = new Map();
-let dbs_open : boolean;
+let dbs_open: boolean;
 
 const db_type = process.env.DATABASE_TYPE;
 
@@ -77,7 +77,7 @@ const cache_sql_run_at_open_sq3 = [
     pragma_sync,
     pragma_journal];
 
-function sqlToString(sql : string, values?: Array<string | number | boolean | null>) : string {
+function sqlToString(sql: string, values?: Array<string | number | boolean | null>): string {
     const value_str = values !== undefined ? values.map((val) => {
         return `[value: ${val} type: ${typeof (val)}] `;
     }) : '';
@@ -92,7 +92,7 @@ async function performDBMigration() {
 
 }*/
 
-async function start() : Promise<void> {
+async function start(): Promise<void> {
     if (!dbs_open) {
         if (db_type === 'sqlite3') {
             const cache_fn = process.env.CACHE_DB_FN !== undefined ? process.env.CACHE_DB_FN : '';
@@ -128,7 +128,7 @@ async function start() : Promise<void> {
     }
 }
 
-function shutdown() : void {
+function shutdown(): void {
     logger.info('Closing DB connection');
     dbs_open = false;
     if (db_type === 'sqlite3') {
@@ -136,7 +136,7 @@ function shutdown() : void {
             logger.info(`Close DB ${key}`);
             value.run('PRAGMA optimize', (err: any) => {
                 value.close();
-                if(err){
+                if (err) {
                     logger.error(err);
                 }
             });
@@ -148,15 +148,15 @@ function shutdown() : void {
     }
 }
 
-async function getDb(db_name: string) : Promise<DatabaseManagerFunction> {
+async function getDb(db_name: string): Promise<DatabaseManagerFunction> {
     await start();
-    const context : DatabaseManagerFunction = function () { };
+    const context: DatabaseManagerFunction = function () { };
     if (db_type === 'sqlite3') {
         context.db = dbs.get(db_name) as sqlite3.Database;
         context.get = function (query, values?): Promise<any> {
             logger.silly(sqlToString(query, values));
             return new Promise((accept, reject) => {
-                this.db.get(query, values, (err: any, row: Record<string,any>) => {
+                this.db.get(query, values, (err: any, row: Record<string, any>) => {
                     if (err) {
                         logger.error(`Issue running query '${query}' and values ${values}`, err);
                         reject();
@@ -168,7 +168,7 @@ async function getDb(db_name: string) : Promise<DatabaseManagerFunction> {
         context.run = function (query, values?) {
             logger.silly(sqlToString(query, values));
             return new Promise<void>((accept, reject) => {
-                this.db.run(query, values, (err:any) => {
+                this.db.run(query, values, (err: any) => {
                     if (err) {
                         logger.error(`Issue running query '${query}' and values ${values}`, err);
                         reject();
@@ -178,10 +178,10 @@ async function getDb(db_name: string) : Promise<DatabaseManagerFunction> {
                 })
             });
         };
-        context.all = function (query, values?) : Promise<any[]>{
+        context.all = function (query, values?): Promise<any[]> {
             logger.silly(sqlToString(query, values));
             return new Promise((accept, reject) => {
-                this.db.all(query, values, (err:any, rows:Record<string,any>[]) => {
+                this.db.all(query, values, (err: any, rows: Record<string, any>[]) => {
                     if (err) {
                         logger.error(`Issue running query '${query}' and values ${values}`, err);
                         reject();
@@ -195,9 +195,9 @@ async function getDb(db_name: string) : Promise<DatabaseManagerFunction> {
                 this.db.serialize(() => {
                     try {
                         for (let i = 0; i < queries.length; i++) {
-                            if(value_sets !== undefined)
-                            logger.silly(sqlToString(queries[i], value_sets[i]));
-                            this.db.run(queries[i], value_sets[i], (err:any) => {
+                            if (value_sets !== undefined)
+                                logger.silly(sqlToString(queries[i], value_sets[i]));
+                            this.db.run(queries[i], value_sets[i], (err: any) => {
                                 if (err) {
                                     logger.error(`Issue running query '${queries[i]}' and values ${value_sets[i]}`, err);
                                     reject();
@@ -215,7 +215,7 @@ async function getDb(db_name: string) : Promise<DatabaseManagerFunction> {
         context.getClient = async function () {
             const f = function () { };
             f.release = async function () { };
-            f.query = async function (query:string, values?: any) {
+            f.query = async function (query: string, values?: any) {
                 const result = <Array<any>>(await context.all(query, values));
                 return { rows: [...result] };
             };
@@ -244,7 +244,7 @@ async function getDb(db_name: string) : Promise<DatabaseManagerFunction> {
             const res = await this.query(query, values);
             return res.rows[0];
         }
-        context.all = async function (query, values?) : Promise<any[]> {
+        context.all = async function (query, values?): Promise<any[]> {
             const result = await this.query(query, values);
             return result.rows;
         }

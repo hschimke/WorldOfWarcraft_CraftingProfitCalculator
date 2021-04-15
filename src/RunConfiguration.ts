@@ -2,15 +2,15 @@ import { parentLogger } from './logging.js';
 const logger = parentLogger.child({});
 
 class RunConfiguration {
-    #internal_inventory : Record<ItemID,number>= {};
-    #inventory_overlay : Record<ItemID,number> = {};
-    #professions : CharacterProfession[] = [];
+    #internal_inventory: Record<ItemID, number> = {};
+    #inventory_overlay: Record<ItemID, number> = {};
+    #professions: CharacterProfession[] = [];
     #realm_name: RealmName = '';
     #realm_region: string = '';
     #item_id: ItemSoftIdentity
     #item_count: number
 
-    constructor(raw_configuration_data : AddonData, item : ItemSoftIdentity, count: number) {
+    constructor(raw_configuration_data: AddonData, item: ItemSoftIdentity, count: number) {
         if (raw_configuration_data != undefined) {
             for (let item of raw_configuration_data.inventory) {
                 this.#internal_inventory[item.id] = Number(item.quantity);
@@ -24,19 +24,19 @@ class RunConfiguration {
         this.#item_id = item;
         this.#item_count = count;
     }
-    get realm_name() : RealmName {
+    get realm_name(): RealmName {
         return this.#realm_name;
     }
-    get realm_region() : string {
+    get realm_region(): string {
         return this.#realm_region;
     }
-    get professions() : Array<CharacterProfession> {
+    get professions(): Array<CharacterProfession> {
         return this.#professions;
     }
-    get item_id() : ItemSoftIdentity {
+    get item_id(): ItemSoftIdentity {
         return this.#item_id;
     }
-    get item_count() : number {
+    get item_count(): number {
         return this.#item_count;
     }
     itemInInventory(item_id: ItemID): boolean {

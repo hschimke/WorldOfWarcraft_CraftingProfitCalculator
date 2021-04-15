@@ -22,4 +22,4 @@ function validateProfessions(profession_list: Array<string>): Array<CharacterPro
     return return_array;
 }
 
-export {validateProfessions};
+export { validateProfessions };

@@ -413,7 +413,7 @@ async function checkProfessionCrafting(profession_list: BlizzardApi.ProfessionsI
         return cacheGet(CRAFTABLE_BY_SINGLE_PROFESSION_CACHE, cache_key);
     }
 
-    const profession_recipe_options : CraftingStatus = {
+    const profession_recipe_options: CraftingStatus = {
         craftable: false,
         recipes: [],
         recipe_ids: []
@@ -561,7 +561,7 @@ async function buildCyclicRecipeList(region: RegionCode): Promise<SkillTierCycli
 
     const profession_list = await getBlizProfessionsList(region);
 
-    const links : SkillTierCyclicLinksBuild = [];
+    const links: SkillTierCyclicLinksBuild = [];
 
     const id = await getProfessionId(profession_list, 'Enchanting');
     const profz = [await getBlizProfessionDetail(id, region)];
@@ -577,7 +577,7 @@ async function buildCyclicRecipeList(region: RegionCode): Promise<SkillTierCycli
             const st_scan_jobs = profession.skill_tiers.map((st) => {
                 return buildCyclicLinkforSkillTier(st, profession);
             });
-            (await Promise.all(st_scan_jobs)).forEach((r:SkillTierCyclicLinksBuild) => {
+            (await Promise.all(st_scan_jobs)).forEach((r: SkillTierCyclicLinksBuild) => {
                 links.push(...r);
             });
         }
@@ -587,7 +587,7 @@ async function buildCyclicRecipeList(region: RegionCode): Promise<SkillTierCycli
 
     logger.debug(`Scanned ${counter} recipes in ${profession_counter} professions`)
 
-    const link_lookup : SkillTierCyclicLinks = {};
+    const link_lookup: SkillTierCyclicLinks = {};
 
     for (const link of links) {
         const item_1 = link[0];
@@ -635,7 +635,7 @@ async function buildCyclicRecipeList(region: RegionCode): Promise<SkillTierCycli
         }
         logger.debug(`Scanning st: ${skill_tier.name}`);
         const checked_set = new Set();
-        const found_links : SkillTierCyclicLinksBuild = [];
+        const found_links: SkillTierCyclicLinksBuild = [];
         const skill_tier_detail = await getBlizSkillTierDetail(profession.id, skill_tier.id, region);
         if (skill_tier_detail.categories !== undefined) {
             for (const sk_category of skill_tier_detail.categories) {

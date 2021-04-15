@@ -12,4 +12,4 @@ function getRegionCode(region_name: string): RegionCode {
     }
 }
 
-export {getRegionCode};
+export { getRegionCode };

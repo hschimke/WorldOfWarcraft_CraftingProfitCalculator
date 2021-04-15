@@ -4,7 +4,7 @@ declare namespace BlizzardApi {
         page: number,
         results: Array<{
             data: {
-                name: Record<string,string>,
+                name: Record<string, string>,
                 id: ItemID
             }
         }>
@@ -49,7 +49,7 @@ declare namespace BlizzardApi {
         id: number
     }
 
-    interface _skillTierCategory{
+    interface _skillTierCategory {
         recipes: Array<{
             id: number,
             name: string
@@ -77,7 +77,7 @@ declare namespace BlizzardApi {
             },
             quantity: number
         }>,
-        crafted_quantity : {
+        crafted_quantity: {
             minimum?: number,
             maximum?: number,
             value?: number

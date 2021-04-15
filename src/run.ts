@@ -57,7 +57,7 @@ const argv = yargs(hideBin(process.argv))
     .alias('help', 'h')
     .argv;
 
-let character_config_json : AddonData = { inventory: [], realm: { realm_name: '', region_name: ''}, professions: [] };
+let character_config_json: AddonData = { inventory: [], realm: { realm_name: '', region_name: '' }, professions: [] };
 
 let region = argv.region;
 let server = argv.server;
@@ -66,7 +66,7 @@ let item = argv.item;
 let required = argv.count;
 
 try {
-    character_config_json  = JSON.parse(argv.json_data);
+    character_config_json = JSON.parse(argv.json_data);
     let good = true;
     let has_inventory = true;
     let has_professions = true;
@@ -97,7 +97,7 @@ try {
 }
 const config = new RunConfiguration({
     inventory: character_config_json.inventory,
-    professions: validateProfessions( professions ),
+    professions: validateProfessions(professions),
     realm: {
         realm_name: server,
         region_name: region,
