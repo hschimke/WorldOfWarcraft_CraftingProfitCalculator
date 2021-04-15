@@ -270,25 +270,31 @@ async function getAuctions(item: ItemSoftIdentity, realm: ConnectedRealmSoftIent
     const price_group_sql = build_sql_with_addins(sql_build_price_map, [...sql_addins, `downloaded = ${get_place_marker()}`]) + ' ' + sql_group_by_price_addin;
 
     //const client = await db.getClient();
+    type MinPrice = { min_price: number };
+    type MaxPrice = { max_price: number };
+    type AvgPrice = { avg_price: number };
+    type LatestDownload = { latest_download: number };
+    type Downloaded = { downloaded: number };
+    type Summary = { downloaded: number, summary: AuctionPriceSummaryRecord | string };
 
-    const min_value = (await db.get(min_sql, value_searches)).min_price;
-    const max_value = (await db.get(max_sql, value_searches)).max_price;
-    const avg_value = (await db.get(avg_sql, value_searches)).avg_price;
-    const latest_dl_value = (await db.get(latest_dl_sql, value_searches)).latest_download;
+    const min_value = (await db.get<MinPrice>(min_sql, value_searches)).min_price;
+    const max_value = (await db.get<MaxPrice>(max_sql, value_searches)).max_price;
+    const avg_value = (await db.get<AvgPrice>(avg_sql, value_searches)).avg_price;
+    const latest_dl_value = (await db.get<LatestDownload>(latest_dl_sql, value_searches)).latest_download;
 
     const price_data_by_download: Record<number, AuctionPriceSummaryRecord> = {};
-    for (const row of (await db.all(distinct_download_sql, value_searches))) {
+    for (const row of (await db.all<Downloaded>(distinct_download_sql, value_searches))) {
         price_data_by_download[row.downloaded] = {
             data: await db.all(price_group_sql, [...value_searches, row.downloaded]),
-            min_value: (await db.get(min_dtm_sql, [...value_searches, row.downloaded])).min_price,
-            max_value: (await db.get(max_dtm_sql, [...value_searches, row.downloaded])).max_price,
-            avg_value: (await db.get(avg_dtm_sql, [...value_searches, row.downloaded])).avg_price
+            min_value: (await db.get<MinPrice>(min_dtm_sql, [...value_searches, row.downloaded])).min_price,
+            max_value: (await db.get<MaxPrice>(max_dtm_sql, [...value_searches, row.downloaded])).max_price,
+            avg_value: (await db.get<AvgPrice>(avg_dtm_sql, [...value_searches, row.downloaded])).avg_price
         };
     }
 
     // Get archives if they exist
     const archive_fetch_sql = build_sql_with_addins(sql_archive_build, sql_addins);
-    const archives = await db.all(archive_fetch_sql, value_searches);
+    const archives = await db.all<Summary>(archive_fetch_sql, value_searches);
 
     const archived_results: Record<string, Array<AuctionPriceSummaryRecord>> = {};
     logger.debug(`Found ${archives.length} archive rows.`);
@@ -296,7 +302,7 @@ async function getAuctions(item: ItemSoftIdentity, realm: ConnectedRealmSoftIent
         if (!(archive.downloaded in archived_results)) {
             archived_results[archive.downloaded] = [];
         }
-        archived_results[archive.downloaded].push((db_type === 'pg' ? archive.summary : JSON.parse(archive.summary)));
+        archived_results[archive.downloaded].push((db_type === 'pg' ? archive.summary : JSON.parse(<string>archive.summary)));
     }
 
     const archive_build = [];
@@ -398,10 +404,12 @@ async function archiveAuctions(): Promise<void> {
 
     await client.query('BEGIN TRANSACTION', []);
 
+    type Oldest = { oldest: number };
+
     let running = true;
     while (running) {
         // Get oldest downloaded
-        const current_oldest = Number((await db.get(sql_get_downloaded_oldest, [])).oldest);
+        const current_oldest = Number((await db.get<Oldest>(sql_get_downloaded_oldest, [])).oldest);
         // Check if oldest fits our criteria
         if (current_oldest < backstep_time) {
             // Pick the whole day
@@ -456,10 +464,11 @@ async function removeRealmFromScanList(realm_name: RealmName, realm_region: Regi
 }
 
 async function scanRealms(): Promise<void> {
+    type RealmScanListEntry = { region: RegionCode, connected_realm_id: number };
     const db = await getDb('history');
     const getScannableRealms = 'SELECT connected_realm_id, region FROM realm_scan_list';
-    const realm_scan_list = await db.all(getScannableRealms, []);
-    await Promise.all(realm_scan_list.map((realm: { region: RegionCode, connected_realm_id: number }) => {
+    const realm_scan_list = await db.all<RealmScanListEntry>(getScannableRealms, []);
+    await Promise.all(realm_scan_list.map((realm: RealmScanListEntry) => {
         return ingest(realm.region, realm.connected_realm_id);
     }));
 }

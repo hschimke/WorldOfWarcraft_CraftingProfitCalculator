@@ -82,6 +82,8 @@ interface ShoppingRecipeExclusionList {
 }
 
 // databases.ts
+type DatabaseReturn<RowFormat> = RowFormat[];
+
 type DatabaseClientFunction = {
     release: () => void;
     query: (query: string, values?: Array<string | number | boolean | null>) => Promise<any>;
@@ -90,11 +92,11 @@ type DatabaseClientFunction = {
 type DatabaseManagerFunction = {
     db: any;
     pool: any;
-    get: (query: string, values?: Array<string | number | boolean | null>) => Promise<any>;
-    run: (query: string, values?: Array<string | number | boolean | null>) => Promise<any>;
-    all: (query: string, values?: Array<string | number | boolean | null>) => Promise<any>;
-    query: (query: string, values?: Array<string | number | boolean | null>) => Promise<any>;
-    serialize: (query: Array<string>, values: Array<Array<string | number | boolean | null>>) => Promise<any>;
+    get: <Row>(query: string, values?: Array<string | number | boolean | null>) => Promise<Row>;
+    run: (query: string, values?: Array<string | number | boolean | null>) => Promise<void>;
+    all: <Row>(query: string, values?: Array<string | number | boolean | null>) => Promise<Row[]>;
+    query: <Row>(query: string, values?: Array<string | number | boolean | null>) => Promise<{rows: Row[]}>;
+    serialize: (query: Array<string>, values: Array<Array<string | number | boolean | null>>) => Promise<void>;
     getClient: () => Promise<DatabaseClientFunction>;
     (): void;
 };

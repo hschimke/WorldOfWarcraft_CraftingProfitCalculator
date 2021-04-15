@@ -153,10 +153,10 @@ async function getDb(db_name: string): Promise<DatabaseManagerFunction> {
     const context: DatabaseManagerFunction = function () { };
     if (db_type === 'sqlite3') {
         context.db = dbs.get(db_name) as sqlite3.Database;
-        context.get = function (query, values?): Promise<any> {
+        context.get = function (query, values?) {
             logger.silly(sqlToString(query, values));
             return new Promise((accept, reject) => {
-                this.db.get(query, values, (err: any, row: Record<string, any>) => {
+                this.db.get(query, values, (err: any, row: any) => {
                     if (err) {
                         logger.error(`Issue running query '${query}' and values ${values}`, err);
                         reject();
@@ -178,10 +178,10 @@ async function getDb(db_name: string): Promise<DatabaseManagerFunction> {
                 })
             });
         };
-        context.all = function (query, values?): Promise<any[]> {
+        context.all = function (query, values?) {
             logger.silly(sqlToString(query, values));
             return new Promise((accept, reject) => {
-                this.db.all(query, values, (err: any, rows: Record<string, any>[]) => {
+                this.db.all(query, values, (err: any, rows: any[]) => {
                     if (err) {
                         logger.error(`Issue running query '${query}' and values ${values}`, err);
                         reject();
@@ -240,15 +240,18 @@ async function getDb(db_name: string): Promise<DatabaseManagerFunction> {
             const res = await this.pool.query(query, values);
             return res;
         };
-        context.get = async function (query, values?): Promise<any> {
+        context.get = async function (query, values?) {
             const res = await this.query(query, values);
-            return res.rows[0];
+            return res.rows[0] as any;
         }
-        context.all = async function (query, values?): Promise<any[]> {
+        context.all = async function (query, values?) {
             const result = await this.query(query, values);
-            return result.rows;
+            return result.rows as any;
         }
-        context.run = context.query.bind(context);
+        context.run = async function (query, values?){
+            logger.silly(sqlToString(query, values));
+            await this.pool.query(query, values);
+        }
     }
 
     return context;
