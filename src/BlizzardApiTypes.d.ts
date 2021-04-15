@@ -49,28 +49,28 @@ declare namespace BlizzardApi {
         id: number
     }
 
-    interface _skillTierCategory {
-        recipes: Array<{
-            id: number,
-            name: string
-        }>,
-        name: string
-    }
-
     interface ProfessionSkillTier {
-        categories: Array<_skillTierCategory>
-    }
-
-    interface _craftedItem {
-        id: number
+        categories: Array<{
+            recipes: Array<{
+                id: number,
+                name: string
+            }>,
+            name: string
+        }>
     }
 
     interface Recipe {
         id: number,
         name: string,
-        alliance_crafted_item: _craftedItem,
-        horde_crafted_item: _craftedItem,
-        crafted_item: _craftedItem,
+        alliance_crafted_item: {
+            id: number
+        },
+        horde_crafted_item: {
+            id: number
+        },
+        crafted_item: {
+            id: number
+        },
         reagents: Array<{
             reagent: {
                 id: number

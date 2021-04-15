@@ -531,7 +531,7 @@ function getRecipeCraftedItemID(recipe: BlizzardApi.Recipe): Set<ItemID> {
     return item_ids;
 }
 
-function getSlotName(category: BlizzardApi._skillTierCategory): string {
+function getSlotName(category: BlizzardApi.ProfessionSkillTier["categories"][number]): string {
     const name = category.name;
 
     let raw_slot_name = name;

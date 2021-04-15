@@ -72,7 +72,7 @@ function formDataReducer(state: AuctionsFormDataReducerState, action: AuctionsFo
 }
 
 function Auctions(props: AuctionsProps) {
-    const [apiState, sendPayload] = useFetchHistoryApi() as [UseFetchApiState<AuctionHistoryReturn>, (React.Dispatch<React.SetStateAction<object | undefined>>)];
+    const [apiState, sendPayload] = useFetchHistoryApi();
     const [formState, dispatchFormUpdate] = useReducer(formDataReducer, {
         item_name: 'Grim-Veiled Bracers',
         realm_name: 'Hyjal',

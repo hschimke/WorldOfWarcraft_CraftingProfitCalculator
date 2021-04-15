@@ -54,7 +54,7 @@ const formDataReducer = (state: RunCoordinatorFormDataReducerState, action: RunC
 }
 
 function RunCoordinator(props:RunCoordinatorProps) {
-    const [apiState, setPayload] = useFetchCPCApi() as [UseFetchApiState<ServerRunResultReturn>, (React.Dispatch<React.SetStateAction<object | undefined>>)];
+    const [apiState, setPayload] = useFetchCPCApi();
     const [formData, dispatchFormUpdate] = useReducer(formDataReducer, {
         item: 'Grim-Veiled Bracers',
         addon_data: '',

@@ -57,7 +57,7 @@ function dataFetchReducer<FetchType>(state: UseFetchApiState<FetchType>, action:
     }
 }
 
-function useFetchApi<FetchType>(endpoint: string) {
+function useFetchApi<FetchType>(endpoint: string): [UseFetchApiState<FetchType>, React.Dispatch<React.SetStateAction<object | undefined>>] {
     const [payload, setPayload] = useState<object>();
     const localReducer: DataFetchReducerFunction<FetchType> = dataFetchReducer;
     const [state, dispatch] = useReducer(localReducer, {
@@ -102,7 +102,7 @@ function useFetchApi<FetchType>(endpoint: string) {
 }
 
 function useSeenBonusesApi(item: string, region: string, realm: string) {
-    const localReducer : DataFetchReducerFunction<SeenItemBonusesReturn> = dataFetchReducer;
+    const localReducer: DataFetchReducerFunction<SeenItemBonusesReturn> = dataFetchReducer;
     const [state, dispatch] = useReducer(localReducer, {
         isLoading: false,
         isError: false,

@@ -38,7 +38,7 @@ app.post('/json_output', (req, res) => {
     if (req.body.type == 'custom') {
         config = new RunConfiguration({
             inventory: json_data.inventory,
-            professions: JSON.parse(req.body.professions),
+            professions: validateProfessions(JSON.parse(req.body.professions)),
             realm: {
                 realm_name: req.body.server,
                 region_name: req.body.region,
