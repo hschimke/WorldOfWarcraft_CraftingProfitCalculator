@@ -13,7 +13,7 @@ COPY client/package*.json ./
 
 WORKDIR /usr/src/wow_cpc
 
-RUN npm ci && cd client && npm ci
+RUN npm ci && npm build && cd client && npm ci
 
 WORKDIR /usr/src/wow_cpc
 
@@ -32,4 +32,4 @@ EXPOSE 8080
 
 USER node
 
-CMD ["node","server.js"]
+CMD ["node","./dist/server.js"]

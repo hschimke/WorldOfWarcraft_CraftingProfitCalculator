@@ -9,7 +9,8 @@
 		"clear-cache": "rm ./cache/cache.db",
 		"server": "tsc && node -r dotenv/config ./dist/server.js",
 		"cli": "tsc && node -r dotenv/config ./dist/run.js",
-		"client-server": "concurrently \"npm run server\" \"cd client && npm start\""
+		"client-server": "concurrently \"npm run server\" \"cd client && npm start\"",
+		"build": "tsc"
 	},
 	"repository": {
 		"type": "git",
