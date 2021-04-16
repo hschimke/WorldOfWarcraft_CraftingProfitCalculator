@@ -308,7 +308,7 @@ async function performProfitAnalysis(region: RegionCode, server: RealmName, char
  * Figure out the best/worst/average cost to construct a recipe given all items required.
  * @param recipe_option The recipe to price.
  */
-async function recipeCostCalculator(recipe_option: ProfitAnalysisRecipe): Promise<{ high: number, low: number, average: number }> {
+async function recipeCostCalculator(recipe_option: ProfitAnalysisObject["recipe_options"][number]): Promise<{ high: number, low: number, average: number }> {
     /**
      * For each recipe
      *   For each component
@@ -409,7 +409,7 @@ async function generateOutputFormat(price_data: ProfitAnalysisObject, region: Re
         for (let recipe_option of price_data.recipe_options) {
             const option_price = await recipeCostCalculator(recipe_option);
             const recipe = await getBlizRecipeDetail(recipe_option.recipe.recipe_id, region);
-            const obj_recipe = {} as OutputFormatRecipe;
+            const obj_recipe = {} as OutputFormatObject["recipes"][number];
             obj_recipe.name = recipe.name;
             obj_recipe.rank = recipe_option.rank;
             obj_recipe.id = recipe_option.recipe.recipe_id;
@@ -470,7 +470,8 @@ async function generateOutputFormat(price_data: ProfitAnalysisObject, region: Re
             "value": 3
         }
     */
-function getRecipeOutputValues(recipe: BlizzardApi.Recipe): RecipeProductionValues {
+   
+function getRecipeOutputValues(recipe: BlizzardApi.Recipe): OutputFormatObject["recipes"][number]["output"] {
     let min = -1;
     let max = -1;
     let value = -1;

@@ -9,7 +9,7 @@ const hidden_recipe_listing_header = {};
 const hidden_run_result_header = {};
 
 export interface RecipeListingProps {
-    recipe: OutputFormatRecipe
+    recipe: OutputFormatObject["recipes"][number]
 }
 
 export interface RunResultItemProps{

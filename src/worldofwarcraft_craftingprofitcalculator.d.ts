@@ -90,7 +90,7 @@ type DatabaseManagerFunction = {
     get: <Row>(query: string, values?: Array<string | number | boolean | null>) => Promise<Row>;
     run: (query: string, values?: Array<string | number | boolean | null>) => Promise<void>;
     all: <Row>(query: string, values?: Array<string | number | boolean | null>) => Promise<Row[]>;
-    query: <Row>(query: string, values?: Array<string | number | boolean | null>) => Promise<{rows: Row[]}>;
+    query: <Row>(query: string, values?: Array<string | number | boolean | null>) => Promise<{ rows: Row[] }>;
     serialize: (query: Array<string>, values: Array<Array<string | number | boolean | null>>) => Promise<void>;
     getClient: () => Promise<DatabaseClientFunction>;
     (): void;
@@ -113,20 +113,6 @@ interface CraftingStatus {
     }[]
 }
 
-interface ProfitAnalysisRecipe {
-    prices: ProfitAnalysisObject[],
-    recipe: {
-        recipe_id: number
-    },
-    rank: number,
-    rank_ah: AHItemPriceObject
-}
-
-interface ProfitAnalysisBonusPrice {
-    level: number,
-    ah: AHItemPriceObject
-}
-
 interface ProfitAnalysisObject {
     item_id: number,
     item_name: string,
@@ -135,8 +121,18 @@ interface ProfitAnalysisObject {
     vendor_price: number,
     crafting_status: CraftingStatus
     bonus_lists: number[][],
-    recipe_options: ProfitAnalysisRecipe[],
-    bonus_prices: ProfitAnalysisBonusPrice[]
+    recipe_options: {
+        prices: ProfitAnalysisObject[],
+        recipe: {
+            recipe_id: number
+        },
+        rank: number,
+        rank_ah: AHItemPriceObject
+    }[],
+    bonus_prices: {
+        level: number,
+        ah: AHItemPriceObject
+    }[]
 }
 
 interface ShoppingList {
@@ -147,18 +143,6 @@ interface ShoppingList {
         vendor: number,
         ah: OutputFormatPrice
     }
-}
-
-interface OutputFormatRecipe {
-    name: string,
-    rank: number,
-    id: number,
-    output: RecipeProductionValues,
-    ah: OutputFormatPrice,
-    high: number,
-    low: number,
-    average: number,
-    parts: OutputFormatObject[]
 }
 
 interface OutputFormatPrice {
@@ -174,22 +158,28 @@ interface OutputFormatObject {
     name: string,
     id: number,
     required: number,
-    recipes: OutputFormatRecipe[],
+    recipes: {
+        name: string,
+        rank: number,
+        id: number,
+        output: {
+            min: number,
+            max: number,
+            value: number
+        },
+        ah: OutputFormatPrice,
+        high: number,
+        low: number,
+        average: number,
+        parts: OutputFormatObject[]
+    }[],
     ah: OutputFormatPrice,
     vendor: number,
-    bonus_prices: OutputFormatBonusPrices[],
+    bonus_prices: {
+        level: number,
+        ah: OutputFormatPrice
+    }[],
     shopping_lists: OutputFormatShoppingList
-}
-
-interface RecipeProductionValues {
-    min: number,
-    max: number,
-    value: number
-}
-
-interface OutputFormatBonusPrices {
-    level: number,
-    ah: OutputFormatPrice
 }
 
 interface RunReturn {
