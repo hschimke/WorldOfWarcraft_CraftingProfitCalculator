@@ -414,7 +414,7 @@ async function archiveAuctions(): Promise<void> {
     let running = true;
     while (running) {
         // Get oldest downloaded
-        const current_oldest = Number((await db.get<Oldest>(sql_get_downloaded_oldest, [])).oldest);
+        const current_oldest = Number((await client.query(sql_get_downloaded_oldest, [])).oldest);
         // Check if oldest fits our criteria
         if (current_oldest < backstep_time) {
             // Pick the whole day
