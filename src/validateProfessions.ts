@@ -1,25 +1,28 @@
-function validateProfessions(profession_list: Array<string>): Array<CharacterProfession> {
-    const return_array: Array<CharacterProfession> = [];
-
-    for (const element of profession_list) {
-        switch (element) {
-            case 'Jewelcrafting':
-            case 'Tailoring':
-            case 'Alchemy':
-            case 'Herbalism':
-            case 'Inscription':
-            case 'Enchanting':
-            case 'Blacksmithing':
-            case 'Mining':
-            case 'Engineering':
-            case 'Leatherworking':
-            case 'Skinning':
-            case 'Cooking':
-                return_array.push(element);
-        }
+function isCharacterProfession(candidate: unknown): candidate is CharacterProfession {
+    if (typeof candidate !== 'string') {
+        return false;
     }
-
-    return return_array;
+    switch (candidate) {
+        case 'Jewelcrafting':
+        case 'Tailoring':
+        case 'Alchemy':
+        case 'Herbalism':
+        case 'Inscription':
+        case 'Enchanting':
+        case 'Blacksmithing':
+        case 'Mining':
+        case 'Engineering':
+        case 'Leatherworking':
+        case 'Skinning':
+        case 'Cooking':
+            return true;
+        default:
+            return false;
+    }
 }
 
-export { validateProfessions };
+function validateProfessions(profession_list: Array<string>): Array<CharacterProfession> {
+    return profession_list.filter(isCharacterProfession);
+}
+
+export { validateProfessions, isCharacterProfession };

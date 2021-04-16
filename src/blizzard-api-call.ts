@@ -1,4 +1,4 @@
-import events from 'events';
+import {EventEmitter} from 'events';
 import got from 'got';
 import { parentLogger } from './logging.js';
 
@@ -16,7 +16,7 @@ function sleep(ms: number): Promise<void> {
     });
 }
 
-class BlizzardTimeoutManager extends events {
+class BlizzardTimeoutManager extends EventEmitter {
     intervalTimeout?: NodeJS.Timeout;
 
     constructor() {
