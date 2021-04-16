@@ -8,11 +8,6 @@ interface AccessToken {
     checkExpired: () => boolean
 }
 
-// blizzard-api-calls.ts
-
-// auction-history.ts
-interface SummaryReturnObject { data?: any[], min_value?: number, max_value?: number, avg_value?: number }
-
 // blizzard-api-helpers.ts
 interface AuctionPriceSummaryRecord {
     data?: SalesCountSummaryPrice[],

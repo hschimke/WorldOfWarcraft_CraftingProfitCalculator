@@ -430,11 +430,12 @@ async function archiveAuctions(): Promise<void> {
                 const vals = [item.item_id, item.bonuses, item.connected_realm_id, start_ticks, end_ticks];
 
                 // Run the getAuctions command for the combo
-                const summary: SummaryReturnObject = {};
-                summary.data = (await client.query(sql_price_map, vals)).rows;
-                summary.min_value = (await client.query(sql_min, vals)).rows[0].min_price;
-                summary.max_value = (await client.query(sql_max, vals)).rows[0].max_price;
-                summary.avg_value = (await client.query(sql_avg, vals)).rows[0].avg_price;
+                const summary: AuctionPriceSummaryRecord = {
+                    data: (await client.query(sql_price_map, vals)).rows,
+                    min_value: (await client.query(sql_min, vals)).rows[0].min_price,
+                    max_value: (await client.query(sql_max, vals)).rows[0].max_price,
+                    avg_value: (await client.query(sql_avg, vals)).rows[0].avg_price
+                }
 
                 let quantity = 0;
                 if (summary.data !== undefined) {
