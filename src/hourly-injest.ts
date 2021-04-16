@@ -15,7 +15,7 @@ async function job(): Promise<void> {
 
     await scanRealms();
 
-    if ((new Date()).getHours() === 0) {
+    if ((new Date()).getHours() === 4) {
         logger.info('Performing daily archive.');
         await archiveAuctions();
     }

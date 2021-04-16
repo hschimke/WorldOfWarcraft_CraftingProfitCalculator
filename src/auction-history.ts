@@ -409,8 +409,6 @@ async function archiveAuctions(): Promise<void> {
 
     await client.query('BEGIN TRANSACTION', []);
 
-    type Oldest = { oldest: number };
-
     let running = true;
     while (running) {
         // Get oldest downloaded
@@ -420,7 +418,7 @@ async function archiveAuctions(): Promise<void> {
             // Pick the whole day
             const start_ticks = current_oldest;
             const end_ticks = current_oldest + day_diff;
-            logger.debug(`Scan between ${start_ticks} and ${end_ticks}`);
+            logger.info(`Scan between ${start_ticks} and ${end_ticks}`);
             // Run for that day
             // Get a list of all distinct item/server combinations
             const items = (await client.query(sql_get_distinct_rows_from_downloaded, [start_ticks, end_ticks])).rows;
