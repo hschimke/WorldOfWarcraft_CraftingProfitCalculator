@@ -140,7 +140,7 @@ async function getAllBonuses(item: ItemSoftIdentity, region: RegionCode): Promis
     };
 }
 
-async function fillNItems(fill_count: number = 5) : Promise<void> {
+async function fillNItems(fill_count: number = 5): Promise<void> {
     const db = await getDb('history');
     logger.info(`Filling ${fill_count} items with details.`);
     const select_sql = 'SELECT item_id, region FROM items WHERE name ISNULL LIMIT $1';
@@ -407,18 +407,22 @@ async function archiveAuctions(): Promise<void> {
 
     const client = await db.getClient();
 
+    let count = 0;
+
     await client.query('BEGIN TRANSACTION', []);
 
     let running = true;
     while (running) {
         // Get oldest downloaded
-        const current_oldest = Number((await client.query(sql_get_downloaded_oldest, [])).oldest);
+        const current_oldest = Number((await client.query(sql_get_downloaded_oldest, [])).rows[0].oldest);
+        //console.log((await client.query(sql_get_downloaded_oldest, [])).rows[0].oldest);
+        logger.debug(`Current oldest is ${(new Date(current_oldest)).toLocaleString()}`);
         // Check if oldest fits our criteria
         if (current_oldest < backstep_time) {
             // Pick the whole day
             const start_ticks = current_oldest;
             const end_ticks = current_oldest + day_diff;
-            logger.info(`Scan between ${start_ticks} and ${end_ticks}`);
+            logger.info(`Scan between ${(new Date(start_ticks)).toLocaleString()} and ${(new Date(end_ticks)).toLocaleString()}`);
             // Run for that day
             // Get a list of all distinct item/server combinations
             const items = (await client.query(sql_get_distinct_rows_from_downloaded, [start_ticks, end_ticks])).rows;
@@ -441,12 +445,14 @@ async function archiveAuctions(): Promise<void> {
 
                 // Add the archive
                 await client.query(sql_insert_auction_archive, [item.item_id, quantity, JSON.stringify(summary), start_ticks, item.connected_realm_id, item.bonuses]);
+                count++;
             }
             // Delete the archived data
             await client.query(sql_delete_archived_auctions, [start_ticks, end_ticks]);
             // Done
         } else {
             running = false;
+            logger.info(`Finished archive task. Archived ${count} records`);
         }
     }
 
