@@ -1,7 +1,7 @@
 import { parentLogger } from './logging.js';
 
-import sqlite3 from 'sqlite3';
-import pg from 'pg';
+import {default as sqlite3} from 'sqlite3';
+import {default as pg} from 'pg';
 const { Pool } = pg;
 
 const logger = parentLogger.child({});

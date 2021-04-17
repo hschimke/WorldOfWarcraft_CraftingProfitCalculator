@@ -1,4 +1,4 @@
-import winston from 'winston';
+import {default as winston} from 'winston';
 
 const lowest_level_to_report: string = (process.env.LOG_LEVEL !== undefined) ? process.env.LOG_LEVEL : 'info';
 

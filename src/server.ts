@@ -1,5 +1,5 @@
-import express from 'express';
-import path from 'path';
+import {default as express} from 'express';
+import {resolve} from 'path';
 import { runWithJSONConfig, shutdown } from './wow_crafting_profits.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { parentLogger } from './logging.js';
@@ -17,16 +17,16 @@ const port = process.env.SERVER_PORT;
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-app.use(express.static(path.resolve('html/build')));
+app.use(express.static(resolve('html/build')));
 
 app.get('/', (req, res) => {
     logger.debug('Homepage requested');
-    res.sendFile(path.resolve('html/build/index.html'));
+    res.sendFile(resolve('html/build/index.html'));
 });
 
 app.get('*', (req, res) => {
     logger.debug('Unknown route requested');
-    res.sendFile(path.resolve('html/build/index.html'));
+    res.sendFile(resolve('html/build/index.html'));
 });
 
 app.post('/json_output', (req, res) => {
