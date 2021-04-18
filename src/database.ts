@@ -1,24 +1,7 @@
-import { parentLogger } from './logging.js';
-
-import {default as sqlite3} from 'sqlite3';
-import {default as pg} from 'pg';
+import { default as sqlite3 } from 'sqlite3';
+import { default as pg } from 'pg';
+import { Logger } from 'winston';
 const { Pool } = pg;
-
-const logger = parentLogger.child({});
-let l_pool: pg.Pool;
-const dbs = new Map();
-let dbs_open: boolean;
-
-const db_type = process.env.DATABASE_TYPE;
-
-logger.info(`Using ${db_type} database methods.`);
-
-/*
-import winston from 'winston';
-logger.add(new winston.transports.Console({
-    format: winston.format.simple(),
-    level: 'silly',
-}));*/
 
 const pragma_sync = 'PRAGMA synchronous = normal';
 const pragma_journal = 'PRAGMA journal_mode=WAL';
@@ -77,202 +60,201 @@ const cache_sql_run_at_open_sq3 = [
     pragma_sync,
     pragma_journal];
 
-function sqlToString(sql: string, values?: Array<string | number | boolean | null>): string {
-    const value_str = values !== undefined ? values.map((val) => {
-        return `[value: ${val} type: ${typeof (val)}] `;
-    }) : '';
-    return `${sql} : ${value_str}`;
-}
+function DB(config: DatabaseConfig, logging: Logger): CPCDB {
+    const db_type = config.type;
 
-/*async function checkDBVersion() {
+    function sqlToString(sql: string, values?: Array<string | number | boolean | null>): string {
+        const value_str = values !== undefined ? values.map((val) => {
+            return `[value: ${val} type: ${typeof (val)}] `;
+        }) : '';
+        return `${sql} : ${value_str}`;
+    }
 
-}
+    const logger = logging;
+    let l_pool: pg.Pool;
+    const dbs = new Map();
+    let dbs_open: boolean;
 
-async function performDBMigration() {
+    /*
+    import winston from 'winston';
+    logger.add(new winston.transports.Console({
+        format: winston.format.simple(),
+        level: 'silly',
+    }));*/
 
-}*/
+    logger.info(`Using ${db_type} database methods.`);
 
-async function start(): Promise<void> {
-    if (!dbs_open) {
+    async function start(): Promise<void> {
+        if (!dbs_open) {
+            if (db_type === 'sqlite3') {
+                const cache_fn = config.sqlite3 !== undefined ? config.sqlite3.cache_fn : '';
+                const history_fn = config.sqlite3 !== undefined ? config.sqlite3.auction_fn : '';
+                dbs.set('cache', new sqlite3.Database(cache_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE));
+                dbs.set('history', new sqlite3.Database(history_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE));
+
+                dbs.get('history').serialize(() => {
+                    for (const query of history_sql_run_at_open_sq3) {
+                        dbs.get('history').run(query);
+                    }
+                });
+
+                dbs.get('cache').serialize(() => {
+                    for (const query of cache_sql_run_at_open_sq3) {
+                        dbs.get('cache').run(query);
+                    }
+                });
+            } else if (db_type === 'pg') {
+                l_pool = new Pool();
+                const client = await l_pool.connect();
+
+                for (const query of history_sql_run_at_open_pg) {
+                    await client.query(query);
+                }
+                for (const query of cache_sql_run_at_open_pg) {
+                    await client.query(query);
+                }
+                await client.release();
+            }
+
+            dbs_open = true;
+        }
+    }
+
+    function shutdown(): void {
+        logger.info('Closing DB connection');
+        dbs_open = false;
         if (db_type === 'sqlite3') {
-            const cache_fn = process.env.CACHE_DB_FN !== undefined ? process.env.CACHE_DB_FN : '';
-            const history_fn = process.env.HISTORY_DB_FN !== undefined ? process.env.HISTORY_DB_FN : '';
-            dbs.set('cache', new sqlite3.Database(cache_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE));
-            dbs.set('history', new sqlite3.Database(history_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE));
-
-            dbs.get('history').serialize(() => {
-                for (const query of history_sql_run_at_open_sq3) {
-                    dbs.get('history').run(query);
-                }
-            });
-
-            dbs.get('cache').serialize(() => {
-                for (const query of cache_sql_run_at_open_sq3) {
-                    dbs.get('cache').run(query);
-                }
-            });
+            for (let [key, value] of dbs) {
+                logger.info(`Close DB ${key}`);
+                value.run('PRAGMA optimize', (err: any) => {
+                    value.close();
+                    if (err) {
+                        logger.error(err);
+                    }
+                });
+            }
         } else if (db_type === 'pg') {
-            l_pool = new Pool();
-            const client = await l_pool.connect();
-
-            for (const query of history_sql_run_at_open_pg) {
-                await client.query(query);
-            }
-            for (const query of cache_sql_run_at_open_pg) {
-                await client.query(query);
-            }
-            await client.release();
-        }
-
-        dbs_open = true;
-    }
-}
-
-function shutdown(): void {
-    logger.info('Closing DB connection');
-    dbs_open = false;
-    if (db_type === 'sqlite3') {
-        for (let [key, value] of dbs) {
-            logger.info(`Close DB ${key}`);
-            value.run('PRAGMA optimize', (err: any) => {
-                value.close();
-                if (err) {
-                    logger.error(err);
-                }
+            l_pool.end().then(() => {
+                logger.info('Database connection closed');
             });
         }
-    } else if (db_type === 'pg') {
-        l_pool.end().then(() => {
-            logger.info('Database connection closed');
-        });
     }
-}
 
-async function getDb(db_name: string): Promise<DatabaseManagerFunction> {
-    await start();
-    const context: DatabaseManagerFunction = function () { };
-    if (db_type === 'sqlite3') {
-        context.db = dbs.get(db_name) as sqlite3.Database;
-        context.get = function (query, values?) {
-            logger.silly(sqlToString(query, values));
-            return new Promise((accept, reject) => {
-                this.db.get(query, values, (err: any, row: any) => {
-                    if (err) {
-                        logger.error(`Issue running query '${query}' and values ${values}`, err);
-                        reject();
-                    }
-                    accept(row);
-                })
-            });
-        };
-        context.run = function (query, values?) {
-            logger.silly(sqlToString(query, values));
-            return new Promise<void>((accept, reject) => {
-                this.db.run(query, values, (err: any) => {
-                    if (err) {
-                        logger.error(`Issue running query '${query}' and values ${values}`, err);
-                        reject();
-                    } else {
-                        accept();
-                    }
-                })
-            });
-        };
-        context.all = function (query, values?) {
-            logger.silly(sqlToString(query, values));
-            return new Promise((accept, reject) => {
-                this.db.all(query, values, (err: any, rows: any[]) => {
-                    if (err) {
-                        logger.error(`Issue running query '${query}' and values ${values}`, err);
-                        reject();
-                    }
-                    accept(rows);
-                })
-            });
-        };
-        context.serialize = function (queries, value_sets) {
-            return new Promise<void>((accept, reject) => {
-                this.db.serialize(() => {
-                    try {
-                        for (let i = 0; i < queries.length; i++) {
-                            if (value_sets !== undefined)
-                                logger.silly(sqlToString(queries[i], value_sets[i]));
-                            this.db.run(queries[i], value_sets[i], (err: any) => {
-                                if (err) {
-                                    logger.error(`Issue running query '${queries[i]}' and values ${value_sets[i]}`, err);
-                                    reject();
-                                }
-                            });
+    async function getDb(db_name: string): Promise<DatabaseManagerFunction> {
+        await start();
+        const context: DatabaseManagerFunction = function () { };
+        if (db_type === 'sqlite3') {
+            context.db_type = 'sqlite3';
+            context.db = dbs.get(db_name) as sqlite3.Database;
+            context.get = function (query, values?) {
+                logger.silly(sqlToString(query, values));
+                return new Promise((accept, reject) => {
+                    this.db.get(query, values, (err: any, row: any) => {
+                        if (err) {
+                            logger.error(`Issue running query '${query}' and values ${values}`, err);
+                            reject();
                         }
-                        accept();
-                    } catch (e) {
-                        logger.error('serialize failed', { q: queries, v: value_sets });
-                        reject(e);
-                    }
-                })
-            });
-        };
-        context.getClient = async function () {
-            const f = function () { };
-            f.release = async function () { };
-            f.query = async function (query: string, values?: any) {
-                const result = <Array<any>>(await context.all(query, values));
-                return { rows: [...result] };
+                        accept(row);
+                    })
+                });
             };
-            return f;
-        };
-    } else if (db_type === 'pg') {
-        context.pool = l_pool;
-        context.serialize = async function (queries, value_sets) {
-            const client = await this.pool.connect();
-            for (let i = 0; i < queries.length; i++) {
-                logger.silly(sqlToString(queries[i], value_sets[i]));
-                await client.query(queries[i], value_sets[i]);
+            context.run = function (query, values?) {
+                logger.silly(sqlToString(query, values));
+                return new Promise<void>((accept, reject) => {
+                    this.db.run(query, values, (err: any) => {
+                        if (err) {
+                            logger.error(`Issue running query '${query}' and values ${values}`, err);
+                            reject();
+                        } else {
+                            accept();
+                        }
+                    })
+                });
+            };
+            context.all = function (query, values?) {
+                logger.silly(sqlToString(query, values));
+                return new Promise((accept, reject) => {
+                    this.db.all(query, values, (err: any, rows: any[]) => {
+                        if (err) {
+                            logger.error(`Issue running query '${query}' and values ${values}`, err);
+                            reject();
+                        }
+                        accept(rows);
+                    })
+                });
+            };
+            context.serialize = function (queries, value_sets) {
+                return new Promise<void>((accept, reject) => {
+                    this.db.serialize(() => {
+                        try {
+                            for (let i = 0; i < queries.length; i++) {
+                                if (value_sets !== undefined)
+                                    logger.silly(sqlToString(queries[i], value_sets[i]));
+                                this.db.run(queries[i], value_sets[i], (err: any) => {
+                                    if (err) {
+                                        logger.error(`Issue running query '${queries[i]}' and values ${value_sets[i]}`, err);
+                                        reject();
+                                    }
+                                });
+                            }
+                            accept();
+                        } catch (e) {
+                            logger.error('serialize failed', { q: queries, v: value_sets });
+                            reject(e);
+                        }
+                    })
+                });
+            };
+            context.getClient = async function () {
+                const f = function () { };
+                f.release = async function () { };
+                f.query = async function (query: string, values?: any) {
+                    const result = <Array<any>>(await context.all(query, values));
+                    return { rows: [...result] };
+                };
+                return f;
+            };
+        } else if (db_type === 'pg') {
+            context.pool = l_pool;
+            context.db_type = 'pg';
+            context.serialize = async function (queries, value_sets) {
+                const client = await this.pool.connect();
+                for (let i = 0; i < queries.length; i++) {
+                    logger.silly(sqlToString(queries[i], value_sets[i]));
+                    await client.query(queries[i], value_sets[i]);
+                }
+                await client.release();
+            };
+            context.getClient = async function () {
+                const client = await this.pool.connect();
+                return client;
+            };
+            context.query = async function (query, values?) {
+                logger.silly(sqlToString(query, values));
+                const res = await this.pool.query(query, values);
+                return res;
+            };
+            context.get = async function (query, values?) {
+                const res = await this.query(query, values);
+                return res.rows[0] as any;
             }
-            await client.release();
-        };
-        context.getClient = async function () {
-            const client = await this.pool.connect();
-            return client;
-        };
-        context.query = async function (query, values?) {
-            logger.silly(sqlToString(query, values));
-            const res = await this.pool.query(query, values);
-            return res;
-        };
-        context.get = async function (query, values?) {
-            const res = await this.query(query, values);
-            return res.rows[0] as any;
+            context.all = async function (query, values?) {
+                const result = await this.query(query, values);
+                return result.rows as any;
+            }
+            context.run = async function (query, values?) {
+                logger.silly(sqlToString(query, values));
+                await this.pool.query(query, values);
+            }
         }
-        context.all = async function (query, values?) {
-            const result = await this.query(query, values);
-            return result.rows as any;
-        }
-        context.run = async function (query, values?){
-            logger.silly(sqlToString(query, values));
-            await this.pool.query(query, values);
-        }
+
+        return context;
     }
 
-    return context;
+    return Object.freeze({
+        getDb,
+        shutdown
+    });
 }
 
-process.on('beforeExit', () => {
-    if (dbs_open) {
-        shutdown();
-    }
-});
-
-process.on('SIGTERM', () => {
-    if (dbs_open) {
-        shutdown();
-    }
-});
-
-process.on('SIGINT', () => {
-    if (dbs_open) {
-        shutdown();
-    }
-});
-
-export { getDb };
+export { DB };

@@ -1,8 +1,12 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+import { CPCApi } from './blizzard-api-call.js';
+import { CPCCache } from './cached-data-sources.js';
+import { DB } from './database.js';
+import { parentLogger } from './logging.js';
 import { RunConfiguration } from './RunConfiguration.js';
-import { cliRun } from './wow_crafting_profits.js';
 import { validateProfessions } from "./validateProfessions.js";
+import { CPCInstance } from './wow_crafting_profits.js';
 
 //blacksmithing
 //const test_item = 171414;
@@ -104,4 +108,19 @@ const config = new RunConfiguration({
     },
 }, item, required);
 
-cliRun(config);
+const db_conf: DatabaseConfig = {
+    type: process.env.DATABASE_TYPE !== undefined ? process.env.DATABASE_TYPE : ''
+}
+if (process.env.DATABASE_TYPE === 'sqlite3') {
+    db_conf.sqlite3 = {
+        cache_fn: process.env.CACHE_DB_FN !== undefined ? process.env.CACHE_DB_FN : './databases/cache.db',
+        auction_fn: process.env.HISTORY_DB_FN !== undefined ? process.env.HISTORY_DB_FN : './databases/historical_auctions.db'
+    };
+}
+const log = parentLogger.child({})
+const db = DB(db_conf, log);
+const api = CPCApi(log);
+const cache = await CPCCache(db);
+const inst = await CPCInstance(log, cache, api);
+
+inst.cliRun(config);

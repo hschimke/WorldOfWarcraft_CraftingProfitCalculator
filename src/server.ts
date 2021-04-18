@@ -1,18 +1,35 @@
 import {default as express} from 'express';
 import {resolve} from 'path';
-import { runWithJSONConfig, shutdown } from './wow_crafting_profits.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { parentLogger } from './logging.js';
-import { getAuctions, getAllBonuses } from './auction-history.js';
-import { static_sources } from './cached-data-sources.js';
+import { CPCCache, static_sources } from './cached-data-sources.js';
 import './hourly-injest.js';
 import { validateProfessions } from './validateProfessions.js';
 import { getRegionCode } from './getRegionCode.js';
+import { DB } from './database.js';
+import { CPCApi } from './blizzard-api-call.js';
+import {CPCInstance} from './wow_crafting_profits.js';
+import { CPCAuctionHistory } from './auction-history.js';
 
 const logger = parentLogger.child({});
 
 const app = express();
 const port = process.env.SERVER_PORT;
+
+const db_conf: DatabaseConfig = {
+    type: process.env.DATABASE_TYPE !== undefined ? process.env.DATABASE_TYPE : ''
+}
+if (process.env.DATABASE_TYPE === 'sqlite3') {
+    db_conf.sqlite3 = {
+        cache_fn: process.env.CACHE_DB_FN !== undefined ? process.env.CACHE_DB_FN : './databases/cache.db',
+        auction_fn: process.env.HISTORY_DB_FN !== undefined ? process.env.HISTORY_DB_FN : './databases/historical_auctions.db'
+    };
+}
+const db = DB(db_conf, logger);
+const api = CPCApi(logger);
+const cache = await CPCCache(db);
+const inst = await CPCInstance(logger, cache, api);
+const ah = await CPCAuctionHistory(db,logger,api,cache);
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
@@ -52,7 +69,7 @@ app.post('/json_output', (req, res) => {
     }
 
     if (config !== undefined) {
-        runWithJSONConfig(config).then((data) => {
+        inst.runWithJSONConfig(config).then((data) => {
             const { intermediate } = data;
             res.json(intermediate);
         });
@@ -68,7 +85,7 @@ app.post('/auction_history', (req, res) => {
     const end_dtm: string | undefined = req.body.end_dtm;
 
     logger.info(`Request for item: ${item}, realm: ${realm}, region: ${region}, bonuses: ${bonuses}, start_dtm: ${start_dtm}, end_dtm: ${end_dtm}`);
-    getAuctions(item, realm, getRegionCode(region), bonuses, start_dtm, end_dtm).then((result: AuctionSummaryData) => {
+    ah.getAuctions(item, realm, getRegionCode(region), bonuses, start_dtm, end_dtm).then((result: AuctionSummaryData) => {
         logger.debug(`Return auction data`);
         res.json(result);
     }).catch(error => {
@@ -87,7 +104,7 @@ app.post('/seen_item_bonuses', (req, res) => {
         res.json({ ERROR: 'empty item' });
     }
 
-    getAllBonuses(item, getRegionCode(region)).then(bonuses => {
+    ah.getAllBonuses(item, getRegionCode(region)).then(bonuses => {
         static_sources().then(cache => {
             const bonuses_cache = cache.bonuses_cache;
             logger.debug(`Regurning bonus lists for ${item}`);
@@ -180,12 +197,10 @@ const server = app.listen(port, () => {
 
 process.on('SIGTERM', () => {
     logger.info('SIGTERM signal received: closing HTTP server')
-    shutdown()
-        .then(() => { server.close() });
+    server.close();
 });
 
 process.on('SIGINT', () => {
     logger.info('SIGINT signal received: closing HTTP server')
-    shutdown()
-        .then(() => { server.close() });
+    server.close();
 });

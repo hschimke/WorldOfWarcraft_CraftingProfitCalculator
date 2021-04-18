@@ -8,6 +8,18 @@ interface AccessToken {
     checkExpired: () => boolean
 }
 
+// blizzard-api-call.ts
+interface ApiConfig {
+    connection_per_window?: number,
+    window_size?: number
+}
+
+type CPCApi = Readonly<{
+    getBlizzardAPIResponse: (region_code: RegionCode, authorization_token: AccessToken, data: string | Record<string, string | number>, uri: string) => Promise<BlizzardApi.BlizzardApiReponse | void>;
+    getBlizzardRawUriResponse: (authorization_token: AccessToken, data: string | Record<string, string | number>, uri: string) => Promise<BlizzardApi.BlizzardApiReponse | void>;
+    shutdownApiManager: () => void;
+}>;
+
 // blizzard-api-helpers.ts
 interface AuctionPriceSummaryRecord {
     data?: SalesCountSummaryPrice[],
@@ -51,6 +63,21 @@ type SkillTierCyclicLinksBuild = {
     quantity: number
 }[][];
 
+type CPCApiHelpers = Readonly<{
+    getItemId: (region: RegionCode, item_name: ItemName) => Promise<ItemID>;
+    getConnectedRealmId: (server_name: RealmName, server_region: RegionCode) => Promise<ConnectedRealmID>;
+    getItemDetails: (item_id: ItemID, region: RegionCode) => Promise<BlizzardApi.Item>;
+    getBlizProfessionsList: (region: RegionCode) => Promise<BlizzardApi.ProfessionsIndex>;
+    getBlizProfessionDetail: (profession_id: number, region: RegionCode) => Promise<BlizzardApi.Profession>;
+    getBlizConnectedRealmDetail: (connected_realm_id: ConnectedRealmID, region: RegionCode) => Promise<BlizzardApi.ConnectedRealm>;
+    getBlizSkillTierDetail: (profession_id: number, skillTier_id: number, region: RegionCode) => Promise<BlizzardApi.ProfessionSkillTier>;
+    getBlizRecipeDetail: (recipe_id: number, region: RegionCode) => Promise<BlizzardApi.Recipe>;
+    checkIsCrafting: (item_id: ItemID, character_professions: Array<CharacterProfession>, region: RegionCode) => Promise<CraftingStatus>;
+    buildCyclicRecipeList: (region: RegionCode) => Promise<SkillTierCyclicLinks>;
+    getAuctionHouse: (server_id: ConnectedRealmID, server_region: RegionCode) => Promise<BlizzardApi.Auctions>;
+    getCraftingRecipe: (recipe_id: number, region: RegionCode) => Promise<BlizzardApi.Recipe>;
+}>;
+
 
 // cached-data-sources.ts
 type BonusesCache = Record<number | string, {
@@ -76,7 +103,43 @@ interface ShoppingRecipeExclusionList {
     exclusions: number[]
 }
 
+interface StaticCacheConfig {
+    cache_folder: string
+}
+
+type CPCCache = Readonly<{
+    cacheCheck: (namespace: string, key: string | number, expiration_period?: number | null | undefined) => Promise<boolean>;
+    cacheGet: (namespace: string, key: string | number) => Promise<any>;
+    cacheSet: (namespace: string, key: string | number, data: any) => Promise<void>;
+}>
+
+// auction-history.ts
+type CPCAuctionHistory = Readonly<{
+    scanRealms: () => Promise<void>;
+    addRealmToScanList: (realm_name: RealmName, realm_region: RegionCode) => Promise<void>;
+    removeRealmFromScanList: (realm_name: RealmName, realm_region: RegionCode) => Promise<void>;
+    getAuctions: (item: ItemSoftIdentity, realm: ConnectedRealmSoftIentity, region: RegionCode, bonuses: number[] | string[] | string, start_dtm: number | string | undefined, end_dtm: number | string | undefined) => Promise<AuctionSummaryData>;
+    getAllBonuses: (item: ItemSoftIdentity, region: RegionCode) => Promise<GetAllBonusesReturn>;
+    archiveAuctions: () => Promise<void>;
+    fillNItems: (fill_count?: number) => Promise<void>;
+}>;
+
+interface GetAllBonusesReturn {
+    bonuses: Record<string, string>[]
+    item: BlizzardApi.Item
+}
+
 // databases.ts
+interface DatabaseConfig {
+    type: string,
+    sqlite3?: {
+        cache_fn: string,
+        auction_fn: string
+    }
+}
+
+type CPCDB = Readonly<{ getDb: (db_name: string) => Promise<DatabaseManagerFunction>, shutdown: () => void }>;
+
 type DatabaseReturn<RowFormat> = RowFormat[];
 
 type DatabaseClientFunction = {
@@ -87,6 +150,7 @@ type DatabaseClientFunction = {
 type DatabaseManagerFunction = {
     db: any;
     pool: any;
+    db_type: string;
     get: <Row>(query: string, values?: Array<string | number | boolean | null>) => Promise<Row>;
     run: (query: string, values?: Array<string | number | boolean | null>) => Promise<void>;
     all: <Row>(query: string, values?: Array<string | number | boolean | null>) => Promise<Row[]>;
