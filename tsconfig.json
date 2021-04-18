@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "outDir": "./dist",
-    "allowJs": true,
     "target":"ESNext",
     "moduleResolution": "node",
     "module": "ESNext",
