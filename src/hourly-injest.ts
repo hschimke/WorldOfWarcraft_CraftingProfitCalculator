@@ -1,5 +1,6 @@
 import { CPCAuctionHistory } from './auction-history.js';
 import { CPCApi } from './blizzard-api-call.js';
+import { ApiAuthorization } from './blizz_oath.js';
 import { CPCCache } from './cached-data-sources.js';
 import { CPCDb } from './database.js';
 import { parentLogger } from './logging.js';
@@ -41,7 +42,8 @@ switch (server_mode) {
                 };
             }
             const db = CPCDb(db_conf, logger);
-            const api = CPCApi(logger);
+            const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, logger);
+            const api = CPCApi(logger, auth);
             const cache = await CPCCache(db);
             const ah = await CPCAuctionHistory(db, logger, api, cache);
             job(ah);
@@ -60,7 +62,8 @@ switch (server_mode) {
                 };
             }
             const db = CPCDb(db_conf, logger);
-            const api = CPCApi(logger);
+            const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, logger);
+            const api = CPCApi(logger, auth);
             const cache = await CPCCache(db);
             const ah = await CPCAuctionHistory(db, logger, api, cache);
             standalone_container_abc = setInterval(() => { job(ah) }, 3.6e+6);

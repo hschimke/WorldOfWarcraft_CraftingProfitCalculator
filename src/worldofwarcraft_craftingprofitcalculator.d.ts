@@ -8,6 +8,10 @@ interface AccessToken {
     checkExpired: () => boolean
 }
 
+type ApiAuthorization = Readonly<{
+    getAuthorizationToken: (region: RegionCode) => Promise<AccessToken>;
+}>
+
 // blizzard-api-call.ts
 interface ApiConfig {
     connection_per_window?: number,
@@ -15,8 +19,8 @@ interface ApiConfig {
 }
 
 type CPCApi = Readonly<{
-    getBlizzardAPIResponse: (region_code: RegionCode, authorization_token: AccessToken, data: string | Record<string, string | number>, uri: string) => Promise<BlizzardApi.BlizzardApiReponse | void>;
-    getBlizzardRawUriResponse: (authorization_token: AccessToken, data: string | Record<string, string | number>, uri: string) => Promise<BlizzardApi.BlizzardApiReponse | void>;
+    getBlizzardAPIResponse: (region_code: RegionCode, data: string | Record<string, string | number>, uri: string) => Promise<BlizzardApi.BlizzardApiReponse | void>;
+    getBlizzardRawUriResponse: (data: string | Record<string, string | number>, uri: string, region: RegionCode) => Promise<BlizzardApi.BlizzardApiReponse | void>;
     shutdownApiManager: () => void;
 }>;
 

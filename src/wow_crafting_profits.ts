@@ -1,7 +1,6 @@
 import { promises as fs } from 'fs';
 import { CPCApiHelpers } from './blizzard-api-helpers.js';
 import { textFriendlyOutputFormat } from './text-output-helpers.js';
-import { getAuthorizationToken } from './blizz_oath.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { getRegionCode } from './getRegionCode.js';
 import { Logger } from 'winston';
@@ -691,7 +690,6 @@ async function CPCInstance(logging: Logger, cache: CPCCache, api: CPCApi) {
      * @param {RunConfiguration} json_config The configuration object.
      */
     async function runWithJSONConfig(json_config: RunConfiguration): Promise<RunReturn> {
-        getAuthorizationToken(getRegionCode(json_config.realm_region));
         return run(json_config.realm_region,
             json_config.realm_name,
             json_config.professions,

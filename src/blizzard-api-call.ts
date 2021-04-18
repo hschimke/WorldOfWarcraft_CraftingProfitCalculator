@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import got from 'got';
 import { Logger } from 'winston';
 
-function CPCApi(logging: Logger, config?: ApiConfig): CPCApi {
+function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig): CPCApi {
     const logger = logging;
 
     let allowed_connections_per_period = 100;
@@ -71,7 +71,7 @@ function CPCApi(logging: Logger, config?: ApiConfig): CPCApi {
      * @param {Object} data The request data to send.
      * @param {!string} uri The url to query against.
      */
-    async function getBlizzardAPIResponse(region_code: RegionCode, authorization_token: AccessToken, data: string | Record<string, string | number>, uri: string): Promise<BlizzardApi.BlizzardApiReponse | void> {
+    async function getBlizzardAPIResponse(region_code: RegionCode, data: string | Record<string, string | number>, uri: string): Promise<BlizzardApi.BlizzardApiReponse | void> {
         let proceed = false;
         let wait_count = 0;
         while (!proceed) {
@@ -93,7 +93,7 @@ function CPCApi(logging: Logger, config?: ApiConfig): CPCApi {
                 method: 'GET',
                 headers: {
                     'Connection': 'keep-alive',
-                    'Authorization': `Bearer ${authorization_token.access_token}`
+                    'Authorization': `Bearer ${(await api_auth.getAuthorizationToken(region_code)).access_token}`
                 },
                 searchParams: data
             }).json();
@@ -110,7 +110,7 @@ function CPCApi(logging: Logger, config?: ApiConfig): CPCApi {
      * @param {object} data The request data to send.
      * @param {string} uri Raw url including transport to query.
      */
-    async function getBlizzardRawUriResponse(authorization_token: AccessToken, data: string | Record<string, string | number>, uri: string): Promise<BlizzardApi.BlizzardApiReponse | void> {
+    async function getBlizzardRawUriResponse(data: string | Record<string, string | number>, uri: string, region: RegionCode): Promise<BlizzardApi.BlizzardApiReponse | void> {
         let proceed = false;
         let wait_count = 0;
         while (!proceed) {
@@ -132,7 +132,7 @@ function CPCApi(logging: Logger, config?: ApiConfig): CPCApi {
                 method: 'GET',
                 headers: {
                     'Connection': 'keep-alive',
-                    'Authorization': `Bearer ${authorization_token.access_token}`
+                    'Authorization': `Bearer ${(await api_auth.getAuthorizationToken(region)).access_token}}`
                 },
                 searchParams: data
             }).json();

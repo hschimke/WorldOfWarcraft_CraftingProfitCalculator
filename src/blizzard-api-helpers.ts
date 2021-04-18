@@ -1,4 +1,3 @@
-import { getAuthorizationToken } from './blizz_oath.js';
 import { Logger } from 'winston';
 
 const exclude_before_shadowlands = false;
@@ -37,7 +36,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         let item_id = -1;
 
         // Step 1: Get the initial results to see if we get anything
-        const initial_page: BlizzardApi.ItemSearch = <BlizzardApi.ItemSearch>await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
+        const initial_page: BlizzardApi.ItemSearch = <BlizzardApi.ItemSearch>await getBlizzardAPIResponse(region, {
             'namespace': 'static-us',
             'locale': 'en_US',
             'name.en_US': item_name,
@@ -60,7 +59,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
                 for (let cp = initial_page.page; cp <= page_count; cp++) {
                     logger.debug(`Checking page ${cp} for ${item_name}`);
                     if (page_item_id <= 0) {
-                        const current_page = <BlizzardApi.ItemSearch>await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
+                        const current_page = <BlizzardApi.ItemSearch>await getBlizzardAPIResponse(region, {
                             'namespace': 'static-us',
                             'locale': 'en_US',
                             'name.en_US': item_name,
@@ -115,7 +114,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
      * @param {string} region Region to return list of connected realms.
      * @param {object} token An OATH access token to use for the request.
      */
-    async function getAllConnectedRealms(region: RegionCode, token: AccessToken): Promise<BlizzardApi.ConnectedRealmIndex> {
+    async function getAllConnectedRealms(region: RegionCode): Promise<BlizzardApi.ConnectedRealmIndex> {
         const list_connected_realms_api = '/data/wow/connected-realm/index';
         const list_connected_realms_form = {
             'namespace': 'dynamic-us',
@@ -124,7 +123,6 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
 
         return <Promise<BlizzardApi.ConnectedRealmIndex>>getBlizzardAPIResponse(
             region,
-            token,
             list_connected_realms_form,
             list_connected_realms_api);
     }
@@ -147,17 +145,16 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
             'namespace': 'dynamic-us',
             'locale': 'en_US'
         };
-        const access_token = await getAuthorizationToken(server_region);
 
         let realm_id = 0;
 
         // Get a list of all connected realms
-        const all_connected_realms = await getAllConnectedRealms(server_region, access_token);
+        const all_connected_realms = await getAllConnectedRealms(server_region);
 
         // Pull the data for each connection until you find one with the server name in question
         for (let realm_href of all_connected_realms.connected_realms) {
             const hr = realm_href.href;
-            const connected_realm_detail = <BlizzardApi.ConnectedRealm>await getBlizzardRawUriResponse(access_token, get_connected_realm_form, hr);
+            const connected_realm_detail = <BlizzardApi.ConnectedRealm>await getBlizzardRawUriResponse(get_connected_realm_form, hr, server_region);
             const realm_list = connected_realm_detail.realms;
             let found_realm = false;
             for (let rlm of realm_list) {
@@ -195,7 +192,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
 
         const profession_item_detail_uri = `/data/wow/item/${item_id}`;
         //categories[array].recipes[array].name categories[array].recipes[array].id
-        const result = <BlizzardApi.Item>await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
+        const result = <BlizzardApi.Item>await getBlizzardAPIResponse(region, {
             'namespace': 'static-us',
             'locale': 'en_US'
         },
@@ -217,7 +214,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
             return cacheGet(PROFESSION_LIST_CACHE, key);
         }
 
-        const result = <BlizzardApi.ProfessionsIndex>await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
+        const result = <BlizzardApi.ProfessionsIndex>await getBlizzardAPIResponse(region, {
             'namespace': 'static-us',
             'locale': 'en_US'
         }, profession_list_uri);
@@ -240,7 +237,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         }
 
         const profession_detail_uri = `/data/wow/profession/${profession_id}`; // skill_tiers.name skill_tiers.id
-        const result = <BlizzardApi.Profession>await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
+        const result = <BlizzardApi.Profession>await getBlizzardAPIResponse(region, {
             'namespace': 'static-us',
             'locale': 'en_US'
         },
@@ -258,7 +255,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         }
 
         const connected_realm_detail_uri = `/data/wow/connected-realm/${connected_realm_id}`; // skill_tiers.name skill_tiers.id
-        const result = <BlizzardApi.ConnectedRealm>await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
+        const result = <BlizzardApi.ConnectedRealm>await getBlizzardAPIResponse(region, {
             'namespace': 'dynamic-us',
             'locale': 'en_US'
         },
@@ -284,7 +281,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
 
         const profession_skill_tier_detail_uri = `/data/wow/profession/${profession_id}/skill-tier/${skillTier_id}`;
         //categories[array].recipes[array].name categories[array].recipes[array].id
-        const result = <BlizzardApi.ProfessionSkillTier>await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
+        const result = <BlizzardApi.ProfessionSkillTier>await getBlizzardAPIResponse(region, {
             'namespace': 'static-us',
             'locale': 'en_US'
         },
@@ -311,7 +308,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         const profession_recipe_uri = `/data/wow/recipe/${recipe_id}`;
         //crafted_item.name crafted_item.id / reagents[array].name reagents[array].id reagents[array].quantity
 
-        const result = <BlizzardApi.Recipe>await getBlizzardAPIResponse(region, await getAuthorizationToken(region), {
+        const result = <BlizzardApi.Recipe>await getBlizzardAPIResponse(region, {
             'namespace': 'static-us',
             'locale': 'en_US'
         },
@@ -709,7 +706,6 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         const auction_house_fetch_uri = `/data/wow/connected-realm/${server_id}/auctions`;
         const ah = <BlizzardApi.Auctions>await getBlizzardAPIResponse(
             server_region,
-            await getAuthorizationToken(server_region),
             {
                 'namespace': 'dynamic-us',
                 'locale': 'en_US'
