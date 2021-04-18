@@ -28,7 +28,6 @@ if (process.env.DATABASE_TYPE === 'sqlite3') {
 const db = CPCDb(db_conf, logger);
 const api = CPCApi(logger);
 const cache = await CPCCache(db);
-const inst = await CPCInstance(logger, cache, api);
 const ah = await CPCAuctionHistory(db, logger, api, cache);
 
 app.use(express.urlencoded({ extended: false }));
@@ -68,12 +67,16 @@ app.post('/json_output', (req, res) => {
         logger.debug(`JSON search for item: ${config.item_id}, server: ${config.realm_name}, region: ${config.realm_region}, professions: ${config.professions}. JSON DATA: ${json_data.inventory.length}`);
     }
 
-    if (config !== undefined) {
-        inst.runWithJSONConfig(config).then((data) => {
-            const { intermediate } = data;
-            res.json(intermediate);
-        });
-    }
+
+    CPCInstance(logger, cache, api).then((instance) => {
+        if (config !== undefined) {
+            instance.runWithJSONConfig(config).then((data) => {
+                const { intermediate } = data;
+                res.json(intermediate);
+            });
+        }
+    });
+
 });
 
 app.post('/auction_history', (req, res) => {
