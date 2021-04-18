@@ -6,7 +6,7 @@ import { CPCCache, static_sources } from './cached-data-sources.js';
 import './hourly-injest.js';
 import { validateProfessions } from './validateProfessions.js';
 import { getRegionCode } from './getRegionCode.js';
-import { DB } from './database.js';
+import { CPCDb } from './database.js';
 import { CPCApi } from './blizzard-api-call.js';
 import {CPCInstance} from './wow_crafting_profits.js';
 import { CPCAuctionHistory } from './auction-history.js';
@@ -25,7 +25,7 @@ if (process.env.DATABASE_TYPE === 'sqlite3') {
         auction_fn: process.env.HISTORY_DB_FN !== undefined ? process.env.HISTORY_DB_FN : './databases/historical_auctions.db'
     };
 }
-const db = DB(db_conf, logger);
+const db = CPCDb(db_conf, logger);
 const api = CPCApi(logger);
 const cache = await CPCCache(db);
 const inst = await CPCInstance(logger, cache, api);

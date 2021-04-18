@@ -1,7 +1,7 @@
 import { CPCAuctionHistory } from './auction-history.js';
 import { CPCApi } from './blizzard-api-call.js';
 import { CPCCache } from './cached-data-sources.js';
-import { DB } from './database.js';
+import { CPCDb } from './database.js';
 import { parentLogger } from './logging.js';
 
 const logger = parentLogger.child({});
@@ -42,7 +42,7 @@ switch (server_mode) {
                     auction_fn: process.env.HISTORY_DB_FN !== undefined ? process.env.HISTORY_DB_FN : './databases/historical_auctions.db'
                 };
             }
-            const db = DB(db_conf, logger);
+            const db = CPCDb(db_conf, logger);
             const api = CPCApi(logger);
             const cache = await CPCCache(db);
             const ah = await CPCAuctionHistory(db, logger, api, cache);
@@ -61,7 +61,7 @@ switch (server_mode) {
                     auction_fn: process.env.HISTORY_DB_FN !== undefined ? process.env.HISTORY_DB_FN : './databases/historical_auctions.db'
                 };
             }
-            const db = DB(db_conf, logger);
+            const db = CPCDb(db_conf, logger);
             const api = CPCApi(logger);
             const cache = await CPCCache(db);
             const ah = await CPCAuctionHistory(db, logger, api, cache);

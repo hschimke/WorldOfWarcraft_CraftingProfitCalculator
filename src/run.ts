@@ -2,7 +2,7 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { CPCApi } from './blizzard-api-call.js';
 import { CPCCache } from './cached-data-sources.js';
-import { DB } from './database.js';
+import { CPCDb } from './database.js';
 import { parentLogger } from './logging.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { validateProfessions } from "./validateProfessions.js";
@@ -118,7 +118,7 @@ if (process.env.DATABASE_TYPE === 'sqlite3') {
     };
 }
 const log = parentLogger.child({})
-const db = DB(db_conf, log);
+const db = CPCDb(db_conf, log);
 const api = CPCApi(log);
 const cache = await CPCCache(db);
 const inst = await CPCInstance(log, cache, api);

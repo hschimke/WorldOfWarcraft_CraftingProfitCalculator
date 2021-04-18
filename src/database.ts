@@ -60,7 +60,7 @@ const cache_sql_run_at_open_sq3 = [
     pragma_sync,
     pragma_journal];
 
-function DB(config: DatabaseConfig, logging: Logger): CPCDB {
+function CPCDb(config: DatabaseConfig, logging: Logger): CPCDB {
     const db_type = config.type;
 
     function sqlToString(sql: string, values?: Array<string | number | boolean | null>): string {
@@ -257,4 +257,4 @@ function DB(config: DatabaseConfig, logging: Logger): CPCDB {
     });
 }
 
-export { DB };
+export { CPCDb };
