@@ -12,21 +12,19 @@ let standalone_container_abc: NodeJS.Timeout | undefined = undefined;
 
 //await addRealmToScanList('hyjal','us');
 
-async function job(ah: CPCAuctionHistory) {
+function job(ah: CPCAuctionHistory) {
     logger.info('Starting hourly injest job.');
-    //const run_list = [];
 
-    await ah.scanRealms();
-
-    if ((new Date()).getHours() === 4) {
-        logger.info('Performing daily archive.');
-        await ah.archiveAuctions();
-    }
-
-    await ah.fillNItems(20);
-
-    //await Promise.all(run_list);
-    logger.info('Finished hourly injest job.');
+    ah.scanRealms().then(() => {
+        return ah.fillNItems(20);
+    }).then(() => {
+        if ((new Date()).getHours() === 4) {
+            logger.info('Performing daily archive.');
+            ah.archiveAuctions();
+        }
+    }).finally(() => {
+        logger.info('Finished hourly injest job.');
+    })
 }
 
 switch (server_mode) {
@@ -65,7 +63,7 @@ switch (server_mode) {
             const api = CPCApi(logger);
             const cache = await CPCCache(db);
             const ah = await CPCAuctionHistory(db, logger, api, cache);
-            standalone_container_abc = setInterval(() => { job(ah) }, 3.6e+6, ah);
+            standalone_container_abc = setInterval(() => { job(ah) }, 3.6e+6);
             standalone_container_abc.unref();
             break;
         }
