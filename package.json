@@ -4,7 +4,6 @@
 	"description": "An application to determine the profitability of a crafted item on the public auction house.",
 	"main": "dist/wow_crafting_profits.js",
 	"scripts": {
-		"prepare": "tsc",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"fill-cache": "tsc && node -r dotenv/config ./dist/run.js --item 'simple wood'",
 		"clear-cache": "rm ./cache/cache.db",
