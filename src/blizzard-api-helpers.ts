@@ -17,7 +17,7 @@ const PROFESSION_LIST_CACHE = 'regional_profession_list';
 const COMPOSITE_REALM_NAME_CACHE = 'connected_realm_detail';
 const CYCLIC_LINK_CACHE = 'cyclic_links';
 
-function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi) : CPCApiHelpers {
+function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHelpers {
     const logger = logging;
     const { cacheCheck, cacheGet, cacheSet } = cache;
     const { getBlizzardAPIResponse, getBlizzardRawUriResponse } = api;

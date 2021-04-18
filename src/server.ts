@@ -1,5 +1,5 @@
-import {default as express} from 'express';
-import {resolve} from 'path';
+import { default as express } from 'express';
+import { resolve } from 'path';
 import { RunConfiguration } from './RunConfiguration.js';
 import { parentLogger } from './logging.js';
 import { CPCCache, static_sources } from './cached-data-sources.js';
@@ -8,7 +8,7 @@ import { validateProfessions } from './validateProfessions.js';
 import { getRegionCode } from './getRegionCode.js';
 import { CPCDb } from './database.js';
 import { CPCApi } from './blizzard-api-call.js';
-import {CPCInstance} from './wow_crafting_profits.js';
+import { CPCInstance } from './wow_crafting_profits.js';
 import { CPCAuctionHistory } from './auction-history.js';
 
 const logger = parentLogger.child({});
@@ -29,7 +29,7 @@ const db = CPCDb(db_conf, logger);
 const api = CPCApi(logger);
 const cache = await CPCCache(db);
 const inst = await CPCInstance(logger, cache, api);
-const ah = await CPCAuctionHistory(db,logger,api,cache);
+const ah = await CPCAuctionHistory(db, logger, api, cache);
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());

@@ -67,7 +67,7 @@ async function static_sources(init?: StaticCacheConfig): Promise<StaticSources> 
     return context;
 }
 
-async function CPCCache(database: CPCDB) : Promise<CPCCache> {
+async function CPCCache(database: CPCDB): Promise<CPCCache> {
     const db = await database.getDb('cache');
 
     /**

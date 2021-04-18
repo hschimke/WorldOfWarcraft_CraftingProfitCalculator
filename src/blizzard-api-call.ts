@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import got from 'got';
 import { Logger } from 'winston';
 
-function CPCApi(logging : Logger, config?: ApiConfig) : CPCApi {
+function CPCApi(logging: Logger, config?: ApiConfig): CPCApi {
     const logger = logging;
 
     let allowed_connections_per_period = 100;

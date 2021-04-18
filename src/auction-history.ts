@@ -10,7 +10,7 @@ const sql_insert_realm = 'INSERT INTO realms(connected_realm_id, name, region) V
 const sql_check_item = 'SELECT COUNT(*) AS how_many FROM items WHERE item_id = $1 AND region = $2';
 const sql_check_realm = 'SELECT COUNT(*) AS how_many FROM realms WHERE connected_realm_id = $1 AND region = $2';
 
-async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, cache: CPCCache) : Promise<CPCAuctionHistory> {
+async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, cache: CPCCache): Promise<CPCAuctionHistory> {
     const logger = logging;
     const db = await database.getDb('history');
     const db_type = db.db_type;
