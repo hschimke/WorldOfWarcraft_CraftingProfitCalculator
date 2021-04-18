@@ -1,16 +1,16 @@
 import { default as express } from 'express';
 import { resolve } from 'path';
-import { RunConfiguration } from './RunConfiguration.js';
-import { parentLogger } from './logging.js';
-import { CPCCache, static_sources } from './cached-data-sources.js';
-import './hourly-injest.js';
-import { validateProfessions } from './validateProfessions.js';
-import { getRegionCode } from './getRegionCode.js';
-import { CPCDb } from './database.js';
-import { CPCApi } from './blizzard-api-call.js';
-import { CPCInstance } from './wow_crafting_profits.js';
 import { CPCAuctionHistory } from './auction-history.js';
+import { CPCApi } from './blizzard-api-call.js';
 import { ApiAuthorization } from './blizz_oath.js';
+import { CPCCache, static_sources } from './cached-data-sources.js';
+import { CPCDb } from './database.js';
+import { getRegionCode } from './getRegionCode.js';
+import './hourly-injest.js';
+import { parentLogger } from './logging.js';
+import { RunConfiguration } from './RunConfiguration.js';
+import { validateProfessions } from './validateProfessions.js';
+import { CPCInstance } from './wow_crafting_profits.js';
 
 const logger = parentLogger.child({});
 

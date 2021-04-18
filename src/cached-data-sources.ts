@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
-import { parentLogger } from './logging.js';
 import got from 'got';
 import { resolve } from 'path';
+import { parentLogger } from './logging.js';
 
 const logger = parentLogger.child({});
 let cache_loaded = false;
@@ -161,4 +161,5 @@ async function CPCCache(database: CPCDB): Promise<CPCCache> {
 export {
     static_sources,
     CPCCache
-}
+};
+

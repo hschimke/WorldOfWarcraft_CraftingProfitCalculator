@@ -1,5 +1,5 @@
-import { default as sqlite3 } from 'sqlite3';
 import { default as pg } from 'pg';
+import { default as sqlite3 } from 'sqlite3';
 import { Logger } from 'winston';
 const { Pool } = pg;
 

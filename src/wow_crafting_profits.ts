@@ -1,10 +1,10 @@
 import { promises as fs } from 'fs';
-import { CPCApiHelpers } from './blizzard-api-helpers.js';
-import { textFriendlyOutputFormat } from './text-output-helpers.js';
-import { RunConfiguration } from './RunConfiguration.js';
-import { getRegionCode } from './getRegionCode.js';
 import { Logger } from 'winston';
+import { CPCApiHelpers } from './blizzard-api-helpers.js';
 import { static_sources } from './cached-data-sources.js';
+import { getRegionCode } from './getRegionCode.js';
+import { RunConfiguration } from './RunConfiguration.js';
+import { textFriendlyOutputFormat } from './text-output-helpers.js';
 
 async function CPCInstance(logging: Logger, cache: CPCCache, api: CPCApi) {
     const logger = logging;

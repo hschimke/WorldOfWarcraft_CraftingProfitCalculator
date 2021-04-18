@@ -1,6 +1,5 @@
 import got from 'got';
 import { Logger } from 'winston';
-import { parentLogger } from './logging.js';
 
 function ApiAuthorization(client_id: string | undefined, client_secret: string | undefined, logger: Logger): ApiAuthorization {
 

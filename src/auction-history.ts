@@ -1,6 +1,6 @@
-import { ALL_PROFESSIONS } from './shared-constants.js';
 import { Logger } from 'winston';
 import { CPCApiHelpers } from './blizzard-api-helpers.js';
+import { ALL_PROFESSIONS } from './shared-constants.js';
 
 const sql_insert_auction = 'INSERT INTO auctions(item_id, quantity, price, downloaded, connected_realm_id, bonuses) VALUES($1,$2,$3,$4,$5,$6)';
 const sql_insert_auction_archive = 'INSERT INTO auction_archive(item_id, quantity, summary, downloaded, connected_realm_id, bonuses) VALUES($1,$2,$3,$4,$5,$6)';
