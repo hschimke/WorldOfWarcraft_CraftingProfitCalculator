@@ -66,8 +66,10 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
 
         await client.query('BEGIN TRANSACTION');
 
+        type HowMany = { how_many: number };
+
         for (const item of item_set) {
-            const result = (await client.query(sql_check_item, [item, region])).rows[0];
+            const result = (await client.query<HowMany>(sql_check_item, [item, region])).rows[0];
 
             let found = false;
             if (result.how_many > 0) {
@@ -81,7 +83,7 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
             }
         }
 
-        const result = (await client.query(sql_check_realm, [connected_realm, region.toUpperCase()])).rows[0];
+        const result = (await client.query<HowMany>(sql_check_realm, [connected_realm, region.toUpperCase()])).rows[0];
 
         let found = false;
         if (result.how_many > 0) {
@@ -140,7 +142,8 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
         const select_sql = 'SELECT item_id, region FROM items WHERE name ISNULL LIMIT $1';
         const update_sql = 'UPDATE items SET name = $1, craftable = $2 WHERE item_id = $3 AND region = $4';
         const client = await db.getClient();
-        const rows = (await client.query(select_sql, [fill_count])).rows;
+        type ItemRow = { item_id: number, region: RegionCode }
+        const rows = (await client.query<ItemRow>(select_sql, [fill_count])).rows;
         await client.query('BEGIN TRANSACTION');
         for (const item of rows) {
             try {
@@ -401,12 +404,18 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
 
         let count = 0;
 
+        type Oldest = { oldest: number };
+        type DistinctRows = { item_id: number, bonuses: string, connected_realm_id: number };
+        type Min = { min_price: number };
+        type Max = { max_price: number };
+        type Average = { avg_price: number };
+
         await client.query('BEGIN TRANSACTION', []);
 
         let running = true;
         while (running) {
             // Get oldest downloaded
-            const current_oldest = Number((await client.query(sql_get_downloaded_oldest, [])).rows[0].oldest);
+            const current_oldest = Number((await client.query<Oldest>(sql_get_downloaded_oldest, [])).rows[0].oldest);
             //console.log((await client.query(sql_get_downloaded_oldest, [])).rows[0].oldest);
             logger.debug(`Current oldest is ${(new Date(current_oldest)).toLocaleString()}`);
             // Check if oldest fits our criteria
@@ -417,16 +426,16 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
                 logger.info(`Scan between ${(new Date(start_ticks)).toLocaleString()} and ${(new Date(end_ticks)).toLocaleString()}`);
                 // Run for that day
                 // Get a list of all distinct item/server combinations
-                const items = (await client.query(sql_get_distinct_rows_from_downloaded, [start_ticks, end_ticks])).rows;
+                const items = (await client.query<DistinctRows>(sql_get_distinct_rows_from_downloaded, [start_ticks, end_ticks])).rows;
                 for (const item of items) {
                     const vals = [item.item_id, item.bonuses, item.connected_realm_id, start_ticks, end_ticks];
 
                     // Run the getAuctions command for the combo
                     const summary: AuctionPriceSummaryRecord = {
-                        data: (await client.query(sql_price_map, vals)).rows,
-                        min_value: (await client.query(sql_min, vals)).rows[0].min_price,
-                        max_value: (await client.query(sql_max, vals)).rows[0].max_price,
-                        avg_value: (await client.query(sql_avg, vals)).rows[0].avg_price
+                        data: (await client.query<SalesCountSummaryPrice>(sql_price_map, vals)).rows,
+                        min_value: (await client.query<Min>(sql_min, vals)).rows[0].min_price,
+                        max_value: (await client.query<Max>(sql_max, vals)).rows[0].max_price,
+                        avg_value: (await client.query<Average>(sql_avg, vals)).rows[0].avg_price
                     }
 
                     let quantity = 0;

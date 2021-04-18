@@ -144,11 +144,9 @@ interface DatabaseConfig {
 
 type CPCDB = Readonly<{ getDb: (db_name: string) => Promise<DatabaseManagerFunction>, shutdown: () => void }>;
 
-type DatabaseReturn<RowFormat> = RowFormat[];
-
 type DatabaseClientFunction = {
     release: () => void;
-    query: (query: string, values?: Array<string | number | boolean | null>) => Promise<any>;
+    query: <Row>(query: string, values?: Array<string | number | boolean | null>) => Promise<{ rows: Row[] }>;
     (): void;
 }
 type DatabaseManagerFunction = {
