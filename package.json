@@ -1,6 +1,6 @@
 {
 	"name": "worldofwarcraft_craftingprofitcalculator",
-	"version": "0.5.1",
+	"version": "0.5.2",
 	"description": "An application to determine the profitability of a crafted item on the public auction house.",
 	"main": "dist/wow_crafting_profits.js",
 	"scripts": {
