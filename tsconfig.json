@@ -7,7 +7,8 @@
     "allowSyntheticDefaultImports": true,
     "declaration": true,
     "sourceMap": true,
-    "strict": true
+    "strict": true,
+    "removeComments": true
   },
   "include": [
     "./src/**/*"

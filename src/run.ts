@@ -8,6 +8,8 @@ import { parentLogger } from './logging.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { validateProfessions } from "./validateProfessions.js";
 import { CPCInstance } from './wow_crafting_profits.js';
+import {default as winston} from 'winston';
+import {createWriteStream} from 'fs';
 
 //blacksmithing
 //const test_item = 171414;
@@ -119,6 +121,14 @@ if (process.env.DATABASE_TYPE === 'sqlite3') {
     };
 }
 const log = parentLogger.child({})
+
+/*log.add(new winston.transports.Stream({
+    stream: createWriteStream('raw_logger'),
+    format: winston.format.simple(),
+        level: 'silly',
+    }
+));*/
+
 const db = CPCDb(db_conf, log);
 const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, log);
 const api = CPCApi(log, auth);
