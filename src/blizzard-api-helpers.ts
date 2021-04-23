@@ -236,7 +236,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
             return cacheGet(PROFESSION_DETAIL_CACHE, key);
         }
 
-        const profession_detail_uri = `/data/wow/profession/${profession_id}`; // skill_tiers.name skill_tiers.id
+        const profession_detail_uri = `/data/wow/profession/${profession_id}`;
         const result = <BlizzardApi.Profession>await getBlizzardAPIResponse(region, {
             'namespace': 'static-us',
             'locale': 'en_US'

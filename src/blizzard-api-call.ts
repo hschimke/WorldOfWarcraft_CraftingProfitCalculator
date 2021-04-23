@@ -95,7 +95,8 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
                     'Connection': 'keep-alive',
                     'Authorization': `Bearer ${(await api_auth.getAuthorizationToken(region_code)).access_token}`
                 },
-                searchParams: data
+                searchParams: data,
+                retry: 2
             }).json();
             in_use--;
             return <BlizzardApi.BlizzardApiReponse>api_response;
@@ -132,7 +133,7 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
                 method: 'GET',
                 headers: {
                     'Connection': 'keep-alive',
-                    'Authorization': `Bearer ${(await api_auth.getAuthorizationToken(region)).access_token}}`
+                    'Authorization': `Bearer ${(await api_auth.getAuthorizationToken(region)).access_token}`
                 },
                 searchParams: data
             }).json();

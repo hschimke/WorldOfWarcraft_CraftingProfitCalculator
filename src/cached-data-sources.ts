@@ -76,7 +76,7 @@ async function CPCCache(database: CPCDB): Promise<CPCCache> {
  * @param {!string} key The key to check.
  * @param {?number} expiration_period Optionally check if the key has expired.
  */
-    async function cacheCheck(namespace: string, key: string | number, expiration_period?: number | null): Promise<boolean> {
+    async function cacheCheck(namespace: string, key: string | number, expiration_period?: number | undefined): Promise<boolean> {
         //const db = await getDb('cache');
         //logger.profile('cacheGet');
         //const query = 'select namespace, key, value, cached from key_values where namespace = ? and key = ?';
