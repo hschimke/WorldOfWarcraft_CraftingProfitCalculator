@@ -2,7 +2,8 @@
 	"name": "worldofwarcraft_craftingprofitcalculator",
 	"version": "0.6.0",
 	"description": "An application to determine the profitability of a crafted item on the public auction house.",
-	"main": "dist/wow_crafting_profits.js",
+	"main": "dist/run.js",
+	"exports": "./index.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"fill-cache": "tsc --build tsconfig.json && node -r dotenv/config ./dist/run.js --item 'simple wood'",
