@@ -3,7 +3,7 @@ import { hideBin } from 'yargs/helpers';
 import { CPCApi } from './blizzard-api-call.js';
 import { ApiAuthorization } from './blizz_oath.js';
 import { CPCCache } from './cached-data-sources.js';
-import { CPCDb } from './database.js';
+import { CPCDb } from './database/database.js';
 import { parentLogger } from './logging.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { validateProfessions } from "./validateProfessions.js";
