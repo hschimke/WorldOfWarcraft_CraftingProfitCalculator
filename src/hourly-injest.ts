@@ -8,6 +8,7 @@ import { parentLogger } from './logging.js';
 const logger = parentLogger.child({});
 
 const server_mode = process.env.STANDALONE_CONTAINER === undefined ? 'normal' : process.env.STANDALONE_CONTAINER;
+const include_auction_history: boolean = process.env.DISABLE_AUCTION_HISTORY !== undefined && process.env.DISABLE_AUCTION_HISTORY === 'true' ? false : true;
 
 let standalone_container_abc: NodeJS.Timeout | undefined = undefined;
 
@@ -28,50 +29,53 @@ function job(ah: CPCAuctionHistory) {
     })
 }
 
-switch (server_mode) {
-    case 'hourly':
-        {
-            logger.info('Started in default mode. Running job and exiting.');
-            const db_conf: DatabaseConfig = {
-                type: process.env.DATABASE_TYPE !== undefined ? process.env.DATABASE_TYPE : ''
+
+if (include_auction_history) {
+    switch (server_mode) {
+        case 'hourly':
+            {
+                logger.info('Started in default mode. Running job and exiting.');
+                const db_conf: DatabaseConfig = {
+                    type: process.env.DATABASE_TYPE !== undefined ? process.env.DATABASE_TYPE : ''
+                }
+                if (process.env.DATABASE_TYPE === 'sqlite3') {
+                    db_conf.sqlite3 = {
+                        cache_fn: process.env.CACHE_DB_FN !== undefined ? process.env.CACHE_DB_FN : './databases/cache.db',
+                        auction_fn: process.env.HISTORY_DB_FN !== undefined ? process.env.HISTORY_DB_FN : './databases/historical_auctions.db'
+                    };
+                }
+                const db = CPCDb(db_conf, logger);
+                const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, logger);
+                const api = CPCApi(logger, auth);
+                const cache = await CPCCache(db);
+                const ah = await CPCAuctionHistory(db, logger, api, cache);
+                job(ah);
+                break;
             }
-            if (process.env.DATABASE_TYPE === 'sqlite3') {
-                db_conf.sqlite3 = {
-                    cache_fn: process.env.CACHE_DB_FN !== undefined ? process.env.CACHE_DB_FN : './databases/cache.db',
-                    auction_fn: process.env.HISTORY_DB_FN !== undefined ? process.env.HISTORY_DB_FN : './databases/historical_auctions.db'
-                };
+        case 'standalone':
+            {
+                logger.info('Started in standalone container mode. Scheduling hourly job.');
+                const db_conf: DatabaseConfig = {
+                    type: process.env.DATABASE_TYPE !== undefined ? process.env.DATABASE_TYPE : ''
+                }
+                if (process.env.DATABASE_TYPE === 'sqlite3') {
+                    db_conf.sqlite3 = {
+                        cache_fn: process.env.CACHE_DB_FN !== undefined ? process.env.CACHE_DB_FN : './databases/cache.db',
+                        auction_fn: process.env.HISTORY_DB_FN !== undefined ? process.env.HISTORY_DB_FN : './databases/historical_auctions.db'
+                    };
+                }
+                const db = CPCDb(db_conf, logger);
+                const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, logger);
+                const api = CPCApi(logger, auth);
+                const cache = await CPCCache(db);
+                const ah = await CPCAuctionHistory(db, logger, api, cache);
+                standalone_container_abc = setInterval(() => { job(ah) }, 3.6e+6);
+                standalone_container_abc.unref();
+                break;
             }
-            const db = CPCDb(db_conf, logger);
-            const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, logger);
-            const api = CPCApi(logger, auth);
-            const cache = await CPCCache(db);
-            const ah = await CPCAuctionHistory(db, logger, api, cache);
-            job(ah);
+        case 'normal':
+        default:
+            logger.info('Started in normal mode taking no action.');
             break;
-        }
-    case 'standalone':
-        {
-            logger.info('Started in standalone container mode. Scheduling hourly job.');
-            const db_conf: DatabaseConfig = {
-                type: process.env.DATABASE_TYPE !== undefined ? process.env.DATABASE_TYPE : ''
-            }
-            if (process.env.DATABASE_TYPE === 'sqlite3') {
-                db_conf.sqlite3 = {
-                    cache_fn: process.env.CACHE_DB_FN !== undefined ? process.env.CACHE_DB_FN : './databases/cache.db',
-                    auction_fn: process.env.HISTORY_DB_FN !== undefined ? process.env.HISTORY_DB_FN : './databases/historical_auctions.db'
-                };
-            }
-            const db = CPCDb(db_conf, logger);
-            const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, logger);
-            const api = CPCApi(logger, auth);
-            const cache = await CPCCache(db);
-            const ah = await CPCAuctionHistory(db, logger, api, cache);
-            standalone_container_abc = setInterval(() => { job(ah) }, 3.6e+6);
-            standalone_container_abc.unref();
-            break;
-        }
-    case 'normal':
-    default:
-        logger.info('Started in normal mode taking no action.');
-        break;
+    }
 }

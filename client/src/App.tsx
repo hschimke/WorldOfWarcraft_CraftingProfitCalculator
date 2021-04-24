@@ -22,9 +22,11 @@ function App() {
             <li>
               <Link to="/">Profit Calculator</Link>
             </li>
-            <li>
-              <Link to="/auctions">Auction Price History</Link>
-            </li>
+            {(process.env.REACT_APP_DISABLE_AUCTIONS !== 'true') &&
+              <li>
+                <Link to="/auctions">Auction Price History</Link>
+              </li>
+            }
           </ul>
         </div>
         <div className="Main">
