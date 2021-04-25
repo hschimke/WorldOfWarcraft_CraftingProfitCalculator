@@ -2,7 +2,7 @@ import { CPCAuctionHistory } from './auction-history.js';
 import { CPCApi } from './blizzard-api-call.js';
 import { ApiAuthorization } from './blizz_oath.js';
 import { CPCCache } from './cached-data-sources.js';
-import { CPCDb } from './database.js';
+import { CPCDb } from './database/database.js';
 import { parentLogger } from './logging.js';
 
 const logger = parentLogger.child({});

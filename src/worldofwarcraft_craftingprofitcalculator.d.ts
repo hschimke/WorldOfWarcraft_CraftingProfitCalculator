@@ -150,8 +150,8 @@ type DatabaseClientFunction = {
     (): void;
 }
 type DatabaseManagerFunction = {
-    db: any;
-    pool: any;
+    //db: any;
+    //pool: any;
     db_type: string;
     get: <Row>(query: string, values?: Array<string | number | boolean | null>) => Promise<Row>;
     run: (query: string, values?: Array<string | number | boolean | null>) => Promise<void>;
@@ -161,6 +161,14 @@ type DatabaseManagerFunction = {
     getClient: () => Promise<DatabaseClientFunction>;
     (): void;
 };
+
+type Sqlite3DatabaseManagerFunction = {
+    db: any;
+} & DatabaseManagerFunction;
+
+type PostgresDatabaseManagerFunction = {
+    pool: any;
+} & DatabaseManagerFunction;
 
 // wow_crafting_profits.ts
 interface AHItemPriceObject {
