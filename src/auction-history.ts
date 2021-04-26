@@ -388,6 +388,7 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
     async function archiveAuctions(): Promise<void> {
         const backstep_time_diff = (6.048e+8); // One Week
         //const backstep_time_diff = 1.21e+9; // Two weeks
+        const delete_diff = 1.21e+9; // two weeks
         const day_diff = 8.64e+7;
         const backstep_time = Date.now() - backstep_time_diff;
 
@@ -457,6 +458,13 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
                 logger.info(`Finished archive task. Archived ${count} records`);
             }
         }
+
+        const delete_backstep = Date.now() - delete_diff;
+        const delete_auctions_older = 'DELETE FROM auctions WHERE downloaded < $1';
+        const delete_archive_older = 'DELETE FROM auction_archive WHERE downloaded < $1';
+
+        client.query(delete_auctions_older,[delete_backstep]);
+        client.query(delete_archive_older,[delete_backstep]);
 
         await client.query('COMMIT TRANSACTION', []);
         client.release();
