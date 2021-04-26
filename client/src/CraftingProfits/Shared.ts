@@ -29,7 +29,11 @@ function validateAndCleanProfessions(profession_list: string[] | string): Charac
     } else {
         const return_single = validateAndCleanProfessions([profession_list]);
         if (return_single !== undefined && return_single.length > 0) {
-            return return_single;
+            if (Array.isArray(return_single)) {
+                return return_single[0];
+            } else {
+                return return_single;
+            }
         }
     }
 }

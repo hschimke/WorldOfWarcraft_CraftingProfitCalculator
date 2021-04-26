@@ -36,6 +36,7 @@ const formDataReducer = (state: RunCoordinatorFormDataReducerState, action: RunC
             return { ...state, realm: action.value };
         case 'professions':
             const cleaned_prof = validateAndCleanProfessions(action.value);
+            console.log(cleaned_prof);
             if (cleaned_prof !== undefined && !Array.isArray(cleaned_prof)) {
                 const index = state.professions.indexOf(cleaned_prof);
                 const new_profs = state.professions.slice();
