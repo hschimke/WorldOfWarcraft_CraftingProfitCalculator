@@ -1,4 +1,6 @@
-FROM node:15-alpine
+FROM node:16-alpine
+
+RUN apk add zip
 
 ENV LOG_LEVEL=debug SERVER_PORT=8080 CACHE_DB_FN="./databases/cache.db" HISTORY_DB_FN="./databases/historical_auctions.db" DATABASE_TYPE=sqlit3 STANDALONE_CONTAINER=standalone DOCKERIZED=true
 
@@ -20,6 +22,8 @@ WORKDIR /usr/src/wow_cpc
 COPY . .
 
 RUN npm run build
+
+RUN zip -r ./html/CraftingProfitCalculator_data.zip wow-addon/CraftingProfitCalculator_data
 
 WORKDIR /usr/src/wow_cpc/client
 RUN npm run build && mv ./build ../html
