@@ -103,58 +103,60 @@ function Auctions(props: AuctionsProps) {
     let bubble_chart_data: (string | number | Date)[][] = [['ID', 'Auctions', 'Price', 'Quantity']];
     let bar_chart_data: (string | number | Date)[][] = [['Fetch', 'High', 'Low', 'Average']];
     let volume_chart_data: (string | number | Date)[][] = [['Date', 'Qauntity']];
-    if (!(apiState.isLoading || apiState.isError) && apiState.data !== undefined) {
-        const data = apiState.data;
-        if (data.ERROR === undefined) {
+    try {
+        if (!(apiState.isLoading || apiState.isError) && apiState.data !== undefined) {
+            const data = apiState.data;
+            if (data.ERROR === undefined) {
 
-            const latest = data.price_map[data.latest];
+                const latest = data.price_map[data.latest];
 
-            //bubble_chart_data = [['ID', 'Auctions', 'Price', 'Quantity']];
-            if (latest.data !== undefined) {
-                latest.data.forEach(element => {
-                    bubble_chart_data.push(['', Number(element.sales_at_price), Number(element.price), Number(element.quantity_at_price)]);
+                //bubble_chart_data = [['ID', 'Auctions', 'Price', 'Quantity']];
+                if (latest.data !== undefined) {
+                    latest.data.forEach(element => {
+                        bubble_chart_data.push(['', Number(element.sales_at_price), Number(element.price), Number(element.quantity_at_price)]);
+                    });
+                }
+
+                //bar_chart_data = [['Fetch', 'High', 'Low', 'Average']];
+                Object.keys(data.price_map).forEach(key => {
+                    const element = data.price_map[key];
+                    bar_chart_data.push([new Date(Number(key)), Number(element.max_value), Number(element.min_value), Number(element.avg_value)]);
                 });
-            }
 
-            //bar_chart_data = [['Fetch', 'High', 'Low', 'Average']];
-            Object.keys(data.price_map).forEach(key => {
-                const element = data.price_map[key];
-                bar_chart_data.push([new Date(Number(key)), Number(element.max_value), Number(element.min_value), Number(element.avg_value)]);
-            });
-
-            //volume_chart_data = [['Date', 'Qauntity']];
-            Object.keys(data.price_map).forEach(key => {
-                let sales_by_key = 0;
-                const price_map_for_key = data.price_map[key];
-                if (price_map_for_key.data !== undefined) {
-                    price_map_for_key.data.forEach(element => {
-                        sales_by_key += Number(element.quantity_at_price);
-                    });
-                }
-                volume_chart_data.push([new Date(Number(key)), sales_by_key]);
-            });
-
-            // Handle Archives
-            for (const archive_row of data.archives) {
-                bar_chart_data.push([new Date(Number(archive_row.timestamp)), Number(archive_row.max_value), Number(archive_row.min_value), Number(archive_row.avg_value)])
-                {
+                //volume_chart_data = [['Date', 'Qauntity']];
+                Object.keys(data.price_map).forEach(key => {
                     let sales_by_key = 0;
-                    archive_row.data.forEach(element => {
-                        sales_by_key += Number(element.quantity_at_price);
-                    });
-                    volume_chart_data.push([new Date(Number(archive_row.timestamp)), (sales_by_key / 24)]);
+                    const price_map_for_key = data.price_map[key];
+                    if (price_map_for_key.data !== undefined) {
+                        price_map_for_key.data.forEach(element => {
+                            sales_by_key += Number(element.quantity_at_price);
+                        });
+                    }
+                    volume_chart_data.push([new Date(Number(key)), sales_by_key]);
+                });
+
+                // Handle Archives
+                for (const archive_row of data.archives) {
+                    bar_chart_data.push([new Date(Number(archive_row.timestamp)), Number(archive_row.max_value), Number(archive_row.min_value), Number(archive_row.avg_value)])
+                    {
+                        let sales_by_key = 0;
+                        archive_row.data.forEach(element => {
+                            sales_by_key += Number(element.quantity_at_price);
+                        });
+                        volume_chart_data.push([new Date(Number(archive_row.timestamp)), (sales_by_key / 24)]);
+                    }
                 }
+
+                chart_ready = true;
             }
-
-            chart_ready = true;
         }
-    }
 
-    if (apiState.data !== undefined) {
-        const latest_price_data = apiState.data.price_map[apiState.data.latest];
-        const historical_price_data = apiState.data;
-        const current_price_data = apiState.data.price_map[apiState.data.latest].data;
-    }
+        if (apiState.data !== undefined) {
+            const latest_price_data = apiState.data.price_map[apiState.data.latest];
+            const historical_price_data = apiState.data;
+            const current_price_data = apiState.data.price_map[apiState.data.latest].data;
+        }
+    }catch{}
 
 
     // https://react-google-charts.com/scatter-chart

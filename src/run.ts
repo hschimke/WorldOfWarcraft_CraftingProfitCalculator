@@ -22,7 +22,7 @@ import {createWriteStream} from 'fs';
 // Bracers
 //173249
 
-const argv = yargs(hideBin(process.argv))
+const parser = yargs(hideBin(process.argv))
     .option('region', {
         description: 'Region',
         alias: 'r',
@@ -61,12 +61,13 @@ const argv = yargs(hideBin(process.argv))
     })
     .command('json', 'Use JSON to configure region, realm, and professions')
     .help()
-    .alias('help', 'h')
-    .argv;
+    .alias('help', 'h');
 
 let character_config_json: AddonData = { inventory: [], realm: { realm_name: '', region_name: '' }, professions: [] };
 
-let region = argv.region;
+const argv = await parser.argv;
+
+let region = argv['region'];
 let server = argv.server;
 let professions = argv.profession;
 let item = argv.item;
