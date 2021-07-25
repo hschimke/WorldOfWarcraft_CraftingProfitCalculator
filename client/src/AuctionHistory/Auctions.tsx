@@ -102,7 +102,8 @@ function Auctions(props: AuctionsProps) {
 
     let bubble_chart_data: (string | number | Date)[][] = [['ID', 'Auctions', 'Price', 'Quantity']];
     let bar_chart_data: (string | number | Date)[][] = [['Fetch', 'High', 'Low', 'Average']];
-    let volume_chart_data: (string | number | Date)[][] = [['Date', 'Qauntity']];
+    let volume_chart_data: (string | number | Date)[][] = [['Date', 'Quantity']];
+    let no_data_result = '';
     try {
         if (!(apiState.isLoading || apiState.isError) && apiState.data !== undefined) {
             const data = apiState.data;
@@ -156,12 +157,15 @@ function Auctions(props: AuctionsProps) {
             const historical_price_data = apiState.data;
             const current_price_data = apiState.data.price_map[apiState.data.latest].data;
         }
-    }catch{}
+    }catch{
+        no_data_result = 'No Data Found for item';
+    }
 
 
     // https://react-google-charts.com/scatter-chart
     return (
         <div className="Auctions">
+            <span className="NoDataResult">{no_data_result}</span>
             <AuctionHistoryDispatch.Provider value={dispatchFormUpdate}>
                 <form className="AuctionHistorySelector" onSubmit={handleSubmit}>
                     <label>
