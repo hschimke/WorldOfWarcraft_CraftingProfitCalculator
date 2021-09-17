@@ -6,7 +6,7 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
     const logger = logging;
 
     let allowed_connections_per_period = 100;
-    let period_reset_window = 1500;
+    let period_reset_window = 1100;
 
     if (config !== undefined) {
         if (config.connection_per_window !== undefined) {
