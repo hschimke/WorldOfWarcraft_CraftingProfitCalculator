@@ -6,7 +6,7 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
     const logger = logging;
 
     let allowed_connections_per_period = 100;
-    let period_reset_window = 1100;
+    let period_reset_window = 1500;
 
     if (config !== undefined) {
         if (config.connection_per_window !== undefined) {
@@ -96,6 +96,8 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
                     'Authorization': `Bearer ${(await api_auth.getAuthorizationToken(region_code)).access_token}`
                 },
                 searchParams: data,
+                http2: true,
+                dnsCache: true,
                 retry: 2
             }).json();
             in_use--;
@@ -135,7 +137,9 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
                     'Connection': 'keep-alive',
                     'Authorization': `Bearer ${(await api_auth.getAuthorizationToken(region)).access_token}`
                 },
-                searchParams: data
+                searchParams: data,
+                http2: true,
+                dnsCache: true
             }).json();
             in_use--;
             return <BlizzardApi.BlizzardApiReponse>api_response;

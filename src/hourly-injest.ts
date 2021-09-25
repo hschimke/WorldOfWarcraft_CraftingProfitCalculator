@@ -52,6 +52,10 @@ if (include_auction_history) {
                 job(ah);
                 break;
             }
+        case 'worker':
+            {
+                logger.info('Started as a worker thread, actions will be as if standalone but no server is running elsewhere.');
+            }
         case 'standalone':
             {
                 logger.info('Started in standalone container mode. Scheduling hourly job.');
