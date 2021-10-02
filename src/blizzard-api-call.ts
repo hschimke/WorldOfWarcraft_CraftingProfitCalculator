@@ -98,7 +98,10 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
                 searchParams: data,
                 http2: true,
                 dnsCache: true,
-                retry: 2
+                retry: 2,
+                timeout: {
+                    request: 10000
+                }
             }).json();
             in_use--;
             return <BlizzardApi.BlizzardApiReponse>api_response;
@@ -139,7 +142,11 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
                 },
                 searchParams: data,
                 http2: true,
-                dnsCache: true
+                dnsCache: true,
+                retry: 2,
+                timeout: {
+                    request: 10000
+                }
             }).json();
             in_use--;
             return <BlizzardApi.BlizzardApiReponse>api_response;

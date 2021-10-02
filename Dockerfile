@@ -31,5 +31,5 @@ RUN mkdir databases
 RUN chown -R node ./databases
 VOLUME /usr/src/wow_cpc/databases
 EXPOSE 8080
-USER node
+#USER node
 CMD ["node","./dist/server.js"]
