@@ -1,0 +1,19 @@
+version: "3"
+services:
+  wow-cpc:
+    build: .
+    image: cpc/wow_cpc-compose
+    ports:
+      - "8080:8080"
+    volumes:
+      - "./databases:/usr/src/wow_cpc/databases"
+    restart: unless-stopped
+    depends_on:
+      - "cpc-db"
+    env_file: ./production.env
+  cpc-db:
+    image: postgres:alpine
+    restart: always
+    env_file: ./pg-prod.env
+    volumes:
+      - "./databases:/var/lib/postgresql/data"

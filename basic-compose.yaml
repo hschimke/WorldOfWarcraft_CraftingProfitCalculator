@@ -1,0 +1,18 @@
+version: "3"
+services:
+  wow-cpc:
+    build: .
+    image: cpc/wow_cpc-compose
+    ports:
+      - "8080:8080"
+    volumes:
+      - "./databases:/usr/src/wow_cpc/databases"
+    restart: unless-stopped
+    environment:
+      - CLIENT_ID
+      - CLIENT_SECRET
+      - DATABASE_TYPE=sqlite3
+      - CACHE_DB_FN=./databases/c.db
+      - HISTORY_DB_FN=./databases/h.db
+      - LOG_LEVEL=debug
+      - SERVER_PORT=3001
