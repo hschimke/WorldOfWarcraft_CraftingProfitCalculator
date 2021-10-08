@@ -43,6 +43,11 @@ app.get('/', (req, res) => {
     res.sendFile(resolve('html/build/index.html'));
 });
 
+app.get('/healthcheck', (req, res) => {
+    logger.debug('Healthcheck OK');
+    res.json({ health: 'ok' });
+});
+
 app.get('*', (req, res) => {
     logger.debug('Unknown route requested');
     res.sendFile(resolve('html/build/index.html'));
