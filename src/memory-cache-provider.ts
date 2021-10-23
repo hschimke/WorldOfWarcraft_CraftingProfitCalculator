@@ -101,10 +101,15 @@ async function MemoryCache(): Promise<CPCCache> {
         }
     }
 
+    async function shutdown() {
+        return;
+    }
+
     return Object.freeze({
         cacheCheck,
         cacheGet,
-        cacheSet
+        cacheSet,
+        shutdown
     })
 }
 

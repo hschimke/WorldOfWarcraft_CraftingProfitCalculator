@@ -212,10 +212,14 @@ const server = app.listen(port, () => {
 
 process.on('SIGTERM', () => {
     logger.info('SIGTERM signal received: closing HTTP server')
+    db.shutdown();
+    cache.shutdown();
     server.close();
 });
 
 process.on('SIGINT', () => {
     logger.info('SIGINT signal received: closing HTTP server')
+    db.shutdown();
+    cache.shutdown();
     server.close();
 });

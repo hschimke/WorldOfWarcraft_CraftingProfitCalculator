@@ -697,7 +697,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
     async function getAuctionHouse(server_id: ConnectedRealmID, server_region: RegionCode): Promise<BlizzardApi.Auctions> {
         // Download the auction house for the server_id
         // If the auction house is older than an hour then remove it from the cached_data.fetched_auction_houses array
-        if (await cacheCheck(AUCTION_DATA_CACHE, server_id, 3.6e+6)) {
+        if (await cacheCheck(AUCTION_DATA_CACHE, server_id)) {
             return cacheGet(AUCTION_DATA_CACHE, server_id);
         }
 
@@ -712,7 +712,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
             },
             auction_house_fetch_uri);
 
-        await cacheSet(AUCTION_DATA_CACHE, server_id, ah);
+        await cacheSet(AUCTION_DATA_CACHE, server_id, ah, 3600);
 
         return ah;
     }

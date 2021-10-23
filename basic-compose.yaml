@@ -16,3 +16,12 @@ services:
       - HISTORY_DB_FN=./databases/h.db
       - LOG_LEVEL=debug
       - SERVER_PORT=3001
+      - REDIS_HOST=redis-cpc
+      - REDIS_PORT=6379
+    depends_on:
+      - "redis-cpc"
+  redis-cpc:
+    image: redis:alpine
+    volumes:
+      - "./databases:/data"
+    command: redis-server --save 380 15 --loglevel warning

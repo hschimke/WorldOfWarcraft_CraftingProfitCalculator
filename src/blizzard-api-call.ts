@@ -6,7 +6,7 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
     const logger = logging;
 
     let allowed_connections_per_period = 100;
-    let period_reset_window = 1500;
+    let period_reset_window = 5000;
 
     if (config !== undefined) {
         if (config.connection_per_window !== undefined) {
@@ -98,9 +98,9 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
                 searchParams: data,
                 http2: true,
                 dnsCache: true,
-                retry: 2,
+                retry: 5,
                 timeout: {
-                    request: 10000
+                    request: 5000
                 }
             }).json();
             in_use--;
@@ -143,9 +143,9 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
                 searchParams: data,
                 http2: true,
                 dnsCache: true,
-                retry: 2,
+                retry: 5,
                 timeout: {
-                    request: 10000
+                    request: 5000
                 }
             }).json();
             in_use--;

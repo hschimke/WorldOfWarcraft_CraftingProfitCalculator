@@ -151,10 +151,15 @@ async function CPCCache(database: CPCDB): Promise<CPCCache> {
         //logger.profile('cacheSet');
     }
 
+    async function shutdown() {
+        return;
+    }
+
     return Object.freeze({
         cacheCheck,
         cacheGet,
-        cacheSet
+        cacheSet,
+        shutdown
     });
 }
 
