@@ -4,6 +4,7 @@
     "target":"ESNext",
     "moduleResolution": "node",
     "module": "ESNext",
+    "incremental": true,
     "allowSyntheticDefaultImports": true,
     "declaration": true,
     "sourceMap": true,

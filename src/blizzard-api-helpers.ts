@@ -35,52 +35,15 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         const search_api_uri = '/data/wow/search/item';
         let item_id = -1;
 
-        // Step 1: Get the initial results to see if we get anything
-        const initial_page: BlizzardApi.ItemSearch = <BlizzardApi.ItemSearch>await getBlizzardAPIResponse(region, {
-            'namespace': 'static-us',
-            'locale': 'en_US',
-            'name.en_US': item_name,
-            'orderby': 'id:desc',
-        },
-            search_api_uri);
-
-        // Check how many pages, if there are more pages, loop through them and fetch each.
-        const page_count = initial_page.pageCount;
-        logger.debug(`Found ${page_count} pages for item search ${item_name}`);
-        if (page_count > 0) {
-            // Check if results are on the first page
-            let page_item_id = await checkPageSearchResults(initial_page, item_name);
+        let page_counter = 0;
+        for await (const pg of getAllSearchPages()){
+            page_counter++;
+            let page_item_id = await checkPageSearchResults(pg, item_name);
             if (page_item_id > 0) {
-                // We found it, we're done!
                 item_id = page_item_id;
-                logger.debug(`Found ${item_id} for ${item_name} on first page.`);
-            } else {
-                // loop through all the remaining pages and check
-                for (let cp = initial_page.page; cp <= page_count; cp++) {
-                    logger.debug(`Checking page ${cp} for ${item_name}`);
-                    if (page_item_id <= 0) {
-                        const current_page = <BlizzardApi.ItemSearch>await getBlizzardAPIResponse(region, {
-                            'namespace': 'static-us',
-                            'locale': 'en_US',
-                            'name.en_US': item_name,
-                            'orderby': 'id:desc',
-                            '_page': cp,
-                        },
-                            search_api_uri);
-                        page_item_id = await checkPageSearchResults(current_page, item_name);
-                        if (page_item_id > 0) {
-                            item_id = page_item_id;
-                            logger.debug(`Found ${item_id} for ${item_name} on page ${cp} of ${page_count}.`);
-                            break;
-                        }
-                    }
-                }
+                logger.debug(`Found ${item_id} for ${item_name} on page ${page_counter} of ${pg.pageCount}.`);
+                break;
             }
-        } else {
-            // We didn't get any results, that's an error
-            await cacheSet(ITEM_SEARCH_CACHE, item_name, -1);
-            logger.error(`No items match search ${item_name}`);
-            throw (new Error('No Results'));
         }
 
         //if (item_id > 0) {
@@ -106,6 +69,42 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
                 }
             }
             return found_item_id;
+        }
+
+        /**
+         * Create an interator for all pages of the search.
+         */
+        async function* getAllSearchPages() {
+            // Step 1: Get the initial results to see if we get anything
+            const initial_page: BlizzardApi.ItemSearch = <BlizzardApi.ItemSearch>await getBlizzardAPIResponse(region, {
+                'namespace': 'static-us',
+                'locale': 'en_US',
+                'name.en_US': item_name,
+                'orderby': 'id:desc',
+            },
+                search_api_uri);
+            const page_count = initial_page.pageCount;
+            logger.debug(`Found ${page_count} pages for item search ${item_name}`);
+            if (page_count > 0) {
+                yield initial_page;
+                for (let cp = initial_page.page; cp <= page_count; cp++) {
+                    logger.debug(`Checking page ${cp} for ${item_name}`);
+                    const current_page = <BlizzardApi.ItemSearch>await getBlizzardAPIResponse(region, {
+                        'namespace': 'static-us',
+                        'locale': 'en_US',
+                        'name.en_US': item_name,
+                        'orderby': 'id:desc',
+                        '_page': cp,
+                    },
+                        search_api_uri);
+                    yield current_page;
+                }
+            } else {
+                // We didn't get any results, that's an error
+                //await cacheSet(ITEM_SEARCH_CACHE, item_name, -1);
+                logger.error(`No items match search ${item_name}`);
+                throw (new Error('No Results'));
+            }
         }
     }
 

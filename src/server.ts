@@ -8,6 +8,7 @@ import { CPCDb } from './database/database.js';
 import { getRegionCode } from './getRegionCode.js';
 import './hourly-injest.js';
 import { parentLogger } from './logging.js';
+import { RedisCache } from './redis-cache-provider.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { validateProfessions } from './validateProfessions.js';
 import { CPCInstance } from './wow_crafting_profits.js';
@@ -31,7 +32,8 @@ if (process.env.DATABASE_TYPE === 'sqlite3') {
 const db = CPCDb(db_conf, logger);
 const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, logger);
 const api = CPCApi(logger, auth);
-const cache = await CPCCache(db);
+//const cache = await CPCCache(db);
+const cache = await RedisCache();
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
