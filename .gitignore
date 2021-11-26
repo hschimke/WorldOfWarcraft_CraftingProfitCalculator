@@ -115,6 +115,7 @@ data-cache.json
 !cache/data-sources.json
 !cache/shopping-recipe-exclusion-list.json
 databases/*.db*
+databases/*.rdb
 
 # Output data
 output.json
@@ -134,3 +135,4 @@ intermediate_output.json
 test_data/*
 
 notes
+scripts/_*

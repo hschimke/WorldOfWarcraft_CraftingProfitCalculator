@@ -2,7 +2,7 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { CPCApi } from './blizzard-api-call.js';
 import { ApiAuthorization } from './blizz_oath.js';
-//import { CPCCache } from './cached-data-sources.js';
+import { CPCCache } from './cached-data-sources.js';
 import { RedisCache } from './redis-cache-provider.js';
 import { CPCDb } from './database/database.js';
 import { parentLogger } from './logging.js';
@@ -135,7 +135,8 @@ const db = CPCDb(db_conf, log);
 const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, log);
 const api = CPCApi(log, auth);
 //const cache = await CPCCache(db);
-const cache = await RedisCache();
+//const cache = await RedisCache();
+const cache = await (process.env.USE_REDIS === 'true' ? RedisCache() : CPCCache(db));
 const inst = await CPCInstance(log, cache, api);
 
 inst.cliRun(config).then(()=>{
