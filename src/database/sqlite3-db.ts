@@ -39,25 +39,26 @@ const cache_sql_run_at_open_sq3 = [
 
 function CPC_SQLITE3_DB(config: DatabaseConfig, logging: Logger) {
     const logger = logging;
-    const dbs = new Map();
+    const dbs = new Map<string, sqlite3.Database>();
     let dbs_open: boolean;
 
     async function start(): Promise<void> {
         if (!dbs_open) {
+            logger.debug('Opening DBs');
             const cache_fn = config.sqlite3 !== undefined ? config.sqlite3.cache_fn : '';
             const history_fn = config.sqlite3 !== undefined ? config.sqlite3.auction_fn : '';
             dbs.set('cache', new sqlite3.Database(cache_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE));
             dbs.set('history', new sqlite3.Database(history_fn, sqlite3.OPEN_CREATE | sqlite3.OPEN_READWRITE));
 
-            dbs.get('history').serialize(() => {
+            dbs.get('history')?.serialize(() => {
                 for (const query of history_sql_run_at_open_sq3) {
-                    dbs.get('history').run(query);
+                    dbs.get('history')?.run(query);
                 }
             });
 
-            dbs.get('cache').serialize(() => {
+            dbs.get('cache')?.serialize(() => {
                 for (const query of cache_sql_run_at_open_sq3) {
-                    dbs.get('cache').run(query);
+                    dbs.get('cache')?.run(query);
                 }
             });
 
@@ -65,25 +66,31 @@ function CPC_SQLITE3_DB(config: DatabaseConfig, logging: Logger) {
         }
     }
 
-    function shutdown(): void {
+    async function shutdown(): Promise<void> {
         logger.info('Closing DB connection');
         dbs_open = false;
-        for (let [key, value] of dbs) {
-            logger.info(`Close DB ${key}`);
-            value.run('PRAGMA optimize', (err: any) => {
-                value.close();
-                if (err) {
-                    logger.error(err);
-                }
-            });
+        let closes = [];
+        for (const [key, value] of dbs) {
+            closes.push(new Promise((accept,reject)=>{
+                logger.info(`Close DB ${key}`);
+                value.run('PRAGMA optimize', (err: any) => {
+                    value.close(()=>{
+                        accept(1);
+                    });
+                    if(err){
+                        reject(err);
+                    }
+                });
+            }));
         }
+        await Promise.all(closes);
     }
 
     async function getDb(db_name: string): Promise<DatabaseManagerFunction> {
         await start();
         const context: Sqlite3DatabaseManagerFunction = function () { };
         context.db_type = 'sqlite3';
-        context.db = dbs.get(db_name) as sqlite3.Database;
+        context.db = dbs.get(db_name);
         context.get = function (query, values?) {
             logger.silly(sqlToString(query, values));
             return new Promise((accept, reject) => {

@@ -9,8 +9,8 @@ import { parentLogger } from './logging.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { validateProfessions } from "./validateProfessions.js";
 import { CPCInstance } from './wow_crafting_profits.js';
-import {default as winston} from 'winston';
-import {createWriteStream} from 'fs';
+import { default as winston } from 'winston';
+import { createWriteStream } from 'fs';
 
 //blacksmithing
 //const test_item = 171414;
@@ -139,7 +139,6 @@ const api = CPCApi(log, auth);
 const cache = await (process.env.USE_REDIS === 'true' ? RedisCache() : CPCCache(db));
 const inst = await CPCInstance(log, cache, api);
 
-inst.cliRun(config).then(()=>{
-    db.shutdown();
-    cache.shutdown();
-})
+await inst.cliRun(config)
+await db.shutdown();
+await cache.shutdown();

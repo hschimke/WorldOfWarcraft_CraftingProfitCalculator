@@ -36,63 +36,62 @@ function CPC_PG_DB(config: DatabaseConfig, logging: Logger) {
 
     async function start(): Promise<void> {
         if (!dbs_open) {
-                l_pool = new Pool();
-                const client = await l_pool.connect();
+            l_pool = new Pool();
+            const client = await l_pool.connect();
 
-                for (const query of history_sql_run_at_open_pg) {
-                    await client.query(query);
-                }
-                for (const query of cache_sql_run_at_open_pg) {
-                    await client.query(query);
-                }
-                await client.release();
+            for (const query of history_sql_run_at_open_pg) {
+                await client.query(query);
+            }
+            for (const query of cache_sql_run_at_open_pg) {
+                await client.query(query);
+            }
+            await client.release();
 
             dbs_open = true;
         }
     }
 
-    function shutdown(): void {
+    async function shutdown(): Promise<void> {
         logger.info('Closing DB connection');
         dbs_open = false;
-            l_pool.end().then(() => {
-                logger.info('Database connection closed');
-            });
+        await l_pool.end();
+        logger.info('Database connection closed');
     }
 
     async function getDb(db_name: string): Promise<DatabaseManagerFunction> {
         await start();
         const context: PostgresDatabaseManagerFunction = function () { };
-            context.pool = l_pool;
-            context.db_type = 'pg';
-            context.serialize = async function (queries, value_sets) {
-                const client = await this.pool.connect();
-                for (let i = 0; i < queries.length; i++) {
-                    logger.silly(sqlToString(queries[i], value_sets[i]));
-                    await client.query(queries[i], value_sets[i]);
-                }
-                await client.release();
-            };
-            context.getClient = async function () {
-                const client = await this.pool.connect();
-                return client;
-            };
-            context.query = async function (query, values?) {
-                logger.silly(sqlToString(query, values));
-                const res = await this.pool.query(query, values);
-                return res;
-            };
-            context.get = async function (query, values?) {
-                const res = await this.query(query, values);
-                return res.rows[0] as any;
+        context.pool = l_pool;
+        context.db_type = 'pg';
+        context.serialize = async function (queries, value_sets) {
+            const client = await this.pool.connect();
+            for (let i = 0; i < queries.length; i++) {
+                logger.silly(sqlToString(queries[i], value_sets[i]));
+                await client.query(queries[i], value_sets[i]);
             }
-            context.all = async function (query, values?) {
-                const result = await this.query(query, values);
-                return result.rows as any;
-            }
-            context.run = async function (query, values?) {
-                logger.silly(sqlToString(query, values));
-                await this.pool.query(query, values);
-            }
+            await client.release();
+        };
+        context.getClient = async function () {
+            const client = await this.pool.connect();
+            return client;
+        };
+        context.query = async function (query, values?) {
+            logger.silly(sqlToString(query, values));
+            const res = await this.pool.query(query, values);
+            return res;
+        };
+        context.get = async function (query, values?) {
+            const res = await this.query(query, values);
+            return res.rows[0] as any;
+        }
+        context.all = async function (query, values?) {
+            const result = await this.query(query, values);
+            return result.rows as any;
+        }
+        context.run = async function (query, values?) {
+            logger.silly(sqlToString(query, values));
+            await this.pool.query(query, values);
+        }
 
         return context;
     }

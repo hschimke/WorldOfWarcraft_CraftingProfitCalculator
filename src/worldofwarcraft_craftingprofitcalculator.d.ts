@@ -143,7 +143,7 @@ interface DatabaseConfig {
     }
 }
 
-type CPCDB = Readonly<{ getDb: (db_name: string) => Promise<DatabaseManagerFunction>, shutdown: () => void }>;
+type CPCDB = Readonly<{ getDb: (db_name: string) => Promise<DatabaseManagerFunction>, shutdown: () => Promise<void> }>;
 
 type DatabaseClientFunction = {
     release: () => void;
