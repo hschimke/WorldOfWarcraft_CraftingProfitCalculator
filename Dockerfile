@@ -1,4 +1,4 @@
-FROM node:16-alpine AS client-build
+FROM node:17-alpine AS client-build
 WORKDIR /usr/src/build
 RUN mkdir client
 COPY client/package*.json ./client/
@@ -14,7 +14,7 @@ RUN apk --no-cache add zip
 COPY ./wow-addon .
 RUN zip -r ./CraftingProfitCalculator_data.zip ./CraftingProfitCalculator_data
 
-FROM node:16-alpine
+FROM node:17-alpine
 # Add Curl for healthcheck
 RUN apk --no-cache add curl
 ENV LOG_LEVEL=debug SERVER_PORT=8080 CACHE_DB_FN="./databases/cache.db" HISTORY_DB_FN="./databases/historical_auctions.db" DATABASE_TYPE="sqlite3" STANDALONE_CONTAINER="standalone" DOCKERIZED="true"
