@@ -9,8 +9,6 @@ import { parentLogger } from './logging.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { validateProfessions } from "./validateProfessions.js";
 import { CPCInstance } from './wow_crafting_profits.js';
-import { default as winston } from 'winston';
-import { createWriteStream } from 'fs';
 
 //blacksmithing
 //const test_item = 171414;
