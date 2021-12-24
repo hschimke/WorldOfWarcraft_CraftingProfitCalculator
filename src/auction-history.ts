@@ -217,7 +217,7 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
         }
         if (region !== undefined) {
             // Get specific region
-            sql_addins.push(`connected_realm_id IN (SELECT connected_realm_id FROM realms WHERE region = ${get_place_marker()})`);
+            sql_addins.push(`connected_realm_id IN (SELECT connected_realm_id FROM realms WHERE upper(region) = upper(${get_place_marker()}))`);
             value_searches.push(region);
         } else {
             // All regions
@@ -472,7 +472,11 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
 
     async function addRealmToScanList(realm_name: RealmName, realm_region: RegionCode): Promise<void> {
         const sql = 'INSERT INTO realm_scan_list(connected_realm_id,region) VALUES($1,$2)';
-        await db.run(sql, [await getConnectedRealmId(realm_name, realm_region), realm_region.toUpperCase()]);
+        try{
+            await db.run(sql, [await getConnectedRealmId(realm_name, realm_region), realm_region.toUpperCase()]);
+        }catch(err){
+            logger.error(`Couldn't add ${realm_name} in ${realm_region} to scan realms table.`, err);
+        }
     }
 
     async function removeRealmFromScanList(realm_name: RealmName, realm_region: RegionCode): Promise<void> {
