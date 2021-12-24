@@ -193,10 +193,10 @@ if (include_auction_history) {
 
                 //console.log(JSON.stringify(return_value,undefined,2));
                 res.json(return_value);
-            }).catch(error => {
-                logger.error("Issue getting bonuses", error);
-                res.json({ ERROR: error });
-            });
+            })
+        }).catch(error => {
+            logger.error("Issue getting bonuses", error);
+            res.json({ ERROR: error });
         });
     });
 
