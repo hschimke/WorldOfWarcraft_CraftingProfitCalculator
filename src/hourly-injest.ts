@@ -4,6 +4,7 @@ import { ApiAuthorization } from './blizz_oath.js';
 import { CPCCache } from './cached-data-sources.js';
 import { CPCDb } from './database/database.js';
 import { parentLogger } from './logging.js';
+import { RedisCache } from './redis-cache-provider.js';
 
 const logger = parentLogger.child({});
 
@@ -47,7 +48,7 @@ if (include_auction_history) {
                 const db = CPCDb(db_conf, logger);
                 const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, logger);
                 const api = CPCApi(logger, auth);
-                const cache = await CPCCache(db);
+                const cache = await (process.env.USE_REDIS === 'true' ? RedisCache() : CPCCache(db));
                 const ah = await CPCAuctionHistory(db, logger, api, cache);
                 job(ah);
                 break;
@@ -71,7 +72,7 @@ if (include_auction_history) {
                 const db = CPCDb(db_conf, logger);
                 const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, logger);
                 const api = CPCApi(logger, auth);
-                const cache = await CPCCache(db);
+                const cache = await (process.env.USE_REDIS === 'true' ? RedisCache() : CPCCache(db));
                 const ah = await CPCAuctionHistory(db, logger, api, cache);
                 standalone_container_abc = setInterval(() => { job(ah) }, 3.6e+6);
                 standalone_container_abc.unref();
