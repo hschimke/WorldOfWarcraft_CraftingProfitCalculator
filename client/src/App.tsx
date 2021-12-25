@@ -2,8 +2,8 @@ import './App.css';
 import RunCoordinator from './CraftingProfits/RunCoordinator';
 import Auctions from './AuctionHistory/Auctions';
 import {
-  BrowserRouter as Router,
-  Switch,
+  BrowserRouter,
+  Routes,
   Route,
   Link
 } from "react-router-dom";
@@ -12,7 +12,7 @@ import {
 
 function App() {
   return (
-    <Router>
+    <BrowserRouter>
       <div className="App">
         <div className="Header">
           <h1>Crafting Profits Calculator</h1>
@@ -30,17 +30,13 @@ function App() {
           </ul>
         </div>
         <div className="Main">
-          <Switch>
-            <Route path="/auctions">
-              <Auctions />
-            </Route>
-            <Route path="/">
-              <RunCoordinator />
-            </Route>
-          </Switch>
+          <Routes>
+            <Route path="/auctions" element={<Auctions />} />
+            <Route path="/" element={<RunCoordinator />}/>
+          </Routes>
         </div>
       </div>
-    </Router>
+    </BrowserRouter>
   );
 }
 

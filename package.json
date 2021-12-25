@@ -34,7 +34,7 @@
 	"dependencies": {
 		"dotenv": "^10.0.0",
 		"express": "^4.17.1",
-		"got": "^11.8.2",
+		"got": "^12.0.0",
 		"pg": "^8.7.1",
 		"redis": "^4.0.0-rc.2",
 		"sqlite3": "^5.0.2",
@@ -45,7 +45,7 @@
 	"type": "module",
 	"devDependencies": {
 		"@types/express": "^4.17.13",
-		"@types/node": "^16.10.3",
+		"@types/node": "^17.0.4",
 		"@types/pg": "^8.6.1",
 		"@types/sqlite3": "^3.1.7",
 		"@types/yargs": "^17.0.3",
