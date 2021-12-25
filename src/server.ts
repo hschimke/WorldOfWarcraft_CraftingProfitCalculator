@@ -1,6 +1,5 @@
 import { default as express } from 'express';
 import { resolve } from 'path';
-import { CPCAuctionHistory } from './auction-history.js';
 import { CPCApi } from './blizzard-api-call.js';
 import { ApiAuthorization } from './blizz_oath.js';
 import { CPCCache, static_sources } from './cached-data-sources.js';
@@ -91,6 +90,7 @@ app.post('/json_output', (req, res) => {
 });
 
 if (include_auction_history) {
+    const { CPCAuctionHistory } = await import('./auction-history.js');
     const ah = await CPCAuctionHistory(db, logger, api, cache);
 
     app.post('/auction_history', (req, res) => {
