@@ -1,5 +1,5 @@
 import React from 'react';
-import 'About.css';
+import './cAbout.css';
 
 function About(){
     const download_uri = '/addon-download';
