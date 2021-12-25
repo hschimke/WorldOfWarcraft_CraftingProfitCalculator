@@ -98,7 +98,7 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
                 searchParams: data,
                 http2: true,
                 dnsCache: true,
-                retry: 5,
+                retry: { limit: 5 },
                 timeout: {
                     request: 5000
                 }
@@ -143,7 +143,7 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
                 searchParams: data,
                 http2: true,
                 dnsCache: true,
-                retry: 5,
+                retry: { limit: 5 },
                 timeout: {
                     request: 5000
                 }
