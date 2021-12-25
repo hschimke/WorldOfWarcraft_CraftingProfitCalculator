@@ -1,6 +1,7 @@
 import './App.css';
 import RunCoordinator from './CraftingProfits/RunCoordinator';
 import Auctions from './AuctionHistory/Auctions';
+import About from './About/About';
 import {
   BrowserRouter,
   Routes,
@@ -27,13 +28,24 @@ function App() {
                 <Link to="/auctions">Auction Price History</Link>
               </li>
             }
+            <li>
+              <Link to="/about">About</Link>
+            </li>
           </ul>
         </div>
         <div className="Main">
           <Routes>
             <Route path="/auctions" element={<Auctions />} />
             <Route path="/" element={<RunCoordinator />}/>
+            <Route path="/about" element={<About />} />
           </Routes>
+        </div>
+        <div className="Footer">
+          <ul>
+            <li>Copyright</li>
+            <li>Source</li>
+            <li>Report Bugs</li>
+          </ul>
         </div>
       </div>
     </BrowserRouter>

@@ -44,3 +44,9 @@
 .App .Nav ul li a:hover {
   background-color: #111;
 }
+
+.App .Footer {
+  text-align: left;
+  padding: 15px;
+  background-color: #001f00;
+}

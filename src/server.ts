@@ -45,6 +45,10 @@ app.get('/', (req, res) => {
     res.sendFile(resolve('html/build/index.html'));
 });
 
+app.get('/addon-download', (req,res) => {
+    res.download(resolve('html/CraftingProfitCalculator_data.zip'));
+});
+
 app.get('/healthcheck', (req, res) => {
     logger.debug('Healthcheck OK');
     res.json({ health: 'ok' });
