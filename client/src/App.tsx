@@ -2,6 +2,7 @@ import './App.css';
 import RunCoordinator from './CraftingProfits/RunCoordinator';
 import Auctions from './AuctionHistory/Auctions';
 import About from './About/About';
+import Footer from './Footer/Footer';
 import {
   BrowserRouter,
   Routes,
@@ -36,17 +37,11 @@ function App() {
         <div className="Main">
           <Routes>
             <Route path="/auctions" element={<Auctions />} />
-            <Route path="/" element={<RunCoordinator />}/>
+            <Route path="/" element={<RunCoordinator />} />
             <Route path="/about" element={<About />} />
           </Routes>
         </div>
-        <div className="Footer">
-          <ul>
-            <li>Copyright</li>
-            <li>Source</li>
-            <li>Report Bugs</li>
-          </ul>
-        </div>
+        <Footer />
       </div>
     </BrowserRouter>
   );
