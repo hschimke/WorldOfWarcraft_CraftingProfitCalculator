@@ -46,6 +46,7 @@
 }
 
 .App .Footer {
+  clear: both;
   text-align: left;
   padding: 15px;
   background-color: #001f00;
