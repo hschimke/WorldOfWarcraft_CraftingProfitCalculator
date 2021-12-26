@@ -45,7 +45,7 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
 
     emitter.on('reset', () => {
         logger.debug(`Resetting connection pool: used ${allowed_during_period} of available ${allowed_connections_per_period}, ${in_use} currently used`);
-        allowed_during_period = 0;
+        allowed_during_period = 0 + in_use;
     });
     emitter.on('shutdown', () => {
         logger.debug(`Stop API manager with ${allowed_during_period} still running and ${in_use} in use`);

@@ -36,7 +36,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         let item_id = -1;
 
         let page_counter = 0;
-        for await (const pg of getAllSearchPages()){
+        for await (const pg of getAllSearchPages()) {
             page_counter++;
             let page_item_id = await checkPageSearchResults(pg, item_name);
             if (page_item_id > 0) {
@@ -77,7 +77,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         async function* getAllSearchPages() {
             // Step 1: Get the initial results to see if we get anything
             const initial_page: BlizzardApi.ItemSearch = <BlizzardApi.ItemSearch>await getBlizzardAPIResponse(region, {
-                'namespace': 'static-us',
+                'namespace': getNamespace('static', region),
                 'locale': 'en_US',
                 'name.en_US': item_name,
                 'orderby': 'id:desc',
@@ -90,7 +90,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
                 for (let cp = initial_page.page; cp <= page_count; cp++) {
                     logger.debug(`Checking page ${cp} for ${item_name}`);
                     const current_page = <BlizzardApi.ItemSearch>await getBlizzardAPIResponse(region, {
-                        'namespace': 'static-us',
+                        'namespace': getNamespace('static', region),
                         'locale': 'en_US',
                         'name.en_US': item_name,
                         'orderby': 'id:desc',
@@ -116,7 +116,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
     async function getAllConnectedRealms(region: RegionCode): Promise<BlizzardApi.ConnectedRealmIndex> {
         const list_connected_realms_api = '/data/wow/connected-realm/index';
         const list_connected_realms_form = {
-            'namespace': 'dynamic-us',
+            'namespace': getNamespace('dynamic', region),
             'locale': 'en_US'
         };
 
@@ -141,7 +141,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         }
 
         const get_connected_realm_form = {
-            'namespace': 'dynamic-us',
+            'namespace': getNamespace('dynamic', server_region),
             'locale': 'en_US'
         };
 
@@ -192,7 +192,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         const profession_item_detail_uri = `/data/wow/item/${item_id}`;
         //categories[array].recipes[array].name categories[array].recipes[array].id
         const result = <BlizzardApi.Item>await getBlizzardAPIResponse(region, {
-            'namespace': 'static-us',
+            'namespace': getNamespace('static', region),
             'locale': 'en_US'
         },
             profession_item_detail_uri);
@@ -214,7 +214,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         }
 
         const result = <BlizzardApi.ProfessionsIndex>await getBlizzardAPIResponse(region, {
-            'namespace': 'static-us',
+            'namespace': getNamespace('static', region),
             'locale': 'en_US'
         }, profession_list_uri);
 
@@ -237,7 +237,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
 
         const profession_detail_uri = `/data/wow/profession/${profession_id}`;
         const result = <BlizzardApi.Profession>await getBlizzardAPIResponse(region, {
-            'namespace': 'static-us',
+            'namespace': getNamespace('static', region),
             'locale': 'en_US'
         },
             profession_detail_uri);
@@ -255,7 +255,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
 
         const connected_realm_detail_uri = `/data/wow/connected-realm/${connected_realm_id}`; // skill_tiers.name skill_tiers.id
         const result = <BlizzardApi.ConnectedRealm>await getBlizzardAPIResponse(region, {
-            'namespace': 'dynamic-us',
+            'namespace': getNamespace('dynamic', region),
             'locale': 'en_US'
         },
             connected_realm_detail_uri);
@@ -281,7 +281,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         const profession_skill_tier_detail_uri = `/data/wow/profession/${profession_id}/skill-tier/${skillTier_id}`;
         //categories[array].recipes[array].name categories[array].recipes[array].id
         const result = <BlizzardApi.ProfessionSkillTier>await getBlizzardAPIResponse(region, {
-            'namespace': 'static-us',
+            'namespace': getNamespace('static', region),
             'locale': 'en_US'
         },
             profession_skill_tier_detail_uri);
@@ -308,7 +308,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         //crafted_item.name crafted_item.id / reagents[array].name reagents[array].id reagents[array].quantity
 
         const result = <BlizzardApi.Recipe>await getBlizzardAPIResponse(region, {
-            'namespace': 'static-us',
+            'namespace': getNamespace('static', region),
             'locale': 'en_US'
         },
             profession_recipe_uri);
@@ -706,7 +706,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         const ah = <BlizzardApi.Auctions>await getBlizzardAPIResponse(
             server_region,
             {
-                'namespace': 'dynamic-us',
+                'namespace': getNamespace('dynamic', server_region),
                 'locale': 'en_US'
             },
             auction_house_fetch_uri);
@@ -714,6 +714,10 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         await cacheSet(AUCTION_DATA_CACHE, server_id, ah, 3600);
 
         return ah;
+    }
+
+    function getNamespace(ns_type: 'dynamic' | 'static', region: RegionCode): string {
+        return (`${ns_type}-${region.toLowerCase()}`);
     }
 
     return Object.freeze({
