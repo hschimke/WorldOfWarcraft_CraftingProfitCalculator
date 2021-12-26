@@ -129,7 +129,7 @@ const log = parentLogger.child({})
     }
 ));*/
 
-const db = CPCDb(db_conf, log);
+const db = await CPCDb(db_conf, log);
 const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, log);
 const api = CPCApi(log, auth);
 //const cache = await CPCCache(db);

@@ -5,7 +5,6 @@ import { ApiAuthorization } from './blizz_oath.js';
 import { CPCCache, static_sources } from './cached-data-sources.js';
 import { CPCDb } from './database/database.js';
 import { getRegionCode } from './getRegionCode.js';
-import './hourly-injest.js';
 import { parentLogger } from './logging.js';
 import { RedisCache } from './redis-cache-provider.js';
 import { RunConfiguration } from './RunConfiguration.js';
@@ -28,7 +27,7 @@ if (process.env.DATABASE_TYPE === 'sqlite3') {
         auction_fn: process.env.HISTORY_DB_FN !== undefined ? process.env.HISTORY_DB_FN : './databases/historical_auctions.db'
     };
 }
-const db = CPCDb(db_conf, logger);
+const db = await CPCDb(db_conf, logger);
 const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, logger);
 const api = CPCApi(logger, auth);
 //const cache = await CPCCache(db);
@@ -45,7 +44,7 @@ app.get('/', (req, res) => {
     res.sendFile(resolve('html/build/index.html'));
 });
 
-app.get('/addon-download', (req,res) => {
+app.get('/addon-download', (req, res) => {
     res.download(resolve('html/CraftingProfitCalculator_data.zip'));
 });
 
@@ -95,6 +94,7 @@ app.post('/json_output', (req, res) => {
 
 if (include_auction_history) {
     const { CPCAuctionHistory } = await import('./auction-history.js');
+    await import('./hourly-injest.js');
     const ah = await CPCAuctionHistory(db, logger, api, cache);
 
     app.post('/auction_history', (req, res) => {

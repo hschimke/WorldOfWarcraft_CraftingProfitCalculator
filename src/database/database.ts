@@ -1,8 +1,6 @@
 import { Logger } from 'winston';
-import { CPC_PG_DB } from './postgres-db.js';
-import { CPC_SQLITE3_DB } from './sqlite3-db.js';
 
-function CPCDb(config: DatabaseConfig, logging: Logger): CPCDB {
+async function CPCDb(config: DatabaseConfig, logging: Logger): Promise<CPCDB> {
     const db_type = config.type;
 
     const logger = logging;
@@ -18,8 +16,10 @@ function CPCDb(config: DatabaseConfig, logging: Logger): CPCDB {
 
     switch (db_type) {
         case 'pg':
+            const { CPC_PG_DB } = await import('./postgres-db.js');
             return CPC_PG_DB(config, logger);
         case 'sqlite3':
+            const { CPC_SQLITE3_DB } = await import('./sqlite3-db.js');
             return CPC_SQLITE3_DB(config, logger);
     }
     throw new Error(`UNDEFINED DATABASE TYPE: ${db_type}`);

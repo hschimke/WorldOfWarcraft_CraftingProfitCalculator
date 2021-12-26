@@ -45,7 +45,7 @@ if (include_auction_history) {
                         auction_fn: process.env.HISTORY_DB_FN !== undefined ? process.env.HISTORY_DB_FN : './databases/historical_auctions.db'
                     };
                 }
-                const db = CPCDb(db_conf, logger);
+                const db = await CPCDb(db_conf, logger);
                 const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, logger);
                 const api = CPCApi(logger, auth);
                 const cache = await (process.env.USE_REDIS === 'true' ? RedisCache() : CPCCache(db));
@@ -69,7 +69,7 @@ if (include_auction_history) {
                         auction_fn: process.env.HISTORY_DB_FN !== undefined ? process.env.HISTORY_DB_FN : './databases/historical_auctions.db'
                     };
                 }
-                const db = CPCDb(db_conf, logger);
+                const db = await CPCDb(db_conf, logger);
                 const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, logger);
                 const api = CPCApi(logger, auth);
                 const cache = await (process.env.USE_REDIS === 'true' ? RedisCache() : CPCCache(db));
