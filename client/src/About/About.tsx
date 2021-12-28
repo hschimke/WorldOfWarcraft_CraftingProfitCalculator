@@ -1,6 +1,6 @@
 import React from 'react';
 import './About.css';
-import {BugReportLink,SourceLink,ReadMeLink,AddonDownloadLink} from '../Shared/Links';
+import { BugReportLink, SourceLink, ReadMeLink, AddonDownloadLink } from '../Shared/Links';
 
 function About() {
     return (
@@ -16,7 +16,7 @@ function About() {
                 <li>Internationalization is not supported and all text is in en_us.</li>
                 <li>All searches are done in en_us.</li>
                 <li>Some items are incorrectly listed as being available from vendors,
-                    this can confuse the system. If you find one of these please <BugReportLink text="report it"/>.</li>
+                    this can confuse the system. If you find one of these please <BugReportLink text="report it" />.</li>
             </ul>
 
             <span className='header'>Privacy</span>
@@ -27,10 +27,10 @@ function About() {
 
             <span className='header'>Links</span>
             <ul>
-            <li><ReadMeLink text="Full Readme [github]" /></li>
-            <li><AddonDownloadLink text="Download Addon" /></li>
-            <li><SourceLink text="Source Coce" /></li>
-            <li><BugReportLink text="Report Issue" /></li>
+                <li><ReadMeLink text="Full Readme [github]" /></li>
+                <li><AddonDownloadLink text="Download Addon" /></li>
+                <li><SourceLink text="Source Coce" /></li>
+                <li><BugReportLink text="Report Issue" /></li>
             </ul>
         </div>
     )
