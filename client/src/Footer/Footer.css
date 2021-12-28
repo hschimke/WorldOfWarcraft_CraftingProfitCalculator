@@ -1,16 +1,17 @@
-.Footer {
+footer {
     clear: both;
     text-align: left;
     padding: 15px;
     background-color: #001f00;
-    margin-top: 200px;
+    margin-top: 100px;
+    width: 100%;
   }
 
-  .Footer ul {
+  footer ul {
       list-style: none;
   }
 
-  .Footer ul li, .Footer ul li a {
+  footer ul li, footer ul li a {
       margin: 10px;
       color: gray;
   }
