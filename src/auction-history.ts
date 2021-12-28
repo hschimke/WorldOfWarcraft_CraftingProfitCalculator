@@ -1,6 +1,7 @@
 import { Logger } from 'winston';
 import { CPCApiHelpers } from './blizzard-api-helpers.js';
 import { ALL_PROFESSIONS } from './shared-constants.js';
+import { getRegionCode } from './getRegionCode.js';
 
 const sql_insert_auction = 'INSERT INTO auctions(item_id, quantity, price, downloaded, connected_realm_id, bonuses) VALUES($1,$2,$3,$4,$5,$6)';
 const sql_insert_auction_archive = 'INSERT INTO auction_archive(item_id, quantity, summary, downloaded, connected_realm_id, bonuses) VALUES($1,$2,$3,$4,$5,$6)';
@@ -77,9 +78,11 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
             }
 
             if (!found) {
-                //const item_detail = { name: null }; //await getItemDetails(item, region);
-                //const craftable = false; //(await checkIsCrafting(item, ALL_PROFESSIONS, region)).craftable;
-                await client.query(sql_insert_item, [item, region, null, false]);
+                try {
+                    await client.query(sql_insert_item, [item, region, null, false]);
+                } catch (err) {
+                    logger.error(`Could not save ${item} in region ${region}.`, err);
+                }
             }
         }
 
@@ -463,8 +466,8 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
         const delete_auctions_older = 'DELETE FROM auctions WHERE downloaded < $1';
         const delete_archive_older = 'DELETE FROM auction_archive WHERE downloaded < $1';
 
-        client.query(delete_auctions_older,[delete_backstep]);
-        client.query(delete_archive_older,[delete_backstep]);
+        client.query(delete_auctions_older, [delete_backstep]);
+        client.query(delete_archive_older, [delete_backstep]);
 
         await client.query('COMMIT TRANSACTION', []);
         client.release();
@@ -472,9 +475,9 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
 
     async function addRealmToScanList(realm_name: RealmName, realm_region: RegionCode): Promise<void> {
         const sql = 'INSERT INTO realm_scan_list(connected_realm_id,region) VALUES($1,$2)';
-        try{
+        try {
             await db.run(sql, [await getConnectedRealmId(realm_name, realm_region), realm_region.toUpperCase()]);
-        }catch(err){
+        } catch (err) {
             logger.error(`Couldn't add ${realm_name} in ${realm_region} to scan realms table.`, err);
         }
     }
@@ -482,6 +485,20 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
     async function removeRealmFromScanList(realm_name: RealmName, realm_region: RegionCode): Promise<void> {
         const sql = 'DELETE FROM realm_scan_list WHERE connected_realm_id = $1 AND region = $2';
         await db.run(sql, [await getConnectedRealmId(realm_name, realm_region), realm_region.toUpperCase()]);
+    }
+
+    async function getScanRealms(): Promise<{ realm_names: string, realm_id: ConnectedRealmID, region: RegionCode }[]> {
+        const query = 'SELECT connected_realm_id, region FROM realm_scan_list';
+        const data = await db.all<{ connected_realm_id: number, region: string }>(query);
+        const ret_val: { realm_names: string, realm_id: ConnectedRealmID, region: RegionCode }[] = [];
+        for (const row of data) {
+            ret_val.push({
+                realm_id: row.connected_realm_id,
+                region: getRegionCode(row.region),
+                realm_names: (await getBlizConnectedRealmDetail(row.connected_realm_id, getRegionCode(row.region))).realms.reduce((prev, rlm) => { return `${prev}, ${rlm.name}` }, '')
+            });
+        }
+        return ret_val;
     }
 
     async function scanRealms(): Promise<void> {
@@ -492,7 +509,7 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
             return ingest(realm.region, realm.connected_realm_id);
         }));
     }
-    return Object.freeze({ scanRealms, addRealmToScanList, removeRealmFromScanList, getAuctions, getAllBonuses, archiveAuctions, fillNItems });
+    return Object.freeze({ scanRealms, addRealmToScanList, removeRealmFromScanList, getAuctions, getAllBonuses, archiveAuctions, fillNItems, getScanRealms });
 }
 
 export { CPCAuctionHistory };

@@ -127,6 +127,7 @@ type CPCAuctionHistory = Readonly<{
     getAllBonuses: (item: ItemSoftIdentity, region: RegionCode) => Promise<GetAllBonusesReturn>;
     archiveAuctions: () => Promise<void>;
     fillNItems: (fill_count?: number) => Promise<void>;
+    getScanRealms: () => Promise<{ realm_names: string, realm_id: ConnectedRealmID, region: RegionCode }[]>;
 }>;
 
 interface GetAllBonusesReturn {

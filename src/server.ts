@@ -53,11 +53,6 @@ app.get('/healthcheck', (req, res) => {
     res.json({ health: 'ok' });
 });
 
-app.get('*', (req, res) => {
-    logger.debug('Unknown route requested');
-    res.sendFile(resolve('html/build/index.html'));
-});
-
 app.post('/json_output', (req, res) => {
     let json_data: AddonData = { inventory: [], professions: [], realm: { realm_name: '', region_name: '' } };
     if (req.body.addon_data.length > 0) {
@@ -93,9 +88,16 @@ app.post('/json_output', (req, res) => {
 });
 
 if (include_auction_history) {
+    logger.info('Auction History functions enabled');
     const { CPCAuctionHistory } = await import('./auction-history.js');
     await import('./hourly-injest.js');
     const ah = await CPCAuctionHistory(db, logger, api, cache);
+
+    app.get('/scanned_realms', (req,res) => {
+        ah.scanRealms().then((result) => {
+            res.json(result);
+        })
+    });
 
     app.post('/auction_history', (req, res) => {
         const item: string = req.body.item;
@@ -212,6 +214,11 @@ if (include_auction_history) {
         )
     })
 }
+
+app.get('*', (req, res) => {
+    logger.debug('Unknown route requested');
+    res.sendFile(resolve('html/build/index.html'));
+});
 
 const server = app.listen(port, () => {
     logger.info(`Crafting Profit Calculator running at: http://localhost:${port}`)
