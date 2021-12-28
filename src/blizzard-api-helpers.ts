@@ -707,7 +707,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
             server_region,
             {
                 'namespace': getNamespace('dynamic', server_region),
-                'locale': 'en_US'
+                //'locale': 'en_US'
             },
             auction_house_fetch_uri);
 

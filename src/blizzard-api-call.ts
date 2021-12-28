@@ -96,11 +96,11 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
                     'Authorization': `Bearer ${(await api_auth.getAuthorizationToken(region_code)).access_token}`
                 },
                 searchParams: data,
-                http2: true,
+                //http2: true,
                 dnsCache: true,
                 retry: { limit: 5 },
                 timeout: {
-                    request: 5000
+                    request: 10000
                 }
             }).json();
             in_use--;
@@ -141,11 +141,11 @@ function CPCApi(logging: Logger, api_auth: ApiAuthorization, config?: ApiConfig)
                     'Authorization': `Bearer ${(await api_auth.getAuthorizationToken(region)).access_token}`
                 },
                 searchParams: data,
-                http2: true,
+                //http2: true,
                 dnsCache: true,
                 retry: { limit: 5 },
                 timeout: {
-                    request: 5000
+                    request: 10000
                 }
             }).json();
             in_use--;
