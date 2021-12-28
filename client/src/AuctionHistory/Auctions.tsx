@@ -6,6 +6,7 @@ import { GoldFormatter } from '../Shared/GoldFormatter';
 import { BonusListDropdown } from './BonusListDropdown';
 import { RegionSelector } from '../Shared/RegionSelector';
 import { AuctionHistoryDispatch } from './Shared';
+import {ScanRealms} from './ScanRealms';
 
 export interface AuctionsFormDataReducerAction {
     fieldName: string,
@@ -181,6 +182,7 @@ function Auctions(props: AuctionsProps) {
                     <button type="submit" disabled={!button_enabled} value="Run">Run</button>
                 </form>
             </AuctionHistoryDispatch.Provider>
+            <ScanRealms />
             {
                 (chart_ready === true) &&
                 <div className="DataReturnDisplay">
