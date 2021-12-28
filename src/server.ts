@@ -94,7 +94,7 @@ if (include_auction_history) {
     const ah = await CPCAuctionHistory(db, logger, api, cache);
 
     app.get('/scanned_realms', (req,res) => {
-        ah.scanRealms().then((result) => {
+        ah.getScanRealms().then((result) => {
             res.json(result);
         })
     });
