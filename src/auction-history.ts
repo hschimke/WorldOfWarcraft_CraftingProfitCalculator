@@ -5,7 +5,7 @@ import { getRegionCode } from './getRegionCode.js';
 
 const sql_insert_auction = 'INSERT INTO auctions(item_id, quantity, price, downloaded, connected_realm_id, bonuses) VALUES($1,$2,$3,$4,$5,$6)';
 const sql_insert_auction_archive = 'INSERT INTO auction_archive(item_id, quantity, summary, downloaded, connected_realm_id, bonuses) VALUES($1,$2,$3,$4,$5,$6)';
-const sql_insert_item = 'INSERT INTO items(item_id, region, name, craftable) VALUES($1,$2,$3,$4)';
+const sql_insert_item = 'INSERT INTO items(item_id, region, name, craftable) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING';
 const sql_insert_realm = 'INSERT INTO realms(connected_realm_id, name, region) VALUES($1,$2,$3)';
 
 const sql_check_item = 'SELECT COUNT(*) AS how_many FROM items WHERE item_id = $1 AND region = $2';
