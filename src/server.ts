@@ -30,8 +30,6 @@ if (process.env.DATABASE_TYPE === 'sqlite3') {
 const db = await CPCDb(db_conf, logger);
 const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, logger);
 const api = CPCApi(logger, auth);
-//const cache = await CPCCache(db);
-//const cache = await RedisCache();
 const cache = await (process.env.USE_REDIS === 'true' ? RedisCache() : CPCCache(db));
 
 app.use(express.urlencoded({ extended: false }));
