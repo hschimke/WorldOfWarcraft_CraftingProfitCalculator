@@ -65,8 +65,6 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
 
         const client = await db.getClient();
 
-        await client.query('BEGIN TRANSACTION');
-
         type HowMany = { how_many: number };
 
         for (const item of item_set) {
@@ -85,6 +83,8 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
                 }
             }
         }
+
+        await client.query('BEGIN TRANSACTION');
 
         const result = (await client.query<HowMany>(sql_check_realm, [connected_realm, region.toUpperCase()])).rows[0];
 
