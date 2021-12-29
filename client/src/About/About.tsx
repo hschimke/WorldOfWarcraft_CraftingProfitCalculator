@@ -24,6 +24,10 @@ function About() {
                 Basic server logs of errors may be kept, but ip addresses or other user identifiable information is not.
                 You can check our work by looking at <SourceLink text="the source" />, which is exactly what we deply.
             </p>
+            <p>wowcpc.info uses Google Analytics to record pageviews and metrics.
+                We have disabled all data sharing and advertising features.
+                In addition we have enabled anonymized ip-addresses.
+            </p>
 
             <span className='header'>Links</span>
             <ul>
