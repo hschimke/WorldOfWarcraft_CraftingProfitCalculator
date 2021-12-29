@@ -1,4 +1,4 @@
-import React, { FormEvent, useReducer } from 'react';
+import React, { FormEvent, useEffect, useReducer } from 'react';
 import './Auctions.css';
 import { useFetchHistoryApi, UseFetchApiState } from '../Shared/ApiClient';
 import { Chart } from "react-google-charts";
@@ -73,6 +73,10 @@ function formDataReducer(state: AuctionsFormDataReducerState, action: AuctionsFo
 }
 
 function Auctions(props: AuctionsProps) {
+    useEffect(()=>{
+        document.title = "Crafting Profits Calculator - Auctions";
+    },[]);
+
     const [apiState, sendPayload] = useFetchHistoryApi();
     const [formState, dispatchFormUpdate] = useReducer(formDataReducer, {
         item_name: 'Grim-Veiled Bracers',

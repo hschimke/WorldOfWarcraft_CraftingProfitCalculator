@@ -1,4 +1,4 @@
-import { useState, useReducer } from 'react';
+import { useState, useReducer, useEffect } from 'react';
 import { RunForm } from './RunForm';
 import { useFetchCPCApi, UseFetchApiState } from '../Shared/ApiClient';
 import RunResultDisplay from './RunResultDisplay';
@@ -55,6 +55,10 @@ const formDataReducer = (state: RunCoordinatorFormDataReducerState, action: RunC
 }
 
 function RunCoordinator(props:RunCoordinatorProps) {
+    useEffect(()=>{
+        document.title = "Crafting Profits Calculator";
+    },[]);
+
     const [apiState, setPayload] = useFetchCPCApi();
     const [formData, dispatchFormUpdate] = useReducer(formDataReducer, {
         item: 'Grim-Veiled Bracers',

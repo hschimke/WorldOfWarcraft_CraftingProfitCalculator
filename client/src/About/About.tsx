@@ -1,8 +1,12 @@
-import React from 'react';
+import {useEffect} from 'react';
 import './About.css';
 import { BugReportLink, SourceLink, ReadMeLink, AddonDownloadLink } from '../Shared/Links';
 
 function About() {
+    useEffect(()=>{
+        document.title = "Crafting Profits Calculator - About";
+    },[]);
+
     return (
         <div id="About">
             <span className='header'>About</span>
