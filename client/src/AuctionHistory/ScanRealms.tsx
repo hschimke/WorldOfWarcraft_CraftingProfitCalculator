@@ -11,7 +11,7 @@ export function ScanRealms(){
                 updateResult(realms);
             } );
         })
-    });
+    }, []);
 
     return <div id="ScanRealmsList">
         <p>You can enter any realm or region in the search box but you won't get any results unless it is one of the ones listed below.
