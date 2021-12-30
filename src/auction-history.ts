@@ -19,6 +19,7 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
     const { getAuctionHouse, getConnectedRealmId, checkIsCrafting, getItemId, getItemDetails, getBlizConnectedRealmDetail } = CPCApiHelpers(logging, cache, api);
 
     async function ingest(region: RegionCode, connected_realm: number): Promise<void> {
+        logger.info(`Injest job started for ${region}:${connected_realm}`);
         // Get auction house
         const auction_house = await getAuctionHouse(connected_realm, region);
         const downloaded = Date.now();
@@ -67,6 +68,8 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
 
         type HowMany = { how_many: number };
 
+        await client.query('BEGIN TRANSACTION');
+
         for (const item of item_set) {
             const result = (await client.query<HowMany>(sql_check_item, [item, region])).rows[0];
 
@@ -83,8 +86,6 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
                 }
             }
         }
-
-        await client.query('BEGIN TRANSACTION');
 
         const result = (await client.query<HowMany>(sql_check_realm, [connected_realm, region.toUpperCase()])).rows[0];
 
@@ -108,6 +109,8 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
 
         await client.query('COMMIT TRANSACTION');
         await client.release();
+
+        logger.info(`Injest job finished for ${region}:${connected_realm}`);
     }
 
     async function getAllBonuses(item: ItemSoftIdentity, region: RegionCode): Promise<GetAllBonusesReturn> {
