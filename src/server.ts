@@ -120,6 +120,9 @@ if (cluster.isPrimary) {
                 instance.runWithJSONConfig(config).then((data) => {
                     const { intermediate } = data;
                     res.json(intermediate);
+                }).catch((issue) => {
+                    logger.info(`Invalid item search`,issue);
+                    res.json({ ERROR: 'Item Not Found' });
                 });
             }
         });

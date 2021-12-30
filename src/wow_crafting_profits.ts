@@ -655,7 +655,7 @@ async function CPCInstance(logging: Logger, cache: CPCCache, api: CPCApi) {
             formatted_data = await textFriendlyOutputFormat(intermediate_data, 0);
         } catch (e) {
             logger.error(`Error building output for ${region}:${server} ${item}`, e);
-            console.log(e);
+            throw(e);
         }
 
         return {

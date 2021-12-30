@@ -3,6 +3,7 @@ import { RunForm } from './RunForm';
 import { useFetchCPCApi, UseFetchApiState } from '../Shared/ApiClient';
 import RunResultDisplay from './RunResultDisplay';
 import { all_professions, CraftingProfitsDispatch, CharacterProfessionList, validateAndCleanProfessions } from './Shared';
+import {HelpBox} from './HelpBox';
 import './RunCoordinator.css';
 
 export interface RunCoordinatorFormDataReducerState {
@@ -69,8 +70,12 @@ function RunCoordinator(props:RunCoordinatorProps) {
         professions: all_professions.slice(),
     });
     const enable_run_button = !apiState.isLoading;
-    const output_display = apiState.isLoading ? `Analyzing ${formData.item}` : 'ready';
-    const raw_data = apiState.data;
+    let output_display = apiState.isLoading ? `Analyzing ${formData.item}` : 'ready';
+
+    const raw_data = apiState.data?.ERROR === undefined ? apiState.data : undefined;
+    if(apiState.data?.ERROR !== undefined ){
+        output_display = apiState.data.ERROR;
+    }
 
     const [show_raw_results, updateShowRawResults] = useState(false);
     const [run_type, updateRunType] = useState('advanced');
@@ -118,6 +123,7 @@ function RunCoordinator(props:RunCoordinatorProps) {
                         <input type="checkbox" name="includeRaw" checked={show_raw_results} onChange={pickForm} />
                 </label>
             </form>
+            <HelpBox />
             <div>
                 <CraftingProfitsDispatch.Provider value={dispatchFormUpdate}>
                     <RunForm handleSubmit={handleSubmit}
