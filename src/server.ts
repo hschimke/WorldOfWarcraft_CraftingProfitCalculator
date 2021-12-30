@@ -10,6 +10,7 @@ import { RedisCache } from './redis-cache-provider.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { validateProfessions } from './validateProfessions.js';
 import { CPCInstance } from './wow_crafting_profits.js';
+import compression from 'compression';
 import cluster from 'cluster';
 
 const logger = parentLogger.child({});
@@ -77,6 +78,8 @@ if (cluster.isPrimary) {
     app.use(express.json());
 
     app.use(express.static(resolve('html/build')));
+
+    app.use(compression());
 
     app.get('/', (req, res) => {
         logger.debug('Homepage requested');
