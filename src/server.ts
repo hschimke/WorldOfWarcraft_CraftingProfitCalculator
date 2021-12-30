@@ -1,3 +1,5 @@
+import cluster from 'cluster';
+import compression from 'compression';
 import { default as express } from 'express';
 import { resolve } from 'path';
 import { CPCApi } from './blizzard-api-call.js';
@@ -10,8 +12,6 @@ import { RedisCache } from './redis-cache-provider.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { validateProfessions } from './validateProfessions.js';
 import { CPCInstance } from './wow_crafting_profits.js';
-import compression from 'compression';
-import cluster from 'cluster';
 
 const logger = parentLogger.child({});
 
@@ -59,7 +59,7 @@ if (cluster.isPrimary) {
 
     cluster.on('exit', function (worker, code, signal) {
         console.log('worker ' + worker.process.pid + ' died.');
-        if(!shutting_down){
+        if (!shutting_down) {
             cluster.fork();
         }
     });
@@ -124,7 +124,7 @@ if (cluster.isPrimary) {
                     const { intermediate } = data;
                     res.json(intermediate);
                 }).catch((issue) => {
-                    logger.info(`Invalid item search`,issue);
+                    logger.info(`Invalid item search`, issue);
                     res.json({ ERROR: 'Item Not Found' });
                 });
             }
@@ -270,6 +270,6 @@ if (cluster.isPrimary) {
 
     process.on('SIGTERM', () => {
         logger.info('SIGTERM signal received: closing HTTP server')
-        db.shutdown().then(() => {cache.shutdown()}).then(() => {server.close() });
+        db.shutdown().then(() => { cache.shutdown() }).then(() => { server.close() });
     });
 }
