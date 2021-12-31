@@ -176,4 +176,52 @@ function parseJSON(response: Response) {
     return response.json();
 }
 
-export { useFetchHistoryApi, useFetchApi, useFetchCPCApi, useSeenBonusesApi };
+function fetchPromiseWrapper<Type>(endpoint: string, data: object | undefined = undefined): { read: () => Type } {
+    const address = endpoint;
+    let status = 'pending';
+    let result: Error | Type | undefined;
+    let config = undefined;
+
+    if( data !== undefined ){
+        config = {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        };
+    }
+
+    const suspender = fetch(address,config).then((data) => {
+        return data.json();
+    }, (e) => {
+        status = "error";
+        result = e;
+        console.log(1);
+        console.log(e);
+    }).then(
+        (r) => {
+            status = "success";
+            result = r as Type;
+            console.log(2);
+            console.log(r);
+        },
+        (e) => {
+            status = "error";
+            result = e;
+            console.log(3);
+            console.log(e);
+        });
+    return {
+        read(): Type {
+            if (status === "pending") {
+                throw suspender;
+            } else if (status === "error") {
+                throw result;
+            }
+            return result as Type;
+        }
+    }
+}
+
+export { useFetchHistoryApi, useFetchApi, useFetchCPCApi, useSeenBonusesApi, fetchPromiseWrapper };
