@@ -3,6 +3,7 @@ import { textFriendlyOutputFormat } from '../Shared/text-output-helpers';
 import './RunResultDisplay.css';
 import { GoldFormatter, VendorItemPrice, AHItemPrice } from '../Shared/GoldFormatter';
 import { ShoppingLists } from './ShoppingLists';
+import type {RunResultDataResponseAggregate} from './RunCoordinator';
 
 const hidden_recipe_listing_header = {};
 
@@ -17,7 +18,7 @@ export interface RunResultItemProps{
     show_children?: boolean
 }
 export interface RunResultDisplayProps{
-    raw_run: ServerRunResultReturn & ServerErrorReturn | undefined,
+    raw_run: RunResultDataResponseAggregate,
     status: string,
     show_raw_result: boolean
 }
@@ -77,7 +78,7 @@ function RecipeListing(props:RecipeListingProps) {
 function RunResultItem({ raw_run, show_children = true }: RunResultItemProps) {
     const [child_visibility, updateChildVisibility] = useState(show_children);
 
-    if (raw_run === undefined) {
+    if (raw_run === undefined || ((raw_run as ServerErrorReturn).ERROR !== undefined)) {
         return null;
     }
 
@@ -154,15 +155,16 @@ function RunResultItem({ raw_run, show_children = true }: RunResultItemProps) {
 
 function RunResultDisplay(props:RunResultDisplayProps) {
     const SHOW_RES = props.show_raw_result;
+    const raw_run = props.raw_run.read();
     let res;
-    if (props.status === 'ready' && props.raw_run !== undefined) {
-        res = textFriendlyOutputFormat(props.raw_run, 1);
+    if (raw_run !== undefined) {
+        res = textFriendlyOutputFormat(raw_run, 1);
     }
     return (
         <div className="RunResultDisplay">
             {props.status !== 'ready' &&
                 <div className="Status">
-                    {props.status}
+                    {(raw_run?.ERROR !== undefined) && raw_run?.ERROR}
                 </div>
             }
             {SHOW_RES &&
@@ -173,7 +175,7 @@ function RunResultDisplay(props:RunResultDisplayProps) {
                 </div>
             }
             <div className="WebResult">
-                <RunResultItem raw_run={props.raw_run} />
+                <RunResultItem raw_run={raw_run} />
             </div>
         </div>
     );

@@ -197,20 +197,14 @@ function fetchPromiseWrapper<Type>(endpoint: string, data: object | undefined = 
     }, (e) => {
         status = "error";
         result = e;
-        console.log(1);
-        console.log(e);
     }).then(
         (r) => {
             status = "success";
             result = r as Type;
-            console.log(2);
-            console.log(r);
         },
         (e) => {
             status = "error";
             result = e;
-            console.log(3);
-            console.log(e);
         });
     return {
         read(): Type {

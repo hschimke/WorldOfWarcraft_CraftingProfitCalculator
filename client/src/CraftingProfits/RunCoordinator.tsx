@@ -1,15 +1,15 @@
-import { useState, useReducer, useEffect, Suspense } from 'react';
+import { useState, useReducer, useEffect, Suspense, useTransition } from 'react';
 import { RunForm } from './RunForm';
-import { useFetchCPCApi, UseFetchApiState } from '../Shared/ApiClient';
+import { fetchPromiseWrapper } from '../Shared/ApiClient';
 import RunResultDisplay from './RunResultDisplay';
 import { all_professions, CraftingProfitsDispatch, CharacterProfessionList, validateAndCleanProfessions } from './Shared';
-import {HelpBox} from './HelpBox';
+import { HelpBox } from './HelpBox';
 import './RunCoordinator.css';
 
 export interface RunCoordinatorFormDataReducerState {
     item: string,
     addon_data: string,
-    required: string|number,
+    required: string | number,
     region: string,
     realm: string,
     professions: CharacterProfessionList
@@ -21,9 +21,11 @@ export interface RunCoordinatorFormDataReducerAction {
     professions: CharacterProfessionList
 }
 
-export interface RunCoordinatorProps{}
+export interface RunCoordinatorProps { }
 
-const formDataReducer = (state: RunCoordinatorFormDataReducerState, action: RunCoordinatorFormDataReducerAction) : RunCoordinatorFormDataReducerState => {
+export type RunResultDataResponseAggregate = { read: () => (OutputFormatObject & ServerErrorReturn) | undefined };
+
+const formDataReducer = (state: RunCoordinatorFormDataReducerState, action: RunCoordinatorFormDataReducerAction): RunCoordinatorFormDataReducerState => {
     switch (action.field) {
         case 'item':
             return { ...state, item: action.value };
@@ -55,12 +57,15 @@ const formDataReducer = (state: RunCoordinatorFormDataReducerState, action: RunC
     }
 }
 
-function RunCoordinator(props:RunCoordinatorProps) {
-    useEffect(()=>{
+function RunCoordinator(props: RunCoordinatorProps) {
+    useEffect(() => {
         document.title = "Crafting Profits Calculator";
-    },[]);
+    }, []);
 
-    const [apiState, setPayload] = useFetchCPCApi();
+    const [isFormTypeChangePending, startChangeFormType] = useTransition();
+    const [isLoadingRun, startLoadingRun] = useTransition();
+
+    //const [apiState, setPayload] = useFetchCPCApi();
     const [formData, dispatchFormUpdate] = useReducer(formDataReducer, {
         item: 'Grim-Veiled Bracers',
         addon_data: '',
@@ -69,43 +74,52 @@ function RunCoordinator(props:RunCoordinatorProps) {
         realm: 'Hyjal',
         professions: all_professions.slice(),
     });
-    const enable_run_button = !apiState.isLoading;
-    let output_display = apiState.isLoading ? `Analyzing ${formData.item}` : 'ready';
+    const enable_run_button = true;//!apiState.isLoading;
+    const output_display = '';
+    //let output_display = apiState.isLoading ? `Analyzing ${formData.item}` : 'ready';
 
-    const raw_data = apiState.data?.ERROR === undefined ? apiState.data : undefined;
-    if(apiState.data?.ERROR !== undefined ){
+    //const raw_data = apiState.data?.ERROR === undefined ? apiState.data : undefined;
+    /*
+    if (apiState.data?.ERROR !== undefined) {
         output_display = apiState.data.ERROR;
     }
+    */
 
     const [show_raw_results, updateShowRawResults] = useState(false);
     const [run_type, updateRunType] = useState('advanced');
+    const [scanResult, setScanResult] = useState({ read: () => { return undefined; } } as RunResultDataResponseAggregate);
 
-    const handleSubmit : React.FormEventHandler = (event) => {
-        event.preventDefault();
+    const handleSubmit: React.FormEventHandler = (event) => {
+        startLoadingRun(() => {
+            event.preventDefault();
 
-        const run_data = {
-            type: run_type === 'advanced' ? 'custom' : 'json',
-            item_id: formData.item,
-            addon_data: formData.addon_data,
-            count: formData.required,
-            region: formData.region,
-            server: formData.realm,
-            professions: JSON.stringify(formData.professions),
-        };
-        setPayload(run_data);
+            const run_data = {
+                type: run_type === 'advanced' ? 'custom' : 'json',
+                item_id: formData.item,
+                addon_data: formData.addon_data,
+                count: formData.required,
+                region: formData.region,
+                server: formData.realm,
+                professions: JSON.stringify(formData.professions),
+            };
+            //setPayload(run_data);
+            setScanResult(fetchPromiseWrapper<OutputFormatObject & ServerErrorReturn | undefined>('/json_output', run_data));
+        });
     };
 
-    const pickForm : React.ChangeEventHandler<HTMLSelectElement | HTMLInputElement>= (e) => {
-        switch (e.target.name) {
-            case 'formType':
-                updateRunType(e.target.value);
-                break;
-            case 'includeRaw':
-                updateShowRawResults(!show_raw_results);
-                break;
-            default:
-                break;
-        }
+    const pickForm: React.ChangeEventHandler<HTMLSelectElement | HTMLInputElement> = (e) => {
+        startChangeFormType(() => {
+            switch (e.target.name) {
+                case 'formType':
+                    updateRunType(e.target.value);
+                    break;
+                case 'includeRaw':
+                    updateShowRawResults(!show_raw_results);
+                    break;
+                default:
+                    break;
+            }
+        });
     };
 
     return (
@@ -113,14 +127,14 @@ function RunCoordinator(props:RunCoordinatorProps) {
             <form className="TypePicker">
                 <label>
                     Run Type:
-                        <select onChange={pickForm} value={run_type} name="formType">
+                    <select onChange={pickForm} value={run_type} name="formType">
                         <option value="advanced">Advanced</option>
                         <option value="simple">Simple</option>
                     </select>
                 </label>
                 <label>
                     Include Raw Output:
-                        <input type="checkbox" name="includeRaw" checked={show_raw_results} onChange={pickForm} />
+                    <input type="checkbox" name="includeRaw" checked={show_raw_results} onChange={pickForm} />
                 </label>
             </form>
             <HelpBox />
@@ -139,8 +153,9 @@ function RunCoordinator(props:RunCoordinatorProps) {
                 </CraftingProfitsDispatch.Provider>
             </div>
             <div>
-                <Suspense fallback={<p>Loading</p>}>
-                    <RunResultDisplay raw_run={raw_data} status={output_display} show_raw_result={show_raw_results} />
+                {isLoadingRun && <p>Analyzing {formData.item}</p>}
+                <Suspense fallback={<p>Analyzing {formData.item}</p>}>
+                    <RunResultDisplay raw_run={scanResult} status={output_display} show_raw_result={show_raw_results} />
                 </Suspense>
             </div>
         </div>
