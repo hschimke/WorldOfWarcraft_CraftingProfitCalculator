@@ -1,4 +1,4 @@
-import { useState, useReducer, useEffect } from 'react';
+import { useState, useReducer, useEffect, Suspense } from 'react';
 import { RunForm } from './RunForm';
 import { useFetchCPCApi, UseFetchApiState } from '../Shared/ApiClient';
 import RunResultDisplay from './RunResultDisplay';
@@ -139,7 +139,9 @@ function RunCoordinator(props:RunCoordinatorProps) {
                 </CraftingProfitsDispatch.Provider>
             </div>
             <div>
-                <RunResultDisplay raw_run={raw_data} status={output_display} show_raw_result={show_raw_results} />
+                <Suspense fallback={<p>Loading</p>}>
+                    <RunResultDisplay raw_run={raw_data} status={output_display} show_raw_result={show_raw_results} />
+                </Suspense>
             </div>
         </div>
     );
