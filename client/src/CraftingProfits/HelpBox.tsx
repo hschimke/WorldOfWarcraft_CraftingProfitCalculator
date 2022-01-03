@@ -1,26 +1,26 @@
 import { useState } from 'react';
-import './HelpBox.css';
+import styles from './HelpBox.module.css';
 
 export function HelpBox() {
-    const [showMe, updateShowMe] = useState(false);
+    const [showMe, updateShowMe] = useState(true);
     const showHide = () => {
         updateShowMe(!showMe);
     }
 
     if (!showMe) {
-        return (<div className='HelpBox' onClick={showHide}>
-            <span className='HelpTop'>Help</span>
+        return (<div className={styles.HelpBox} onClick={showHide}>
+            <span className={styles.HelpTop}>Help</span>
         </div>);
     }
 
     return (
-        <div className='HelpBox' onClick={showHide}>
-            <span className='HelpTop'>Help</span>
-            <span className='HelpHeader'>Form</span>
+        <div className={styles.HelpBox} onClick={showHide}>
+            <span className={styles.HelpTop}>Help</span>
+            <span className={styles.HelpHeader}>Form</span>
             <p>Help filling out the form.
                 Example values are provided throughout.
                 Copy the outpout from the Addon into the box provided to perform a more automated run.</p>
-            <span className='HelpHeader'>Results</span>
+            <span className={styles.HelpHeader}>Results</span>
             <p>
                 Results are presented as a collapsable heirarchy of recipes and components.
             </p>
@@ -31,7 +31,7 @@ export function HelpBox() {
                 for '1 RECIPES'.
                 If you select that, you will see the recipe details for Enchanged Lightless Silk.
             </p>
-            <span className='HelpHeader'>Shopping List</span>
+            <span className={styles.HelpHeader}>Shopping List</span>
             <p>The shopping list shows what you will need to buy for each different recipe rank to produce the item.</p>
             <p>If inventory data is provided using the Addon then it will only show items you don't know, so only those which need to be purchased.</p>
         </div>

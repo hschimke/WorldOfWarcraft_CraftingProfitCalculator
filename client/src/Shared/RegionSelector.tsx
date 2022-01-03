@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import './RegionSelector.css'
+import './RegionSelector.css';
 
 const region_list = ['US', 'EU', 'KR', 'TW'];
 

@@ -1,7 +1,7 @@
 import { useContext } from 'react';
 import { useSeenBonusesApi } from '../Shared/ApiClient';
 import { AuctionHistoryDispatch } from './Shared';
-import './BonusListDropdown.css';
+import styles from './BonusListDropdown.module.css';
 
 export interface BonusListDropdownProps {
     item: string,

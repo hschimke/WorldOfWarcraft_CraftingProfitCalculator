@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { BugReportLink } from '../Shared/Links';
 import { fetchPromiseWrapper } from '../Shared/ApiClient';
-import './ScanRealms.css';
+import styles from './ScanRealms.module.css';
 
 type ScanRealmsResult = { realm_names: string, realm_id: ConnectedRealmID, region: RegionCode }[];
 
@@ -9,7 +9,7 @@ const realms_dl = fetchPromiseWrapper<ScanRealmsResult>('/scanned_realms');
 
 export function ScanRealms() {
 
-    return <div id="ScanRealmsList">
+    return <div className={styles.ScanRealmsList}>
         <p>You can enter any realm or region in the search box but you won't get any results unless it is one of the ones listed below.
             If you would like to have you realm added to the scan list, please <BugReportLink text="let us known" />.
         </p>

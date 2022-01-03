@@ -1,5 +1,5 @@
 import {useEffect} from 'react';
-import './About.css';
+import styles from './About.module.css';
 import { BugReportLink, SourceLink, ReadMeLink, AddonDownloadLink } from '../Shared/Links';
 
 function About() {
@@ -8,12 +8,12 @@ function About() {
     },[]);
 
     return (
-        <div id="About">
-            <span className='header'>About</span>
+        <div className={styles.About}>
+            <span className={styles.header}>About</span>
             <p>Crafting Profits Calculator is designed to help figure out
                 if it is worth your time and gold to craft an item or buy it on the auction house.</p>
 
-            <span className='header'>Known Issues</span>
+            <span className={styles.header}>Known Issues</span>
             <ul>
                 <li>The behaviour of some international servers is undefined.</li>
                 <li>China is no fully supported.</li>
@@ -23,7 +23,7 @@ function About() {
                     this can confuse the system. If you find one of these please <BugReportLink text="report it" />.</li>
             </ul>
 
-            <span className='header'>Privacy</span>
+            <span className={styles.header}>Privacy</span>
             <p>wowcpc.info does not collect any personal information and requires no login.
                 Basic server logs of errors may be kept, but ip addresses or other user identifiable information is not.
                 You can check our work by looking at <SourceLink text="the source" />, which is exactly what we deply.
@@ -33,7 +33,7 @@ function About() {
                 In addition we have enabled anonymized ip-addresses.
             </p>
 
-            <span className='header'>Links</span>
+            <span className={styles.header}>Links</span>
             <ul>
                 <li><ReadMeLink text="Full Readme [github]" /></li>
                 <li><AddonDownloadLink text="Download Addon" /></li>

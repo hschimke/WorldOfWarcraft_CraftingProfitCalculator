@@ -1,4 +1,4 @@
-import './GoldFormatter.css';
+import styles from  './GoldFormatter.module.css';
 
 export interface GoldFormatterProps {
     raw_price: number
@@ -11,18 +11,18 @@ function GoldFormatter(props: GoldFormatterProps) {
     const silver = (((price % 10000) - copper)) / 100;
     const gold = (price - (price % 10000)) / 10000;
     return (
-        <span className="PriceData">
-            <span className="Gold">
+        <span className={styles.PriceData}>
+            <span className={styles.Gold}>
                 {gold.toLocaleString()}
-                <span className="Currency">g</span>
+                <span className={styles.Currency}>g</span>
             </span>
-            <span className="Silver">
+            <span className={styles.Silver}>
                 {silver.toLocaleString()}
-                <span className="Currency">s</span>
+                <span className={styles.Currency}>s</span>
             </span>
-            <span className="Copper">
+            <span className={styles.Copper}>
                 {copper.toLocaleString()}
-                <span className="Currency">c</span>
+                <span className={styles.Currency}>c</span>
             </span>
         </span>
     );
@@ -30,7 +30,7 @@ function GoldFormatter(props: GoldFormatterProps) {
 
 function AHItemPrice(props: { ah: OutputFormatPrice }) {
     return (
-        <div className="AHItemPrice">
+        <div className={styles.AHItemPrice}>
             AH {props.ah.sales}: <GoldFormatter raw_price={props.ah.high} />/<GoldFormatter raw_price={props.ah.low} />/<GoldFormatter raw_price={props.ah.average} />
         </div>
     );
@@ -38,7 +38,7 @@ function AHItemPrice(props: { ah: OutputFormatPrice }) {
 
 function VendorItemPrice(props: { vendor: number }) {
     return (
-        <div className="VendorItemPrice">
+        <div className={styles.VendorItemPrice}>
             Vendor <GoldFormatter raw_price={props.vendor} />
         </div>
     );
