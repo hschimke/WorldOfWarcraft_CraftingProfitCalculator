@@ -71,20 +71,20 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
         await client.query('BEGIN TRANSACTION');
 
         for (const item of item_set) {
-            const result = (await client.query<HowMany>(sql_check_item, [item, region])).rows[0];
+            //const result = (await client.query<HowMany>(sql_check_item, [item, region])).rows[0];
 
-            let found = false;
-            if (result.how_many > 0) {
-                found = true;
-            }
+            //let found = false;
+            //if (result.how_many > 0) {
+            //    found = true;
+            //}
 
-            if (!found) {
-                try {
-                    await client.query(sql_insert_item, [item, region, null, false]);
-                } catch (err) {
-                    logger.error(`Could not save ${item} in region ${region}.`, err);
-                }
+            //if (!found) {
+            try {
+                await client.query(sql_insert_item, [item, region, null, false]);
+            } catch (err) {
+                logger.error(`Could not save ${item} in region ${region}.`, err);
             }
+            //}
         }
 
         const result = (await client.query<HowMany>(sql_check_realm, [connected_realm, region.toUpperCase()])).rows[0];
