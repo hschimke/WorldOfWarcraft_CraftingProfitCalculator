@@ -1,4 +1,4 @@
-footer {
+.footer {
     clear: both;
     text-align: left;
     padding: 15px;
@@ -7,11 +7,15 @@ footer {
     width: 100%;
   }
 
-  footer ul {
+  .footer ul {
       list-style: none;
   }
 
-  footer ul li, footer ul li a {
+  .footer ul li, .footer ul li a {
       margin: 10px;
+      color: gray;
+  }
+
+  .footer p {
       color: gray;
   }
