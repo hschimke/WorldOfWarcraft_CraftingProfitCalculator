@@ -6,6 +6,7 @@ import { CPCApi } from './blizzard-api-call.js';
 import { ApiAuthorization } from './blizz_oath.js';
 import { CPCCache, static_sources } from './cached-data-sources.js';
 import { CPCDb } from './database/database.js';
+import { CACHE_DB_FN, CLIENT_ID, CLIENT_SECRET, CLUSTER_SIZE, DATABASE_TYPE, DISABLE_AUCTION_HISTORY, HISTORY_DB_FN, SERVER_PORT, USE_REDIS } from './environment_variables.js';
 import { getRegionCode } from './getRegionCode.js';
 import { parentLogger } from './logging.js';
 import { RedisCache } from './redis-cache-provider.js';
@@ -15,18 +16,18 @@ import { CPCInstance } from './wow_crafting_profits.js';
 
 const logger = parentLogger.child({});
 
-const port = process.env.SERVER_PORT;
+const port = SERVER_PORT;
 
-const include_auction_history: boolean = process.env.DISABLE_AUCTION_HISTORY !== undefined && process.env.DISABLE_AUCTION_HISTORY === 'true' ? false : true;
-const cluster_size: number = process.env.CLUSTER_SIZE !== undefined && Number.isSafeInteger(Number(process.env.CLUSTER_SIZE)) ? Number(process.env.CLUSTER_SIZE) : 1;
+const include_auction_history: boolean = DISABLE_AUCTION_HISTORY;
+const cluster_size: number = CLUSTER_SIZE;
 
 const db_conf: DatabaseConfig = {
-    type: process.env.DATABASE_TYPE !== undefined ? process.env.DATABASE_TYPE : ''
+    type: DATABASE_TYPE !== undefined ? DATABASE_TYPE : ''
 }
-if (process.env.DATABASE_TYPE === 'sqlite3') {
+if (DATABASE_TYPE === 'sqlite3') {
     db_conf.sqlite3 = {
-        cache_fn: process.env.CACHE_DB_FN !== undefined ? process.env.CACHE_DB_FN : './databases/cache.db',
-        auction_fn: process.env.HISTORY_DB_FN !== undefined ? process.env.HISTORY_DB_FN : './databases/historical_auctions.db'
+        cache_fn: CACHE_DB_FN !== undefined ? CACHE_DB_FN : './databases/cache.db',
+        auction_fn: HISTORY_DB_FN !== undefined ? HISTORY_DB_FN : './databases/historical_auctions.db'
     };
 }
 
@@ -70,9 +71,9 @@ if (cluster.isPrimary) {
     const app = express();
 
     const db = await CPCDb(db_conf, logger);
-    const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, logger);
+    const auth = ApiAuthorization(CLIENT_ID, CLIENT_SECRET, logger);
     const api = CPCApi(logger, auth);
-    const cache = await (process.env.USE_REDIS === 'true' ? RedisCache() : CPCCache(db));
+    const cache = await (USE_REDIS ? RedisCache() : CPCCache(db));
 
     app.use(express.urlencoded({ extended: false }));
     app.use(express.json());

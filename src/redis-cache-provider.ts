@@ -1,8 +1,9 @@
 import { createClient } from 'redis';
+import { REDIS_URL } from './environment_variables.js';
 
 async function RedisCache(): Promise<CPCCache> {
     const client = createClient({
-        url: process.env.REDIS_URL
+        url: REDIS_URL
     });
 
     client.on('error', (err) => console.log('Redis Client Error', err));

@@ -1,6 +1,7 @@
 import { default as winston } from 'winston';
+import { DOCKERIZED, LOG_LEVEL, NODE_ENV } from './environment_variables.js';
 
-const lowest_level_to_report: string = (process.env.LOG_LEVEL !== undefined) ? process.env.LOG_LEVEL : 'info';
+const lowest_level_to_report: string = LOG_LEVEL;
 
 const parentLogger = winston.createLogger({
     level: lowest_level_to_report,
@@ -20,14 +21,14 @@ const parentLogger = winston.createLogger({
 // If we're not in production then log to the `console` with the format:
 // `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
 //
-if (process.env.NODE_ENV !== 'production') {
+if (NODE_ENV !== 'production') {
     parentLogger.add(new winston.transports.Console({
         format: winston.format.simple(),
         level: lowest_level_to_report,
     }));
 }
 
-if (process.env.DOCKERIZED === 'true') {
+if (DOCKERIZED === true) {
     parentLogger.add(new winston.transports.Console({
         format: winston.format.simple(),
         level: lowest_level_to_report,

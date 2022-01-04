@@ -9,6 +9,7 @@ import { parentLogger } from './logging.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { validateProfessions } from "./validateProfessions.js";
 import { CPCInstance } from './wow_crafting_profits.js';
+import { CACHE_DB_FN, CLIENT_ID, CLIENT_SECRET, DATABASE_TYPE, HISTORY_DB_FN, USE_REDIS } from './environment_variables.js';
 
 //blacksmithing
 //const test_item = 171414;
@@ -112,12 +113,12 @@ const config = new RunConfiguration({
 }, item, required);
 
 const db_conf: DatabaseConfig = {
-    type: process.env.DATABASE_TYPE !== undefined ? process.env.DATABASE_TYPE : ''
+    type: DATABASE_TYPE !== undefined ? DATABASE_TYPE : ''
 }
-if (process.env.DATABASE_TYPE === 'sqlite3') {
+if (DATABASE_TYPE === 'sqlite3') {
     db_conf.sqlite3 = {
-        cache_fn: process.env.CACHE_DB_FN !== undefined ? process.env.CACHE_DB_FN : './databases/cache.db',
-        auction_fn: process.env.HISTORY_DB_FN !== undefined ? process.env.HISTORY_DB_FN : './databases/historical_auctions.db'
+        cache_fn: CACHE_DB_FN !== undefined ? CACHE_DB_FN : './databases/cache.db',
+        auction_fn: HISTORY_DB_FN !== undefined ? HISTORY_DB_FN : './databases/historical_auctions.db'
     };
 }
 const log = parentLogger.child({})
@@ -130,11 +131,11 @@ const log = parentLogger.child({})
 ));*/
 
 const db = await CPCDb(db_conf, log);
-const auth = ApiAuthorization(process.env.CLIENT_ID, process.env.CLIENT_SECRET, log);
+const auth = ApiAuthorization(CLIENT_ID, CLIENT_SECRET, log);
 const api = CPCApi(log, auth);
 //const cache = await CPCCache(db);
 //const cache = await RedisCache();
-const cache = await (process.env.USE_REDIS === 'true' ? RedisCache() : CPCCache(db));
+const cache = await (USE_REDIS ? RedisCache() : CPCCache(db));
 const inst = await CPCInstance(log, cache, api);
 
 await inst.cliRun(config)
