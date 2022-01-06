@@ -138,6 +138,34 @@ if (cluster.isPrimary) {
         const { CPCAuctionHistory } = await import('./auction-history.js');
         const ah = await CPCAuctionHistory(db, logger, api, cache);
 
+        app.get('/all_items', (req,res) => {
+            logger.debug('Getting all items');
+            cache.cacheCheck('AH-FUNCTIONS','ALL_ITEMS_NAMES').then((found)=>{
+                if(found){
+                    logger.debug('Cached all items found.');
+                    return cache.cacheGet('AH-FUNCTIONS','ALL_ITEMS_NAMES');
+                }else{
+                    logger.debug('Getting fresh all items.');
+                    ah.getAllNames().then((names) => {
+                        cache.cacheSet('AH-FUNCTIONS','ALL_ITEMS_NAMES',names,4740);
+                        return names;
+                    })
+                }
+            }).then((names:string[]) => {
+                if( req.query.partial !== undefined && typeof(req.query.partial) === 'string' && req.query.partial !== '' ){
+                    const partial : string = req.query.partial;
+                    logger.debug(`Partial search for all items with "${partial}"`);
+                    const filtered_set = names.filter((str) => {
+                        return str.toLocaleLowerCase().includes(partial.toLocaleLowerCase());
+                    });
+                    res.json(filtered_set);
+                }else{
+                    logger.debug('Returning all unfiltered items.');
+                    res.json(names);
+                }
+            })
+        });
+
         app.get('/scanned_realms', (req, res) => {
             ah.getScanRealms().then((result) => {
                 res.json(result);

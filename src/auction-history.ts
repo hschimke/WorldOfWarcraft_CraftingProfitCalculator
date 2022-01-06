@@ -5,7 +5,7 @@ import { getRegionCode } from './getRegionCode.js';
 
 const sql_insert_auction = 'INSERT INTO auctions(item_id, quantity, price, downloaded, connected_realm_id, bonuses) VALUES($1,$2,$3,$4,$5,$6)';
 const sql_insert_auction_archive = 'INSERT INTO auction_archive(item_id, quantity, summary, downloaded, connected_realm_id, bonuses) VALUES($1,$2,$3,$4,$5,$6)';
-const sql_insert_item = 'INSERT INTO items(item_id, region, name, craftable) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING';
+const sql_insert_item = 'INSERT INTO items(item_id, region, name, craftable, scanned) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING';
 const sql_insert_realm = 'INSERT INTO realms(connected_realm_id, name, region) VALUES($1,$2,$3)';
 
 const sql_check_item = 'SELECT COUNT(*) AS how_many FROM items WHERE item_id = $1 AND region = $2';
@@ -80,7 +80,7 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
 
             //if (!found) {
             try {
-                await client.query(sql_insert_item, [item, region, null, false]);
+                await client.query(sql_insert_item, [item, region, null, false, false]);
             } catch (err) {
                 logger.error(`Could not save ${item} in region ${region}.`, err);
             }
@@ -145,8 +145,8 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
 
     async function fillNItems(fill_count: number = 5): Promise<void> {
         logger.info(`Filling ${fill_count} items with details.`);
-        const select_sql = 'SELECT item_id, region FROM items WHERE name ISNULL LIMIT $1';
-        const update_sql = 'UPDATE items SET name = $1, craftable = $2 WHERE item_id = $3 AND region = $4';
+        const select_sql = 'SELECT item_id, region FROM items WHERE scanned = false LIMIT $1';
+        const update_sql = 'UPDATE items SET name = $1, craftable = $2, scanned = true WHERE item_id = $3 AND region = $4';
         const client = await db.getClient();
         type ItemRow = { item_id: number, region: RegionCode }
         const rows = (await client.query<ItemRow>(select_sql, [fill_count])).rows;
@@ -167,6 +167,28 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
         client.release();
     }
 
+    async function fillNNames(fillCount: number = 5): Promise<void> {
+        logger.info(`Filling ${fillCount} unnamed item names.`);
+        const select_sql = 'SELECT item_id, region FROM items WHERE name ISNULL ORDER BY item_id DESC LIMIT $1';
+        const update_sql = 'UPDATE items SET name = $1 WHERE item_id = $2 AND region = $3';
+        const client = await db.getClient();
+        type ItemRow = { item_id: number, region: RegionCode }
+        const rows = (await client.query<ItemRow>(select_sql, [fillCount])).rows;
+        await client.query('BEGIN TRANSACTION');
+        for (const item of rows) {
+            try {
+                const fetched_item = await getItemDetails(item.item_id, item.region);
+                await client.query(update_sql, [fetched_item.name, item.item_id, item.region]);
+                logger.debug(`Updated item: ${item.item_id}:${item.region} with name: '${fetched_item.name}'`);
+            } catch (e) {
+                logger.error(`Issue filling ${item.item_id} in ${item.region}. Skipping`, e);
+                await client.query('DELETE FROM items WHERE item_id = $1 AND region = $2', [item.item_id, item.region]);
+                logger.error(`DELETED ${item.item_id} in ${item.region} from items table.`);
+            }
+        }
+        await client.query('COMMIT TRANSACTION');
+        client.release();
+    }
 
     async function getAuctions(item: ItemSoftIdentity, realm: ConnectedRealmSoftIentity, region: RegionCode, bonuses: number[] | string[] | string, start_dtm: number | string | undefined, end_dtm: number | string | undefined): Promise<AuctionSummaryData> {
         logger.debug(`getAuctions(${item}, ${realm}, ${region}, ${bonuses}, ${start_dtm}, ${end_dtm})`);
@@ -512,7 +534,15 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
             return ingest(realm.region, realm.connected_realm_id);
         }));
     }
-    return Object.freeze({ scanRealms, addRealmToScanList, removeRealmFromScanList, getAuctions, getAllBonuses, archiveAuctions, fillNItems, getScanRealms });
+
+    async function getAllNames(): Promise<string[]> {
+        const name_list = await db.all< { name: string } >('SELECT name FROM items WHERE name NOTNULL');
+        return name_list.reduce((prev: string[],curr) => {
+            return [...prev, curr.name];
+        }, []);
+    }
+
+    return Object.freeze({ scanRealms, addRealmToScanList, removeRealmFromScanList, getAuctions, getAllBonuses, archiveAuctions, fillNItems, fillNNames, getScanRealms, getAllNames });
 }
 
 export { CPCAuctionHistory };

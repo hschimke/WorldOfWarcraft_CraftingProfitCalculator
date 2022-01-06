@@ -32,6 +32,10 @@ function job(ah: CPCAuctionHistory) {
     })
 }
 
+async function fillNames(ah: CPCAuctionHistory){
+    return ah.fillNNames(100);
+}
+
 
 if (include_auction_history) {
     switch (server_mode) {
@@ -53,6 +57,11 @@ if (include_auction_history) {
                 const cache = await (USE_REDIS ? RedisCache() : CPCCache(db));
                 const ah = await CPCAuctionHistory(db, logger, api, cache);
                 job(ah);
+                await fillNames(ah);
+                api.shutdownApiManager();
+                await cache.shutdown();
+                await db.shutdown();
+                process.exit(0);
                 break;
             }
         case 'worker':
@@ -62,6 +71,7 @@ if (include_auction_history) {
         case 'standalone':
             {
                 logger.info('Started in standalone container mode. Scheduling hourly job.');
+                logger.info('Started in standalone container mode. Scheduling name fetch job.')
                 const db_conf: DatabaseConfig = {
                     type: DATABASE_TYPE !== undefined ? DATABASE_TYPE : ''
                 }
@@ -76,6 +86,10 @@ if (include_auction_history) {
                 const api = CPCApi(logger, auth);
                 const cache = await (USE_REDIS ? RedisCache() : CPCCache(db));
                 const ah = await CPCAuctionHistory(db, logger, api, cache);
+
+                const standalone_container_name_fetch = setInterval(() => { fillNames(ah) }, 300000);
+                standalone_container_name_fetch.unref();
+
                 standalone_container_abc = setInterval(() => { job(ah) }, 3.6e+6);
                 standalone_container_abc.unref();
                 break;
