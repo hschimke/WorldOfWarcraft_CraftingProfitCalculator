@@ -8,6 +8,7 @@ const sql_create_system_table = 'CREATE TABLE IF NOT EXISTS system (key TEXT, va
 const sql_create_item_table_pg = 'CREATE TABLE IF NOT EXISTS auctions (item_id NUMERIC, bonuses TEXT, quantity NUMERIC, price NUMERIC, downloaded NUMERIC, connected_realm_id NUMERIC)';
 const sql_create_auctions_index_pg = 'CREATE INDEX IF NOT EXISTS auctions_index ON auctions (item_id, bonuses, quantity, price, downloaded, connected_realm_id)';
 const sql_create_items_table_pg = 'CREATE TABLE IF NOT EXISTS items (item_id NUMERIC, region TEXT, name TEXT, craftable BOOLEAN, scanned BOOLEAN, PRIMARY KEY (item_id,region))';
+const sql_create_items_name_ind_pg = 'CREATE INDEX IF NOT EXISTS items_name_index on items (name)';
 const sql_create_realms_table_pg = 'CREATE TABLE IF NOT EXISTS realms (connected_realm_id NUMERIC, name TEXT, region TEXT, PRIMARY KEY (connected_realm_id,region))';
 const sql_create_realm_scan_table_pg = 'CREATE TABLE IF NOT EXISTS realm_scan_list (connected_realm_id NUMERIC, region TEXT, PRIMARY KEY (connected_realm_id,region))';
 const sql_create_archive_table_pg = 'CREATE TABLE IF NOT EXISTS auction_archive (item_id NUMERIC, bonuses TEXT, quantity NUMERIC, summary JSON, downloaded NUMERIC, connected_realm_id NUMERIC)';
@@ -22,6 +23,7 @@ const history_sql_run_at_open_pg = [
     sql_create_auctions_index_pg,
     sql_create_auction_archive_index_pg,
     sql_create_system_table,
+    sql_create_items_name_ind_pg
 ];
 
 const sql_create_cache_table_pg = 'CREATE TABLE IF NOT EXISTS key_values (namespace TEXT, key TEXT, value JSON, cached NUMERIC, PRIMARY KEY (namespace,key))';

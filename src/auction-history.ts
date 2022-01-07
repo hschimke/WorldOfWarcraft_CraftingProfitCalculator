@@ -536,7 +536,7 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
     }
 
     async function getAllNames(): Promise<string[]> {
-        const name_list = await db.all< { name: string } >('SELECT name FROM items WHERE name NOTNULL');
+        const name_list = await db.all< { name: string } >('SELECT DISTINCT name FROM items WHERE name NOTNULL');
         return name_list.reduce((prev: string[],curr) => {
             return [...prev, curr.name];
         }, []);

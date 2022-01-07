@@ -14,6 +14,7 @@ const sql_create_realms_table_sq3 = 'CREATE TABLE IF NOT EXISTS realms (connecte
 const sql_create_realm_scan_table_sq3 = 'CREATE TABLE IF NOT EXISTS realm_scan_list (connected_realm_id INTEGER, region TEXT, PRIMARY KEY (connected_realm_id,region))';
 const sql_create_archive_table_sq3 = 'CREATE TABLE IF NOT EXISTS auction_archive (item_id INTEGER, bonuses TEXT, quantity INTEGER, summary TEXT, downloaded INTEGER, connected_realm_id INTEGER)';
 const sql_create_auction_archive_index_sq3 = 'CREATE INDEX IF NOT EXISTS auction_archive_index ON auction_archive (item_id, bonuses, downloaded, connected_realm_id)';
+const sql_create_items_name_ind_sq3 = 'CREATE INDEX IF NOT EXISTS items_name_index on items (name)';
 
 const history_sql_run_at_open_sq3 = [
     pragma_sync,
@@ -26,6 +27,7 @@ const history_sql_run_at_open_sq3 = [
     sql_create_archive_table_sq3,
     sql_create_auction_archive_index_sq3,
     sql_create_system_table,
+    sql_create_items_name_ind_sq3
 ];
 
 const sql_create_cache_table_sq3 = 'CREATE TABLE IF NOT EXISTS key_values (namespace TEXT, key TEXT, value TEXT, cached INTEGER, PRIMARY KEY (namespace,key))';
