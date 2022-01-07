@@ -139,8 +139,12 @@ if (cluster.isPrimary) {
         const ah = await CPCAuctionHistory(db, logger, api, cache);
 
         app.get('/all_items', (req, res) => {
+            const cache_NS = 'AH-FUNCTIONS';
+            const cache_KY = 'ALL_ITEMS_NAMES';
+
             logger.debug('Getting all items');
-            ah.getAllNames().then((names: string[]) => {
+
+            const handleNames = (names: string[]) => {
                 if (req.query.partial !== undefined && typeof (req.query.partial) === 'string' && req.query.partial !== '') {
                     const partial: string = req.query.partial;
                     logger.debug(`Partial search for all items with "${partial}"`);
@@ -152,35 +156,20 @@ if (cluster.isPrimary) {
                     logger.debug('Returning all unfiltered items.');
                     res.json(names);
                 }
-            })
-            /*cache.cacheCheck('AH-FUNCTIONS', 'ALL_ITEMS_NAMES').then((found) => {
-                //let names_: string[] = [];
+            }
+
+            cache.cacheCheck(cache_NS, cache_KY).then((found) => {
                 if (found) {
                     logger.debug('Cached all items found.');
-                    cache.cacheGet('AH-FUNCTIONS', 'ALL_ITEMS_NAMES').then((val) => {
-                        return val;
-                    });
+                    cache.cacheGet(cache_NS, cache_KY).then(handleNames);
                 } else {
                     logger.debug('Getting fresh all items.');
                     ah.getAllNames().then((names) => {
-                        cache.cacheSet('AH-FUNCTIONS', 'ALL_ITEMS_NAMES', names, 4740);
-                        return names;
+                        cache.cacheSet(cache_NS, cache_KY, names, 4740);
+                        handleNames(names);
                     });
                 }
-                //return names_;
-            }).then((names: string[]) => {
-                if (req.query.partial !== undefined && typeof (req.query.partial) === 'string' && req.query.partial !== '') {
-                    const partial: string = req.query.partial;
-                    logger.debug(`Partial search for all items with "${partial}"`);
-                    const filtered_set = names.filter((str) => {
-                        return str.toLocaleLowerCase().includes(partial.toLocaleLowerCase());
-                    });
-                    res.json(filtered_set);
-                } else {
-                    logger.debug('Returning all unfiltered items.');
-                    res.json(names);
-                }
-            })*/
+            });
         });
 
         app.get('/scanned_realms', (req, res) => {
