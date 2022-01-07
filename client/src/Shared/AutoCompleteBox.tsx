@@ -1,18 +1,27 @@
-import React, { MouseEventHandler, Suspense, useEffect, useState, useTransition } from "react";
-import { fetchPromiseWrapper } from "./ApiClient"
+import { Suspense, useEffect, useState, useTransition, useRef, MutableRefObject } from "react";
+import { fetchPromiseWrapper } from "./ApiClient";
+import style from './AutoCompleteBox.module.css';
 
 export type AutoCompleteAgg = { read: () => (string[] | undefined) };
 
-function AutoCompleteBox({ source, filter, onSelect, currentValue, targetField }: { targetField: string, source: string, currentValue: string, filter?: string, onSelect:  (field:string,value:string) => void }) {
-    const visible = useState(true);
+function AutoCompleteBox({ source, filter, onSelect, currentValue, targetField }: { targetField: string, source: string, currentValue: string, filter?: string, onSelect: (field: string, value: string) => void }) {
+    const [visible, setVisible] = useState(true);
     const [isLoading, onBatch] = useTransition();
     const [list, setList] = useState({ read: () => { return undefined; } } as AutoCompleteAgg);
+    const [clickedValue, setClickedValue] = useState('');
+    const ulRef = useRef<HTMLUListElement | null>(null);
+    useOutsideAlerter(ulRef);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             onBatch(() => {
-                const endPoint = `${source}${filter !== undefined ? '?' + filter + '=' + encodeURIComponent(currentValue) : ''}`;
-                setList(fetchPromiseWrapper<string[]>(endPoint));
+                if (clickedValue !== currentValue) {
+                    const endPoint = `${source}${filter !== undefined ? '?' + filter + '=' + encodeURIComponent(currentValue) : ''}`;
+                    if (!visible) {
+                        setVisible(true);
+                    }
+                    setList(fetchPromiseWrapper<string[]>(endPoint));
+                }
             })
         }, 1000);
 
@@ -22,14 +31,40 @@ function AutoCompleteBox({ source, filter, onSelect, currentValue, targetField }
     }, [currentValue]);
 
     const onClick = (event: string) => {
-        onSelect(targetField,event);
+        setVisible(false);
+        setClickedValue(event);
+        onSelect(targetField, event);
     };
 
-    return <ul hidden={!visible}>
-        <Suspense fallback={null}>
-            <ItemList items={list} onSelect={onClick} />
-        </Suspense>
-    </ul>
+    return <>
+        {visible &&
+            <ul ref={ulRef} className={style.Box}>
+                <Suspense fallback={<li>Loading</li>}>
+                    <ItemList items={list} onSelect={onClick} />
+                </Suspense>
+            </ul>
+        }
+    </>
+
+    function useOutsideAlerter(ref: MutableRefObject<HTMLUListElement | null>) {
+        useEffect(() => {
+            /**
+             * Alert if clicked on outside of element
+             */
+            function handleClickOutside(event: MouseEvent) {
+                if (ref.current && !ref.current.contains(event.target as Node)) {
+                    setVisible(false);
+                }
+            }
+
+            // Bind the event listener
+            document.addEventListener("mousedown", handleClickOutside);
+            return () => {
+                // Unbind the event listener on clean up
+                document.removeEventListener("mousedown", handleClickOutside);
+            };
+        }, [ref]);
+    }
 }
 
 function ItemList({ items, onSelect }: { items: AutoCompleteAgg, onSelect: (event: string) => void }) {
@@ -40,7 +75,7 @@ function ItemList({ items, onSelect }: { items: AutoCompleteAgg, onSelect: (even
 
     return <>
         {item_list.map((z) => {
-            return <li key={z} onClick={() => {
+            return <li className={style.Row} key={z} onClick={() => {
                 onSelect(z);
             }}>{z}</li>
         })}
