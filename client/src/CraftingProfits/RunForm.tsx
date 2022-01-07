@@ -2,6 +2,7 @@ import './RunForm.css';
 import { CraftingProfitsDispatch, CharacterProfessionList } from './Shared';
 import { useContext } from 'react';
 import { RegionSelector } from '../Shared/RegionSelector';
+import {AutoCompleteBox} from '../Shared/AutoCompleteBox';
 
 export interface RunFormProps {
     form_type: string,
@@ -36,10 +37,18 @@ function SimpleRunFrom(props: RunFormProps) {
             dispatch({ field: event.target.name, value: event.target.value });
         }
     };
+
+    const handleAutoCompleteClick: (field:string,value:string) => void = (field,value) => {
+        if (dispatch !== undefined) {
+            dispatch({ field: field, value: value });
+        }
+    };
+
     return (
         <form onSubmit={props.handleSubmit} className="RunForm">
             <label>Item:
                     <input type="text" name="item" value={props.item} onChange={handleInputChange} />
+                    <AutoCompleteBox currentValue={props.item} filter='partial' source='all_items' onSelect={handleAutoCompleteClick} targetField='item' />
             </label>
             <label>Required Count:
                     <input type="text" name="required" value={props.required} onChange={handleInputChange} />
@@ -67,10 +76,18 @@ function AdvancedRunFrom(props: RunFormProps) {
             dispatch({ field: 'professions', value: event.target.name });
         }
     };
+
+    const handleAutoCompleteClick: (field:string,value:string) => void = (field,value) => {
+        if (dispatch !== undefined) {
+            dispatch({ field: field, value: value });
+        }
+    };
+
     return (
         <form onSubmit={props.handleSubmit} className="RunForm">
             <label>Item:
                     <input type="text" name="item" value={props.item} onChange={handleInputChange} />
+                    <AutoCompleteBox currentValue={props.item} filter='partial' source='all_items' onSelect={handleAutoCompleteClick} targetField='item' />
             </label>
             <RegionSelector selected_region={props.region} onChange={handleInputChange} />
             <label>Server:

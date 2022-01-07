@@ -7,6 +7,7 @@ import { BonusListDropdown } from './BonusListDropdown';
 import { RegionSelector } from '../Shared/RegionSelector';
 import { AuctionHistoryDispatch } from './Shared';
 import { ScanRealms } from './ScanRealms';
+import {AutoCompleteBox} from '../Shared/AutoCompleteBox';
 
 export interface AuctionsFormDataReducerAction {
     fieldName: string,
@@ -110,6 +111,12 @@ function Auctions(props: AuctionsProps) {
         });
     };
 
+    const handleAutoCompleteClick: (field:string,value:string) => void = (field,value) => {
+        if (dispatchFormUpdate !== undefined) {
+            dispatchFormUpdate({ fieldName: field, value: value });
+        }
+    };
+
     return (
         <div className="Auctions">
             <AuctionHistoryDispatch.Provider value={dispatchFormUpdate}>
@@ -117,6 +124,7 @@ function Auctions(props: AuctionsProps) {
                     <label>
                         Item:
                         <input type="text" name="item_name" value={formState.item_name} onChange={handleChange} />
+                        <AutoCompleteBox currentValue={formState.item_name} filter='partial' source='all_items' onSelect={handleAutoCompleteClick} targetField='item_name' />
                     </label>
                     <label>
                         Realm:
