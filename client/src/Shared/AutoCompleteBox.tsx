@@ -4,7 +4,7 @@ import { fetchPromiseWrapper } from "./ApiClient"
 export type AutoCompleteAgg = { read: () => (string[] | undefined) };
 
 function AutoCompleteBox({ source, filter, onSelect, currentValue, targetField }: { targetField: string, source: string, currentValue: string, filter?: string, onSelect:  (field:string,value:string) => void }) {
-    const visible = useState(false);
+    const visible = useState(true);
     const [isLoading, onBatch] = useTransition();
     const [list, setList] = useState({ read: () => { return undefined; } } as AutoCompleteAgg);
 
@@ -25,7 +25,7 @@ function AutoCompleteBox({ source, filter, onSelect, currentValue, targetField }
         onSelect(targetField,event);
     };
 
-    return <ul>
+    return <ul hidden={!visible}>
         <Suspense fallback={null}>
             <ItemList items={list} onSelect={onClick} />
         </Suspense>
