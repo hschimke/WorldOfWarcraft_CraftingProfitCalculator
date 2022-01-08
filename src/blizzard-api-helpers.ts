@@ -1,4 +1,5 @@
 import { Logger } from 'winston';
+import { getComputedTimeWithShift, getDynamicTimeWithShift, getStaticTimeWithShift } from './cache_time_helpers.js';
 
 const exclude_before_shadowlands = false;
 
@@ -47,7 +48,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         }
 
         //if (item_id > 0) {
-        await cacheSet(ITEM_SEARCH_CACHE, item_name, item_id);
+        await cacheSet(ITEM_SEARCH_CACHE, item_name, item_id, getStaticTimeWithShift());
         //}
 
         return item_id;
@@ -170,7 +171,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
             }
         }
 
-        await cacheSet(CONNECTED_REALM_ID_CACHE, connected_realm_key, realm_id);
+        await cacheSet(CONNECTED_REALM_ID_CACHE, connected_realm_key, realm_id, getStaticTimeWithShift());
         logger.info(`Found Connected Realm ID: ${realm_id} for ${server_region} ${server_name}`);
 
         // Return that connected realm ID
@@ -197,7 +198,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         },
             profession_item_detail_uri);
 
-        await cacheSet(ITEM_DATA_CACHE, key, result);
+        await cacheSet(ITEM_DATA_CACHE, key, result, getStaticTimeWithShift());
         return result;
     }
 
@@ -218,7 +219,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
             'locale': 'en_US'
         }, profession_list_uri);
 
-        await cacheSet(PROFESSION_LIST_CACHE, key, result);
+        await cacheSet(PROFESSION_LIST_CACHE, key, result,getStaticTimeWithShift());
 
         return result;
     }
@@ -242,7 +243,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         },
             profession_detail_uri);
 
-        await cacheSet(PROFESSION_DETAIL_CACHE, key, result);
+        await cacheSet(PROFESSION_DETAIL_CACHE, key, result,getStaticTimeWithShift());
         return result;
     }
 
@@ -260,7 +261,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         },
             connected_realm_detail_uri);
 
-        await cacheSet(COMPOSITE_REALM_NAME_CACHE, key, result);
+        await cacheSet(COMPOSITE_REALM_NAME_CACHE, key, result, getDynamicTimeWithShift());
         return result;
     }
 
@@ -286,7 +287,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         },
             profession_skill_tier_detail_uri);
 
-        await cacheSet(PROFESSION_SKILL_TIER_DETAILS_CACHE, key, result);
+        await cacheSet(PROFESSION_SKILL_TIER_DETAILS_CACHE, key, result, getStaticTimeWithShift());
 
         return result;
     }
@@ -313,7 +314,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         },
             profession_recipe_uri);
 
-        await cacheSet(PROFESSION_RECIPE_DETAIL_CACHE, key, result);
+        await cacheSet(PROFESSION_RECIPE_DETAIL_CACHE, key, result,getStaticTimeWithShift());
 
         return result;
     }
@@ -345,7 +346,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
         if ('description' in item_detail) {
             if (item_detail.description.includes('vendor')) {
                 logger.debug('Skipping vendor recipe');
-                await cacheSet(CRAFTABLE_BY_PROFESSION_SET_CACHE, key, recipe_options);
+                await cacheSet(CRAFTABLE_BY_PROFESSION_SET_CACHE, key, recipe_options, getComputedTimeWithShift());
                 return recipe_options;
             }
         }
@@ -377,7 +378,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
             recipe_options.craftable = recipe_options.craftable || profession_crafting_check.craftable;
         }
 
-        await cacheSet(CRAFTABLE_BY_PROFESSION_SET_CACHE, key, recipe_options);
+        await cacheSet(CRAFTABLE_BY_PROFESSION_SET_CACHE, key, recipe_options, getComputedTimeWithShift());
         //{craftable: found_craftable, recipe_id: found_recipe_id, crafting_profession: found_profession};
         return recipe_options;
     }
@@ -428,7 +429,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
             return checkProfessionTierCrafting(tier, region);
         }));
 
-        await cacheSet(CRAFTABLE_BY_SINGLE_PROFESSION_CACHE, cache_key, profession_recipe_options);
+        await cacheSet(CRAFTABLE_BY_SINGLE_PROFESSION_CACHE, cache_key, profession_recipe_options, getComputedTimeWithShift());
 
         return profession_recipe_options;
 
@@ -673,7 +674,7 @@ function CPCApiHelpers(logging: Logger, cache: CPCCache, api: CPCApi): CPCApiHel
                     }
                 }
             }
-            cacheSet(CYCLIC_LINK_CACHE, cache_key, found_links);
+            cacheSet(CYCLIC_LINK_CACHE, cache_key, found_links, getStaticTimeWithShift());
             return found_links;
         }
     }

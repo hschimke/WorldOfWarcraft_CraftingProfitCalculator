@@ -114,7 +114,7 @@ interface StaticCacheConfig {
 type CPCCache = Readonly<{
     cacheCheck: (namespace: string, key: string | number) => Promise<boolean>;
     cacheGet: (namespace: string, key: string | number) => Promise<any>;
-    cacheSet: (namespace: string, key: string | number, data: any, expiration_period?: number | undefined) => Promise<void>;
+    cacheSet: (namespace: string, key: string | number, data: any, expiration_period: number) => Promise<void>;
     shutdown: () => Promise<void>;
 }>
 
