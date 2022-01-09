@@ -2,17 +2,19 @@ import cluster from 'cluster';
 import compression from 'compression';
 import { default as express } from 'express';
 import { resolve } from 'path';
+import { createClient } from 'redis';
 import { CPCApi } from './blizzard-api-call.js';
 import { ApiAuthorization } from './blizz_oath.js';
 import { CPCCache, static_sources } from './cached-data-sources.js';
 import { CPCDb } from './database/database.js';
-import { CACHE_DB_FN, CLIENT_ID, CLIENT_SECRET, CLUSTER_SIZE, DATABASE_TYPE, DISABLE_AUCTION_HISTORY, HISTORY_DB_FN, SERVER_PORT, USE_REDIS } from './environment_variables.js';
+import { CACHE_DB_FN, CLIENT_ID, CLIENT_SECRET, CLUSTER_SIZE, DATABASE_TYPE, DISABLE_AUCTION_HISTORY, HISTORY_DB_FN, REDIS_URL, SERVER_PORT, USE_REDIS } from './environment_variables.js';
 import { getRegionCode } from './getRegionCode.js';
 import { parentLogger } from './logging.js';
 import { RedisCache } from './redis-cache-provider.js';
 import { RunConfiguration } from './RunConfiguration.js';
 import { validateProfessions } from './validateProfessions.js';
 import { CPCInstance } from './wow_crafting_profits.js';
+import { v4 as uuidv4 } from 'uuid';
 
 const logger = parentLogger.child({});
 
@@ -94,6 +96,71 @@ if (cluster.isPrimary) {
     app.get('/healthcheck', (req, res) => {
         logger.debug('Healthcheck OK');
         res.json({ health: 'ok' });
+    });
+
+    app.post('/json_output_QUEUED', async (req, res) => {
+        const client = createClient({
+            url: REDIS_URL
+        });
+
+        let json_data: AddonData = { inventory: [], professions: [], realm: { realm_name: '', region_name: '' } };
+        if (req.body.addon_data.length > 0) {
+            json_data = JSON.parse(req.body.addon_data);
+        }
+        const uuid = uuidv4();
+        await client.connect();
+
+        if (req.body.type == 'custom') {
+            logger.debug(`Custom search for item: ${req.body.item_id}, server: ${req.body.server}, region: ${req.body.region}, professions: ${req.body.professions}. JSON DATA: ${json_data.inventory.length}`);
+            await client.lPush('cpc-job-queue:web-jobs', JSON.stringify({
+                job_id: uuid,
+                job_config: {
+                    item: req.body.item_id,
+                    count: Number(req.body.count),
+                    addon_data: {
+                        inventory: json_data.inventory,
+                        professions: validateProfessions(JSON.parse(req.body.professions)),
+                        realm: {
+                            realm_name: req.body.server,
+                            region_name: req.body.region,
+                        },
+                    }
+                }
+            }));
+        } else if (req.body.type == 'json') {
+            logger.debug('json search');
+            await client.lPush('cpc-job-queue:web-jobs', JSON.stringify({
+                job_id: uuid,
+                job_config: {
+                    item: req.body.item_id,
+                    count: Number(req.body.count),
+                    addon_data: json_data
+                }
+            }));
+            //config = new RunConfiguration(json_data, req.body.item_id, Number(req.body.count));
+            logger.debug(`JSON search for item: ${req.body.item_id}, server: ${json_data.realm.realm_name}, region: ${json_data.realm.region_name}, professions: ${json_data.professions}. JSON DATA: ${json_data.inventory.length}`);
+        }
+        await client.quit();
+        res.json({ job_id: uuid });
+    });
+
+    app.post('/json_output_CHECK', async (req, res) => {
+        const client = createClient({
+            url: REDIS_URL
+        });
+        await client.connect();
+        const run_id = req.body.job_id;
+        const found = await client.exists(`cpc-job-queue-results:${run_id}`);
+        let data : object= { job_id: run_id };
+        if(found){
+            const SVD = await client.get(`cpc-job-queue-results:${run_id}`);
+            if( SVD !== null ){
+                await client.del(`cpc-job-queue-results:${run_id}`);
+                data = JSON.parse(SVD);
+            }
+        }
+        await client.quit();
+        res.json(data);
     });
 
     app.post('/json_output', (req, res) => {

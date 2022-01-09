@@ -10,8 +10,9 @@
 		"fill-cache": "tsc --build tsconfig.json && node -r dotenv/config ./dist/run.js --item 'simple wood'",
 		"clear-cache": "rm ./cache/cache.db",
 		"server": "tsc --build tsconfig.json && node -r dotenv/config ./dist/server.js",
+		"job-worker": "tsc --build tsconfig.json && node -r dotenv/config ./dist/run-worker.js",
 		"cli": "tsc --build tsconfig.json && node -r dotenv/config ./dist/run.js",
-		"client-server": "concurrently \"npm run server\" \"cd client && npm start\"",
+		"client-server": "concurrently \"npm run server\" \"npm run job-worker\" \"cd client && npm start\"",
 		"build": "tsc --build tsconfig.json",
 		"prepack": "tsc --build tsconfig.json"
 	},
@@ -32,6 +33,7 @@
 	},
 	"homepage": "https://github.com/hschimke/WorldOfWarcraft_CraftingProfitCalculator#readme",
 	"dependencies": {
+		"@types/uuid": "^8.3.4",
 		"compression": "^1.7.4",
 		"dotenv": "^10.0.0",
 		"express": "^4.17.2",
@@ -40,6 +42,7 @@
 		"redis": "^4.0.0-rc.4",
 		"sqlite3": "^5.0.2",
 		"typescript": "^4.5.4",
+		"uuid": "^8.3.2",
 		"winston": "^3.3.3",
 		"yargs": "^17.2.1"
 	},

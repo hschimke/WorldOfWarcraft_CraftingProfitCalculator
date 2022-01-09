@@ -1,6 +1,6 @@
 {
   "name": "client",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "private": true,
   "proxy": "http://localhost:3001/",
   "dependencies": {
@@ -12,8 +12,8 @@
     "@types/react": "^17.0.38",
     "@types/react-dom": "^17.0.11",
     "@types/react-router-dom": "^5.3.2",
-    "react": "^18.0.0-rc.0-next-3dc41d8a2-20211223",
-    "react-dom": "^18.0.0-rc.0-next-3dc41d8a2-20211223",
+    "react": "^18.0.0-rc.0-next-fe905f152-20220107",
+    "react-dom": "^18.0.0-rc.0-next-fe905f152-20220107",
     "react-google-charts": "^3.0.15",
     "react-router-dom": "^6.2.1",
     "react-scripts": "^5.0.0",

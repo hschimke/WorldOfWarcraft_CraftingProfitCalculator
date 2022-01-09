@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { textFriendlyOutputFormat } from '../Shared/text-output-helpers';
 import './RunResultDisplay.css';
 import { GoldFormatter, VendorItemPrice, AHItemPrice } from '../Shared/GoldFormatter';
 import { ShoppingLists } from './ShoppingLists';
-import type {RunResultDataResponseAggregate} from './RunCoordinator';
+import type { RunResultDataResponseAggregate, RunResultDataResponseAggregateQUEUE } from './RunCoordinator';
 
 const hidden_recipe_listing_header = {};
 
@@ -13,20 +13,27 @@ export interface RecipeListingProps {
     recipe: OutputFormatObject["recipes"][number]
 }
 
-export interface RunResultItemProps{
+export interface RunResultItemProps {
     raw_run: ServerRunResultReturn & ServerErrorReturn | ServerRunResultReturn | undefined,
     show_children?: boolean
 }
-export interface RunResultDisplayProps{
+export interface RunResultDisplayProps {
     raw_run: RunResultDataResponseAggregate,
     status: string,
     show_raw_result: boolean
 }
 
-function RecipeListing(props:RecipeListingProps) {
+export interface RunResultDisplayPropsQUEUE {
+    raw_run: RunResultDataResponseAggregateQUEUE,
+    item_name: string,
+    status: string,
+    show_raw_result: boolean
+}
+
+function RecipeListing(props: RecipeListingProps) {
     const [child_visible, setChildVisibility] = useState(false);
 
-    const toggleChildren : React.MouseEventHandler = (e) => {
+    const toggleChildren: React.MouseEventHandler = (e) => {
         setChildVisibility(!child_visible);
     };
 
@@ -39,7 +46,7 @@ function RecipeListing(props:RecipeListingProps) {
             <div className="RecipeHeader">
                 <span className="RecipeBanner">
                     Recipe
-                    </span>
+                </span>
                 <span className="RecipeHeaderDetails">
                     <span className="RecipeName">
                         {props.recipe.name}
@@ -49,21 +56,21 @@ function RecipeListing(props:RecipeListingProps) {
                     </span>
                     <span className="RecipeId">
                         ({props.recipe.id})
-                        </span>
+                    </span>
                 </span>
                 <span className="RecipeCost">
                     <GoldFormatter raw_price={props.recipe.high} />
-                        /
-                        <GoldFormatter raw_price={props.recipe.low} />
-                        /
-                        <GoldFormatter raw_price={props.recipe.average} />
+                    /
+                    <GoldFormatter raw_price={props.recipe.low} />
+                    /
+                    <GoldFormatter raw_price={props.recipe.average} />
                 </span>
             </div>
             {show_ah_price &&
                 <AHItemPrice ah={props.recipe.ah} />}
             <span className="RecipePartsBanner" onClick={toggleChildren}>
                 {props.recipe.parts.length} Components
-                </span>
+            </span>
             <div className={'HideableChild' + child_addins}>
                 {show_parts &&
                     props.recipe.parts.map(part => {
@@ -82,7 +89,7 @@ function RunResultItem({ raw_run, show_children = true }: RunResultItemProps) {
         return null;
     }
 
-    const toggleChildren : React.MouseEventHandler = (e) => {
+    const toggleChildren: React.MouseEventHandler = (e) => {
         updateChildVisibility(!child_visibility);
     };
 
@@ -108,13 +115,13 @@ function RunResultItem({ raw_run, show_children = true }: RunResultItemProps) {
                 <div className="RunResultItemRecipesHeader">
                     <span className="ItemBanner">
                         Item
-                        </span>
+                    </span>
                     <span className="ItemName">
                         {output_data.name}
                     </span>
                     <span className="ItemId">
                         ({output_data.id})
-                        </span>
+                    </span>
                     <span className="Required">
                         Requires {output_data.required}
                     </span>
@@ -127,7 +134,7 @@ function RunResultItem({ raw_run, show_children = true }: RunResultItemProps) {
                 }
                 <span className="ItemRecipesBanner" onClick={toggleChildren}>
                     {output_data.recipes.length} Recipes
-                    </span>
+                </span>
                 <div className={'RunResultItemRecipesChildren HideableChild' + children_classes}>
                     {recipes &&
                         output_data.recipes.map(recipe => {
@@ -153,7 +160,7 @@ function RunResultItem({ raw_run, show_children = true }: RunResultItemProps) {
     );
 }
 
-function RunResultDisplay(props:RunResultDisplayProps) {
+function RunResultDisplay(props: RunResultDisplayProps) {
     const SHOW_RES = props.show_raw_result;
     const raw_run = props.raw_run.read();
     let res;
@@ -181,4 +188,81 @@ function RunResultDisplay(props:RunResultDisplayProps) {
     );
 }
 
+function RunResultDisplayQUEUE(props: RunResultDisplayPropsQUEUE){
+    const SHOW_RES = props.show_raw_result;
+    let raw_run = props.raw_run.read();
+
+    const job_id = (raw_run as any)?.job_id;
+
+    const [st, setSt] = useState(undefined as (OutputFormatObject & ServerErrorReturn) | undefined);
+
+    useEffect(() => {
+        let timer = setTimeout(() => {
+            queue_checker_functino();
+        }, 10);
+        const queue_checker_functino = () => {
+            if (raw_run?.job_id !== undefined) {
+                fetch('json_output_CHECK', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ job_id: job_id })
+                }).then((intermediate) => {
+                    intermediate.json().then((data) => {
+                        if (data.job_id === undefined) {
+                            setSt(data);
+                        } else {
+                            setSt(undefined);
+                            timer = setTimeout(queue_checker_functino, 1000)
+                        }
+                    })
+                });
+            }
+        };
+        return () => {
+            clearTimeout(timer);
+        }
+    }, [props.raw_run]);
+
+    if(st === undefined && job_id !== undefined){
+        return(<JobRunningBox job_id={job_id} item_name={props.item_name} />);
+    }
+
+    let res;
+    if (st !== undefined) {
+        res = textFriendlyOutputFormat(st, 1);
+    }
+    return (
+        <div className="RunResultDisplay">
+            {props.status !== 'ready' &&
+                <div className="Status">
+                    {(st?.ERROR !== undefined) && st?.ERROR}
+                </div>
+            }
+            {SHOW_RES &&
+                <div className="RawResult">
+                    <pre>
+                        {res}
+                    </pre>
+                </div>
+            }
+            <div className="WebResult">
+                <RunResultItem raw_run={st} />
+            </div>
+        </div>
+    );
+}
+
+function JobRunningBox({job_id, item_name}: {job_id: string, item_name?: string}){
+    return(
+        <div>
+            {item_name &&
+            <p>Job submitted for {item_name}</p>}
+            <p>Job {job_id} is running.</p>
+        </div>
+    );
+}
+
 export default RunResultDisplay;
+export { RunResultDisplayQUEUE };

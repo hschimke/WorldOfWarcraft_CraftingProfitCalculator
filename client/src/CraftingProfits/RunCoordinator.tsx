@@ -1,7 +1,7 @@
 import { useState, useReducer, useEffect, Suspense, useTransition } from 'react';
 import { RunForm } from './RunForm';
 import { fetchPromiseWrapper } from '../Shared/ApiClient';
-import RunResultDisplay from './RunResultDisplay';
+import RunResultDisplay, { RunResultDisplayQUEUE } from './RunResultDisplay';
 import { all_professions, CraftingProfitsDispatch, CharacterProfessionList, validateAndCleanProfessions } from './Shared';
 import { HelpBox } from './HelpBox';
 import './RunCoordinator.css';
@@ -23,7 +23,8 @@ export interface RunCoordinatorFormDataReducerAction {
 
 export interface RunCoordinatorProps { }
 
-export type RunResultDataResponseAggregate = { read: () => (OutputFormatObject & ServerErrorReturn) | undefined };
+export type RunResultDataResponseAggregate = { read: () => OutputFormatObject & ServerErrorReturn | undefined };
+export type RunResultDataResponseAggregateQUEUE = { read: () => { job_id: string } | undefined };
 
 const formDataReducer = (state: RunCoordinatorFormDataReducerState, action: RunCoordinatorFormDataReducerAction): RunCoordinatorFormDataReducerState => {
     switch (action.field) {
@@ -87,7 +88,7 @@ function RunCoordinator(props: RunCoordinatorProps) {
 
     const [show_raw_results, updateShowRawResults] = useState(false);
     const [run_type, updateRunType] = useState('advanced');
-    const [scanResult, setScanResult] = useState({ read: () => { return undefined; } } as RunResultDataResponseAggregate);
+    const [scanResult, setScanResult] = useState({ read: () => { return undefined; } } as RunResultDataResponseAggregateQUEUE);
 
     const handleSubmit: React.FormEventHandler = (event) => {
         startLoadingRun(() => {
@@ -103,7 +104,8 @@ function RunCoordinator(props: RunCoordinatorProps) {
                 professions: JSON.stringify(formData.professions),
             };
             //setPayload(run_data);
-            setScanResult(fetchPromiseWrapper<OutputFormatObject & ServerErrorReturn | undefined>('/json_output', run_data));
+            //setScanResult(fetchPromiseWrapper<OutputFormatObject & ServerErrorReturn | undefined>('/json_output', run_data));
+            setScanResult(fetchPromiseWrapper<{ job_id: string } | undefined>('/json_output_QUEUED', run_data));
         });
     };
 
@@ -155,7 +157,7 @@ function RunCoordinator(props: RunCoordinatorProps) {
             <div>
                 {isLoadingRun && <p>Analyzing {formData.item}</p>}
                 <Suspense fallback={<p>Analyzing {formData.item}</p>}>
-                    <RunResultDisplay raw_run={scanResult} status={output_display} show_raw_result={show_raw_results} />
+                    <RunResultDisplayQUEUE item_name={formData.item} raw_run={scanResult} status={output_display} show_raw_result={show_raw_results} />
                 </Suspense>
             </div>
         </div>
