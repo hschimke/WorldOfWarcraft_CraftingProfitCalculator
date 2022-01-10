@@ -17,10 +17,17 @@ let standalone_container_abc: NodeJS.Timeout | undefined = undefined;
 
 //await addRealmToScanList('hyjal','us');
 
-function job(ah: CPCAuctionHistory) {
+async function job(ah: CPCAuctionHistory) {
     logger.info('Starting hourly injest job.');
 
-    ah.scanRealms().then(() => {
+    await ah.scanRealms();
+    await ah.fillNItems(20);
+    if ((new Date()).getHours() === 4) {
+        logger.info('Performing daily archive.');
+        await ah.archiveAuctions();
+    }
+    logger.info('Finished hourly injest job.');
+    /*ah.scanRealms().then(() => {
         return ah.fillNItems(20);
     }).then(() => {
         if ((new Date()).getHours() === 4) {
@@ -29,10 +36,10 @@ function job(ah: CPCAuctionHistory) {
         }
     }).finally(() => {
         logger.info('Finished hourly injest job.');
-    })
+    })*/
 }
 
-async function fillNames(ah: CPCAuctionHistory){
+async function fillNames(ah: CPCAuctionHistory) {
     return ah.fillNNames(100);
 }
 
@@ -56,7 +63,7 @@ if (include_auction_history) {
                 const api = CPCApi(logger, auth);
                 const cache = await (USE_REDIS ? RedisCache() : CPCCache(db));
                 const ah = await CPCAuctionHistory(db, logger, api, cache);
-                job(ah);
+                await job(ah);
                 await fillNames(ah);
                 api.shutdownApiManager();
                 await cache.shutdown();
@@ -90,7 +97,11 @@ if (include_auction_history) {
                 const standalone_container_name_fetch = setInterval(() => { fillNames(ah) }, 300000);
                 standalone_container_name_fetch.unref();
 
-                standalone_container_abc = setInterval(() => { job(ah) }, 3.6e+6);
+                standalone_container_abc = setInterval(() => {
+                    if (((new Date()).getHours() % 3) === 0) { // run only on hours divisible by 3
+                        job(ah);
+                    }
+                }, 3.6e+6);
                 standalone_container_abc.unref();
                 break;
             }

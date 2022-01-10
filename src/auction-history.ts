@@ -3,13 +3,9 @@ import { CPCApiHelpers } from './blizzard-api-helpers.js';
 import { ALL_PROFESSIONS } from './shared-constants.js';
 import { getRegionCode } from './getRegionCode.js';
 
-const sql_insert_auction = 'INSERT INTO auctions(item_id, quantity, price, downloaded, connected_realm_id, bonuses) VALUES($1,$2,$3,$4,$5,$6)';
-const sql_insert_auction_archive = 'INSERT INTO auction_archive(item_id, quantity, summary, downloaded, connected_realm_id, bonuses) VALUES($1,$2,$3,$4,$5,$6)';
+const sql_insert_auction = 'INSERT INTO auctions(item_id, quantity, price, downloaded, connected_realm_id, bonuses, region) VALUES($1,$2,$3,$4,$5,$6,$7)';
+const sql_insert_auction_archive = 'INSERT INTO auction_archive(item_id, quantity, summary, downloaded, connected_realm_id, bonuses, region) VALUES($1,$2,$3,$4,$5,$6,$7)';
 const sql_insert_item = 'INSERT INTO items(item_id, region, name, craftable, scanned) VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING';
-const sql_insert_realm = 'INSERT INTO realms(connected_realm_id, name, region) VALUES($1,$2,$3)';
-
-const sql_check_item = 'SELECT COUNT(*) AS how_many FROM items WHERE item_id = $1 AND region = $2';
-const sql_check_realm = 'SELECT COUNT(*) AS how_many FROM realms WHERE connected_realm_id = $1 AND region = $2';
 
 async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, cache: CPCCache): Promise<CPCAuctionHistory> {
     const logger = logging;
@@ -60,7 +56,7 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
             for (const pk of Object.keys(items[key])) {
                 item_set.add(items[key][pk].item_id);
                 //item_id, quantity, price, downloaded, connected_realm_id, bonuses
-                insert_values_array.push([items[key][pk].item_id, items[key][pk].quantity, items[key][pk].price, downloaded, connected_realm, JSON.stringify(items[key][pk].bonus_lists)]);
+                insert_values_array.push([items[key][pk].item_id, items[key][pk].quantity, items[key][pk].price, downloaded, connected_realm, JSON.stringify(items[key][pk].bonus_lists), region.toLocaleLowerCase()]);
             }
         }
 
@@ -71,36 +67,11 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
         await client.query('BEGIN TRANSACTION');
 
         for (const item of item_set) {
-            //const result = (await client.query<HowMany>(sql_check_item, [item, region])).rows[0];
-
-            //let found = false;
-            //if (result.how_many > 0) {
-            //    found = true;
-            //}
-
-            //if (!found) {
             try {
                 await client.query(sql_insert_item, [item, region, null, false, false]);
             } catch (err) {
                 logger.error(`Could not save ${item} in region ${region}.`, err);
             }
-            //}
-        }
-
-        const result = (await client.query<HowMany>(sql_check_realm, [connected_realm, region.toUpperCase()])).rows[0];
-
-        let found = false;
-        if (result.how_many > 0) {
-            found = true;
-        }
-
-        if (!found) {
-            const realm_detail = await getBlizConnectedRealmDetail(connected_realm, region);
-            const name = realm_detail.realms.reduce((acc, cur) => {
-                return acc += `/${cur.name}`;
-            }, '');
-
-            await client.query(sql_insert_realm, [connected_realm, name.slice(1), region.toUpperCase()]);
         }
 
         await Promise.all(insert_values_array.map((values) => {
@@ -245,8 +216,8 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
         }
         if (region !== undefined) {
             // Get specific region
-            sql_addins.push(`connected_realm_id IN (SELECT connected_realm_id FROM realms WHERE upper(region) = upper(${get_place_marker()}))`);
-            value_searches.push(region);
+            sql_addins.push(`region = ${get_place_marker()}`);
+            value_searches.push(region.toLocaleLowerCase());
         } else {
             // All regions
         }
@@ -421,20 +392,20 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
         const backstep_time = Date.now() - backstep_time_diff;
 
         const sql_get_downloaded_oldest = 'SELECT MIN(downloaded) AS oldest FROM auctions';
-        const sql_get_distinct_rows_from_downloaded = 'SELECT DISTINCT item_id, bonuses, connected_realm_id FROM auctions WHERE downloaded BETWEEN $1 AND $2';
+        const sql_get_distinct_rows_from_downloaded = 'SELECT DISTINCT item_id, bonuses, connected_realm_id, region FROM auctions WHERE downloaded BETWEEN $1 AND $2';
         const sql_delete_archived_auctions = 'DELETE FROM auctions WHERE downloaded BETWEEN $1 AND $2';
 
-        const sql_price_map = 'SELECT price, count(price) AS sales_at_price, sum(quantity) AS quantity_at_price FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5 GROUP BY price';
-        const sql_min = 'SELECT MIN(price) AS min_price FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5';
-        const sql_max = 'SELECT MAX(price) AS max_price FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5';
-        const sql_avg = 'SELECT SUM(price*quantity)/SUM(quantity) AS avg_price FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND downloaded BETWEEN $4 AND $5';
+        const sql_price_map = 'SELECT price, count(price) AS sales_at_price, sum(quantity) AS quantity_at_price FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND region=$6 AND downloaded BETWEEN $4 AND $5 GROUP BY price';
+        const sql_min = 'SELECT MIN(price) AS min_price FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND region=$6 AND downloaded BETWEEN $4 AND $5';
+        const sql_max = 'SELECT MAX(price) AS max_price FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND region=$6 AND downloaded BETWEEN $4 AND $5';
+        const sql_avg = 'SELECT SUM(price*quantity)/SUM(quantity) AS avg_price FROM auctions WHERE item_id=$1 AND bonuses=$2 AND connected_realm_id=$3 AND region=$6 AND downloaded BETWEEN $4 AND $5';
 
         const client = await db.getClient();
 
         let count = 0;
 
         type Oldest = { oldest: number };
-        type DistinctRows = { item_id: number, bonuses: string, connected_realm_id: number };
+        type DistinctRows = { item_id: number, bonuses: string, connected_realm_id: number, region: string };
         type Min = { min_price: number };
         type Max = { max_price: number };
         type Average = { avg_price: number };
@@ -457,7 +428,7 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
                 // Get a list of all distinct item/server combinations
                 const items = (await client.query<DistinctRows>(sql_get_distinct_rows_from_downloaded, [start_ticks, end_ticks])).rows;
                 for (const item of items) {
-                    const vals = [item.item_id, item.bonuses, item.connected_realm_id, start_ticks, end_ticks];
+                    const vals = [item.item_id, item.bonuses, item.connected_realm_id, start_ticks, end_ticks, item.region];
 
                     // Run the getAuctions command for the combo
                     const summary: AuctionPriceSummaryRecord = {
@@ -475,7 +446,7 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
                     }
 
                     // Add the archive
-                    await client.query(sql_insert_auction_archive, [item.item_id, quantity, JSON.stringify(summary), start_ticks, item.connected_realm_id, item.bonuses]);
+                    await client.query(sql_insert_auction_archive, [item.item_id, quantity, JSON.stringify(summary), start_ticks, item.connected_realm_id, item.bonuses, item.region]);
                     count++;
                 }
                 // Delete the archived data
