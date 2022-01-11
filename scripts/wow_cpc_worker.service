@@ -1,0 +1,14 @@
+[Unit]
+Description=WoW CPC Job Worker
+
+[Service]
+type=simple
+WorkingDirectory=/opt/wow_cpc
+Environment='NODE_ENV=production' 'SERVER_PORT=8080' 'LOG_LEVEL=info'  'STANDALONE_CONTAINER=normal'
+ExecStart=/usr/bin/npm run job-worker
+User=WOW_CPC
+RestartSec=35
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

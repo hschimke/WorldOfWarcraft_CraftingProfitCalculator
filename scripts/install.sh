@@ -8,9 +8,11 @@ COPY_DB=0
 systemctl disable wow_cpc_auction_scrape.timer
 systemctl disable wow_cpc_auction_scrape.service
 systemctl disable wow_cpc.service
+systemctl disable wow_cpc_worker.service
 systemctl stop wow_cpc_auction_scrape.timer
 systemctl stop wow_cpc_auction_scrape.service
 systemctl stop wow_cpc.service
+systemctl stop wow_cpc_worker.service
 
 # Copy out the old databases if they exist
 if [ -d "${INSTALL_DIRECTORY}" ]
@@ -45,6 +47,7 @@ cp --archive ../ $INSTALL_DIRECTORY
 cp "${INSTALL_DIRECTORY}/scripts/wow_cpc_auction_scrape.service" /etc/systemd/system/wow_cpc_auction_scrape.service
 cp "${INSTALL_DIRECTORY}/scripts/wow_cpc_auction_scrape.timer" /etc/systemd/system/wow_cpc_auction_scrape.timer
 cp "${INSTALL_DIRECTORY}/scripts/wow_cpc.service" /etc/systemd/system/wow_cpc.service
+cp "${INSTALL_DIRECTORY}/scripts/wow_cpc_worker.service" /etc/systemd/system/wow_cpc_worker.service
 
 # Install modules
 export INSTALL_DIRECTORY
@@ -69,9 +72,11 @@ chown -R $USER "${INSTALL_DIRECTORY}"
 systemctl enable wow_cpc_auction_scrape.service
 systemctl enable wow_cpc_auction_scrape.timer
 systemctl enable wow_cpc.service
+systemctl enable wow_cpc_worker.service
 
 # Start Server
 systemctl start wow_cpc.service
+systemctl start wow_cpc_worker.service
 
 # Start Timer
 systemctl start wow_cpc_auction_scrape.timer
