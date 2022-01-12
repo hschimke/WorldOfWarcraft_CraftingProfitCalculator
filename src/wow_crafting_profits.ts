@@ -246,22 +246,17 @@ async function CPCInstance(logging: Logger, cache: CPCCache, api: CPCApi) {
 
                 price_obj.item_quantity = qauntity / getRecipeOutputValues(item_bom).min;
 
-                // Find alternates for reagents
-                //console.log(craftable_item_swaps);
-                for (const reagent of item_bom.reagents) {
-                    //console.log(reagent);
-                    //console.log(reagent.reagent.id);
-                    if (craftable_item_swaps[reagent.reagent.id] !== undefined) {
-                        //console.log('FOUNDFOUNDFOUND');
-                    }
-                }
-
                 // Get prices for BOM
                 const bom_prices: ProfitAnalysisObject[] = [];
 
                 logger.debug(`Recipe ${item_bom.name} (${recipe.recipe_id}) has ${item_bom.reagents.length} reagents`);
 
                 const bom_promises = item_bom.reagents.map((reagent) => {
+                    if (craftable_item_swaps[reagent.reagent.id] !== undefined) {
+                        // We're in a cyclic relationship, what do we do?
+                        logger.error('Cycles are not fully implemented.', craftable_item_swaps[reagent.reagent.id]);
+                        throw new Error( `Cycles are not supported.`);
+                    }
                     return performProfitAnalysis(region, server, character_professions, reagent.reagent.id, reagent.quantity, auction_house)
                 });
 
