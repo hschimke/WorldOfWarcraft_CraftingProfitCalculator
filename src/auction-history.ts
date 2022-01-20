@@ -14,7 +14,7 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
 
     const { getAuctionHouse, getConnectedRealmId, checkIsCrafting, getItemId, getItemDetails, getBlizConnectedRealmDetail } = CPCApiHelpers(logging, cache, api);
 
-    async function ingest(region: RegionCode, connected_realm: number): Promise<void> {
+    async function ingest(region: RegionCode, connected_realm: ConnectedRealmID): Promise<void> {
         logger.info(`Injest job started for ${region}:${connected_realm}`);
         // Get auction house
         const auction_house = await getAuctionHouse(connected_realm, region);
