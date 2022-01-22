@@ -53,7 +53,7 @@ const cache = await (USE_REDIS ? RedisCache() : CPCCache(db));
 
 while (running) {
     logger.debug('Trying to get job');
-    const raw_job_data = await client.brPop(commandOptions({ isolated: true }),'cpc-job-queue:web-jobs', 5);
+    const raw_job_data = await client.brPop(commandOptions({ isolated: true }),'cpc-job-queue:web-jobs', 15);
     if (raw_job_data !== null) {
         const job_data = JSON.parse(raw_job_data.element) as job_run;
         const run_id = job_data.job_id;

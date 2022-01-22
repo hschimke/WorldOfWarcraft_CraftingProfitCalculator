@@ -355,13 +355,21 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
             archive_build.push(arch_build);
         }
 
+        const now_moment = Date.now();
+        const spot_summary = await getSpotAuctionSummary(item, realm, region, bonuses);
+        if (spot_summary.avg_value !== 0) {
+            price_data_by_download[now_moment] = spot_summary;
+        }
+        const final_latest_value = spot_summary.avg_value === 0 ? latest_dl_value : now_moment;
+
         logger.debug(`Found max: ${max_value}, min: ${min_value}, avg: ${avg_value}`);
 
         return {
             min: min_value,
             max: max_value,
             avg: avg_value,
-            latest: latest_dl_value,
+            //latest: latest_dl_value,
+            latest: final_latest_value,
             price_map: price_data_by_download,
             archives: archive_build,
         };
@@ -469,6 +477,130 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
         client.release();
     }
 
+    async function getSpotAuctionSummary(item: ItemSoftIdentity, realm: ConnectedRealmSoftIentity, region: RegionCode, bonuses: number[] | string[] | string): Promise<AuctionPriceSummaryRecord> {
+        let realm_get = realm;
+        if (typeof (realm) === 'string') {
+            realm_get = await getConnectedRealmId(realm, region);
+        } else if (typeof (realm) === 'number') {
+            realm_get = realm;
+        } else {
+            throw new Error('Realm not a string or number');
+        }
+        const ah = await getAuctionHouse(realm_get, region);
+        logger.debug(`Spot search for item: ${item} and realm ${realm} and region ${region}, with bonuses ${JSON.stringify(bonuses)}`);
+
+        let item_id = item;
+        if (typeof (item) === 'string') {
+            item_id = await getItemId(region, item);
+        }
+
+        const auction_set = ah.auctions.filter((auction) => {
+            let found_item = false;
+            let found_bonus = false;
+            if (auction.item.id == item_id) {
+                found_item = true;
+                logger.silly(`Found ${auction.item.id}`);
+            }
+
+            if (bonuses === null) {
+                if (auction.item.bonus_lists === undefined || auction.item.bonus_lists.length === 0) {
+                    found_bonus = true;
+                    logger.silly(`Found ${auction.item.id} to match null bonus list`);
+                }
+            } else if (typeof (bonuses) === 'string') {
+                const bonus_parse = JSON.parse(bonuses);
+                if (Array.isArray(bonus_parse)) {
+                    found_bonus = check_bonus(bonus_parse, auction.item.bonus_lists);
+                    logger.silly(`String bonus list ${bonuses} returned ${found_bonus} for ${JSON.stringify(auction.item.bonus_lists)}`);
+                }
+            } else {
+                found_bonus = check_bonus(bonuses, auction.item.bonus_lists);
+                logger.silly(`Array bonus list ${JSON.stringify(bonuses)} returned ${found_bonus} for ${JSON.stringify(auction.item.bonus_lists)}`);
+            }
+
+            return found_bonus && found_item;
+        });
+        logger.debug(`Found ${auction_set.length} auctions`);
+
+        const return_value: AuctionPriceSummaryRecord = {
+            min_value: Number.MAX_SAFE_INTEGER,
+            max_value: Number.MIN_SAFE_INTEGER,
+            avg_value: 0,
+            data: []
+        };
+
+        let total_sales = 0;
+        let total_price = 0;
+        const price_map: Record<number, { quantity: number, sales: number }> = {};
+
+        for (const auction of auction_set) {
+            let price = 0;
+            const quantity = auction.quantity;
+            if (auction.buyout !== undefined) {
+                price = auction.buyout;
+            } else {
+                price = auction.unit_price;
+            }
+
+            if (return_value.max_value < price) {
+                return_value.max_value = price;
+            }
+            if (return_value.min_value > price) {
+                return_value.min_value = price;
+            }
+            total_sales += quantity;
+            total_price += price * quantity;
+
+            if (price_map[price] === undefined) {
+                price_map[price] = {
+                    quantity: 0,
+                    sales: 0
+                }
+            }
+            price_map[price].quantity += quantity;
+            price_map[price].sales += 1
+        }
+
+        return_value.avg_value = total_price / total_sales;
+        for (const price of Object.keys(price_map)) {
+            const p_lookup = Number(price);
+            return_value.data?.push(
+                {
+                    price: p_lookup,
+                    quantity_at_price: price_map[p_lookup].quantity,
+                    sales_at_price: price_map[p_lookup].sales
+                }
+            );
+        }
+
+        return return_value;
+
+        function check_bonus(bonus_list: number[] | string[], target?: number[]) {
+            let found = true;
+
+            // Filter array
+            const filtered : string[] | number[] = (bonus_list as any[]).filter(n=>n);
+            const numbers = filtered.map(element => Number(element));
+            const numbers_only = numbers.filter((number) => {
+                return Number.isInteger(number);
+            })
+
+            // Take care of undefined targets
+            if( target === undefined){
+                if(numbers_only.length !== 0){
+                    return false;
+                }
+                return true;
+            }
+
+            for( const list_entry of numbers_only ){
+                found = found && target.includes(list_entry);
+            }
+            
+            return found;
+        };
+    }
+
     async function addRealmToScanList(realm_name: RealmName, realm_region: RegionCode): Promise<void> {
         const sql = 'INSERT INTO realm_scan_list(connected_realm_id,region) VALUES($1,$2)';
         try {
@@ -507,8 +639,8 @@ async function CPCAuctionHistory(database: CPCDB, logging: Logger, api: CPCApi, 
     }
 
     async function getAllNames(): Promise<string[]> {
-        const name_list = await db.all< { name: string } >('SELECT DISTINCT name FROM items WHERE name NOTNULL');
-        return name_list.reduce((prev: string[],curr) => {
+        const name_list = await db.all<{ name: string }>('SELECT DISTINCT name FROM items WHERE name NOTNULL');
+        return name_list.reduce((prev: string[], curr) => {
             return [...prev, curr.name];
         }, []);
     }
